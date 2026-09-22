@@ -24,6 +24,7 @@ open AEGIS.MeromorphicIdentityPreconnectedV11
 open AEGIS.RHZeroKernelLaplaceV12
 open AEGIS.RHZeroKernelLaplaceAnalyticV12
 open AEGIS.WeilZeroTwoPointV11
+open AEGIS.WeilRHImpliesFinalSignV11
 
 theorem zero_coefficient_v10_eq_v11
     (g : WeilCompactSmoothGV1)
@@ -781,5 +782,86 @@ theorem no_zero_re_gt_half_of_final_sign_v13
 
   rw [hResOrder] at hResNonneg
   norm_num at hResNonneg
+
+
+def reflectedNontrivialZeroV13
+    (rho : RiemannNontrivialZeroIndexV2) :
+    RiemannNontrivialZeroIndexV2 := by
+  have hstrip :=
+    riemann_zeta_nontrivial_zero_critical_strip_v1
+      rho.2.1 rho.2.2
+
+  have hnotNegNat : ∀ n : ℕ, rho.1 ≠ -(n : ℂ) := by
+    intro n hn
+    have hpos : 0 < rho.1.re := hstrip.1
+    rw [hn] at hpos
+    have hnonpos : (-(n : ℂ)).re ≤ 0 := by
+      simp
+    exact (not_lt_of_ge hnonpos) hpos
+
+  have hrho1 : rho.1 ≠ 1 := by
+    intro h
+    have hre := congrArg Complex.re h
+    simp at hre
+    linarith [hstrip.2]
+
+  have hzref :
+      riemannZeta (1 - rho.1) = 0 := by
+    have hfe :=
+      riemannZeta_one_sub (s := rho.1) hnotNegNat hrho1
+    simpa [rho.2.1] using hfe
+
+  have hrefpos : 0 < (1 - rho.1).re := by
+    simp
+    linarith [hstrip.2]
+
+  have hrefNontriv :
+      ¬ ∃ n : ℕ, (1 - rho.1) = -(2 : ℂ) * (n + 1) := by
+    rintro ⟨n, hn⟩
+    rw [hn] at hrefpos
+    have hnonpos :
+        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+      simp
+      positivity
+    exact (not_lt_of_ge hnonpos) hrefpos
+
+  exact ⟨1 - rho.1, hzref, hrefNontriv⟩
+
+theorem all_nontrivial_zeros_critical_of_final_sign_v13
+    (h : FinalSignResidualV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    rho.1.re = 1 / 2 := by
+  have hright :
+      rho.1.re ≤ (1 / 2 : ℝ) :=
+    le_of_not_gt (no_zero_re_gt_half_of_final_sign_v13 h rho)
+
+  let sigma : RiemannNontrivialZeroIndexV2 :=
+    reflectedNontrivialZeroV13 rho
+
+  have hsigmaRight :
+      sigma.1.re ≤ (1 / 2 : ℝ) :=
+    le_of_not_gt (no_zero_re_gt_half_of_final_sign_v13 h sigma)
+
+  have hsigmaRe :
+      sigma.1.re = 1 - rho.1.re := by
+    rfl
+
+  rw [hsigmaRe] at hsigmaRight
+  linarith
+
+theorem final_sign_implies_rh_v13
+    (h : FinalSignResidualV1) :
+    RiemannHypothesis := by
+  intro s hz htriv hone
+  let rho : RiemannNontrivialZeroIndexV2 :=
+    ⟨s, hz, htriv⟩
+  simpa [rho] using
+    all_nontrivial_zeros_critical_of_final_sign_v13 h rho
+
+theorem final_sign_iff_rh_v13 :
+    FinalSignResidualV1 ↔ RiemannHypothesis := by
+  constructor
+  · exact final_sign_implies_rh_v13
+  · exact rh_implies_final_sign_residual_v11
 
 end AEGIS.V13Scratch
