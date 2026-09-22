@@ -700,4 +700,86 @@ theorem zero_resolvent_meromorphicOn_rightHalfPlane_v13
       exact Metric.ball_mem_nhds w (by linarith)
     exact han.meromorphicAt
 
+
+theorem laplace_resolvent_seed_eventuallyEq_v13
+    (g : WeilCompactSmoothGV1) :
+    WeilZeroKernelLaplaceV12 g =ᶠ[𝓝 (1 : ℂ)]
+      WeilZeroResolventV12 g := by
+  let S : Set ℂ := {w : ℂ | (1 / 2 : ℝ) < w.re}
+  have hSopen : IsOpen S := by
+    simpa [S] using
+      Complex.continuous_re.isOpen_preimage (Ioi (1 / 2 : ℝ)) isOpen_Ioi
+  have h1S : (1 : ℂ) ∈ S := by
+    simp [S]
+  filter_upwards [hSopen.mem_nhds h1S] with w hw
+  exact zero_kernel_laplace_eq_resolvent_v12 g w hw
+
+theorem no_zero_re_gt_half_of_final_sign_v13
+    (h : FinalSignResidualV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ¬ (1 / 2 : ℝ) < rho.1.re := by
+  intro hrho
+
+  obtain ⟨g, hm, hcoef10⟩ :=
+    exists_nonzero_zero_coefficient_v11 rho
+  have hcoef11 : WeilZeroCoefficientV11 g rho ≠ 0 := by
+    rw [zero_coefficient_v10_eq_v11 g rho] at hcoef10
+    exact hcoef10
+
+  let y : ℂ := WeilCenteredZeroExponentV12 rho
+  have hy : y ∈ RightHalfPlaneV13 := by
+    dsimp [y, RightHalfPlaneV13, WeilCenteredZeroExponentV12]
+    simp
+    linarith
+
+  have hLapAnal :
+      AnalyticOnNhd ℂ (WeilZeroKernelLaplaceV12 g) RightHalfPlaneV13 := by
+    simpa [RightHalfPlaneV13, ZeroLaplaceRightHalfPlaneV12] using
+      zero_kernel_laplace_analyticOnNhd_v12 h g hm
+
+  have hLapMer :
+      MeromorphicOn (WeilZeroKernelLaplaceV12 g) RightHalfPlaneV13 :=
+    hLapAnal.meromorphicOn
+
+  have hResMer :
+      MeromorphicOn (WeilZeroResolventV12 g) RightHalfPlaneV13 :=
+    zero_resolvent_meromorphicOn_rightHalfPlane_v13 g
+
+  have hx : (1 : ℂ) ∈ RightHalfPlaneV13 := by
+    simp [RightHalfPlaneV13]
+
+  have hseed :
+      WeilZeroKernelLaplaceV12 g =ᶠ[𝓝 (1 : ℂ)]
+        WeilZeroResolventV12 g :=
+    laplace_resolvent_seed_eventuallyEq_v13 g
+
+  have heq :
+      WeilZeroKernelLaplaceV12 g =ᶠ[𝓝[≠] y]
+        WeilZeroResolventV12 g :=
+    eventuallyEq_nhdsNE_of_meromorphicOn_of_seed
+      hLapMer hResMer rightHalfPlane_isPreconnected_v13
+      hx hy hseed
+
+  have hordEq :
+      meromorphicOrderAt (WeilZeroKernelLaplaceV12 g) y =
+        meromorphicOrderAt (WeilZeroResolventV12 g) y :=
+    meromorphicOrderAt_congr heq
+
+  have hLapNonneg :
+      0 ≤ meromorphicOrderAt (WeilZeroKernelLaplaceV12 g) y :=
+    (hLapAnal y hy).meromorphicOrderAt_nonneg
+
+  have hResNonneg :
+      0 ≤ meromorphicOrderAt (WeilZeroResolventV12 g) y := by
+    rw [← hordEq]
+    exact hLapNonneg
+
+  have hResOrder :
+      meromorphicOrderAt (WeilZeroResolventV12 g) y = (-1 : ℤ) := by
+    simpa [y] using
+      zero_resolvent_order_eq_neg_one_v13 g rho hcoef11
+
+  rw [hResOrder] at hResNonneg
+  norm_num at hResNonneg
+
 end AEGIS.V13Scratch
