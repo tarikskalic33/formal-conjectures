@@ -150,22 +150,29 @@ jobs:
           s=s.replace(old,new,1)
 
           # Three identical Nat-cast nonzero proofs; preserve source indentation.
-          import re
-          pat=re.compile(
-              r"(?m)^(?P<i>\\s*)have hn1 : \\(\\(n : ℂ\\) \\+ 1\\) ≠ 0 := by\\n"
-              r"(?P=i)  intro h\\n"
-              r"(?P=i)  have hre := congrArg Complex.re h\\n"
-              r"(?P=i)  simp at hre$"
-          )
-          def repl(m):
-              i=m.group("i")
-              return (
-                  f"{i}have hn1 : ((n : ℂ) + 1) ≠ 0 := by\\n"
-                  f"{i}  norm_cast\\n"
-                  f"{i}  omega"
-              )
-          s,n=pat.subn(repl,s)
+          src=s.splitlines()
+          dst=[]
+          i=0
+          n=0
+          while i < len(src):
+              if (
+                  src[i].strip() == "have hn1 : ((n : ℂ) + 1) ≠ 0 := by"
+                  and i + 3 < len(src)
+                  and src[i+1].strip() == "intro h"
+                  and src[i+2].strip() == "have hre := congrArg Complex.re h"
+                  and src[i+3].strip() == "simp at hre"
+              ):
+                  indent=src[i][:len(src[i])-len(src[i].lstrip())]
+                  dst.append(indent+"have hn1 : ((n : ℂ) + 1) ≠ 0 := by")
+                  dst.append(indent+"  norm_cast")
+                  dst.append(indent+"  omega")
+                  i += 4
+                  n += 1
+                  continue
+              dst.append(src[i])
+              i += 1
           assert n == 3, n
+          s="\\n".join(dst) + ("\\n" if original.endswith("\\n") else "")
 
           old_factor="""  field_simp [seriesTerm, hn1, hzn]
             <;> ring
