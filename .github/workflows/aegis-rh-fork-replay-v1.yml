@@ -73,6 +73,43 @@ jobs:
           ./elan-init -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
+      - name: Apply exact-head standalone Lean compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          P=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
+          python3 - "$P" <<'PY'
+          from pathlib import Path
+          import sys
+          p=Path(sys.argv[1])
+          s=p.read_text()
+          original=s
+          anchor="import Mathlib.MeasureTheory.Integral.Bochner.Basic\n"
+          if anchor not in s:
+              s=s.replace(
+                "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n",
+                "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n"+anchor,
+                1,
+              )
+          s=s.replace(
+              "(deriv (Real.log ∘ Real.Gamma) x : ℂ)",
+              "((deriv (fun y : ℝ => Real.log (Real.Gamma y)) x : ℝ) : ℂ)",
+              1,
+          )
+          old="have hmnonpos : -(m : ℝ) ≤ 0 := by positivity"
+          new="have hmnonpos : -(m : ℝ) ≤ 0 := neg_nonpos.mpr (Nat.cast_nonneg m)"
+          count=s.count(old)
+          assert count == 4, count
+          s=s.replace(old,new)
+          old2="← deriv_log,"
+          assert s.count(old2)==1, s.count(old2)
+          s=s.replace(old2,"← Real.deriv_log y,",1)
+          assert s != original
+          p.write_text(s)
+          PY
+          grep -F 'Mathlib.MeasureTheory.Integral.Bochner.Basic' "$P"
+          grep -F 'Real.deriv_log y' "$P"
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
