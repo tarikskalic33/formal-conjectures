@@ -191,6 +191,17 @@ jobs:
           lean /tmp/Audit.lean 2>&1 | tee /tmp/aegis-rh-axioms.log
           ! grep -q 'sorryAx' /tmp/aegis-rh-axioms.log
 
+      - name: Compile fork-side V13 scratch if present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AegisRH/V13Scratch.lean || exit 0
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
+          lean -o "$OUT/V13Scratch.olean" AegisRH/V13Scratch.lean
+
       - name: Compile fork-side V13 if present
         shell: bash
         run: |
