@@ -129,8 +129,8 @@ jobs:
           s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne")
 
           # Two cast normalizations leave definitional reflexive goals at this pin.
-          assert s.count("  push_cast\n") == 1
-          s=s.replace("  push_cast\n","  push_cast\n  rfl\n",1)
+          assert s.count("\n  push_cast\n") == 1
+          s=s.replace("\n  push_cast\n","\n  push_cast\n  rfl\n",1)
           assert s.count("          push_cast\n") == 1
           s=s.replace("          push_cast\n","          push_cast\n          rfl\n",1)
 
