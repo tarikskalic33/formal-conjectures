@@ -417,4 +417,74 @@ theorem zero_resolvent_split_near_pole_v13
   unfold WeilZeroResolventV12 ZeroResolventRemainderV13
   exact hfull.tsum_eq_add_tsum_ite rho
 
+
+theorem zero_resolvent_order_eq_neg_one_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2)
+    (hcoef : WeilZeroCoefficientV11 g rho ≠ 0) :
+    meromorphicOrderAt (WeilZeroResolventV12 g)
+      (WeilCenteredZeroExponentV12 rho) = (-1 : ℤ) := by
+  let y : ℂ := WeilCenteredZeroExponentV12 rho
+
+  obtain ⟨epsR, hepsR, hRdiff⟩ :=
+    zero_resolvent_remainder_differentiable_near_pole_v13 g rho
+  have hRanalytic :
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    apply hRdiff.analyticAt
+    simpa [y] using
+      (Metric.ball_mem_nhds
+        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+
+  let G : ℂ → ℂ := fun z =>
+    WeilZeroCoefficientV11 g rho +
+      (z - y) * ZeroResolventRemainderV13 g rho z
+
+  have hGanalytic : AnalyticAt ℂ G y := by
+    dsimp [G]
+    fun_prop
+
+  have hGne : G y ≠ 0 := by
+    simpa [G] using hcoef
+
+  obtain ⟨epsS, hepsS, hsplit⟩ :=
+    zero_resolvent_split_near_pole_v13 g rho
+
+  have hball :
+      Metric.ball y (epsS / 2) ∈ 𝓝 y := by
+    simpa [y] using
+      (Metric.ball_mem_nhds
+        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsS / 2))
+
+  have hballNE :
+      ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
+    hball.filter_mono nhdsWithin_le_nhds
+
+  have heq :
+      ∀ᶠ z in 𝓝[≠] y,
+        WeilZeroResolventV12 g z =
+          (z - y) ^ (-1 : ℤ) * G z := by
+    filter_upwards [hballNE, self_mem_nhdsWithin] with z hzball hzNE
+    have hzy : z - y ≠ 0 := by
+      apply sub_ne_zero.mpr
+      simpa using hzNE
+    have hs :=
+      hsplit z (by simpa [y] using hzball)
+    rw [hs]
+    dsimp [G]
+    rw [zpow_neg_one]
+    field_simp [hzy]
+    ring
+
+  have hmer :
+      MeromorphicAt (WeilZeroResolventV12 g) y := by
+    rw [MeromorphicAt.iff_eventuallyEq_zpow_smul_analyticAt]
+    refine ⟨(-1 : ℤ), G, hGanalytic, ?_⟩
+    filter_upwards [heq] with z hz
+    simpa [smul_eq_mul] using hz
+
+  rw [meromorphicOrderAt_eq_int_iff hmer]
+  refine ⟨G, hGanalytic, hGne, ?_⟩
+  filter_upwards [heq] with z hz
+  simpa [smul_eq_mul] using hz
+
 end AEGIS.V13Scratch
