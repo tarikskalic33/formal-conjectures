@@ -148,4 +148,68 @@ theorem zero_cauchy_remainder_differentiable_near_pole_v13
   refine ⟨eps, heps, ?_⟩
   simpa [ZeroCauchyRemainderV13] using hd
 
+
+private theorem zero_cauchy_remainder_summable_near_pole_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2)
+    (eps : ℝ) (heps : 0 < eps)
+    (hsep : ∀ sigma : RiemannNontrivialZeroIndexV2,
+      sigma ≠ rho →
+      eps ≤ dist (CenteredZeroExponentV10 sigma)
+        (CenteredZeroExponentV10 rho))
+    {w : ℂ}
+    (hw : w ∈ Metric.ball (CenteredZeroExponentV10 rho) (eps / 2)) :
+    Summable (fun sigma : RiemannNontrivialZeroIndexV2 =>
+      if sigma = rho then 0 else ZeroCauchySummandV10 g w sigma) := by
+  let u : RiemannNontrivialZeroIndexV2 → ℝ := fun sigma =>
+    ‖ZeroCoefficientV10 g sigma‖ * (1 / (eps / 2))
+  have hr : 0 < eps / 2 := by linarith
+  have hu : Summable u := by
+    dsimp [u]
+    exact (zero_coefficient_norm_summable_v10 g).mul_right (1 / (eps / 2))
+  apply Summable.of_norm_bounded hu
+  intro sigma
+  by_cases hsigma : sigma = rho
+  · simp [hsigma, u]
+    positivity
+  · simp only [hsigma, if_false]
+    have hd :=
+      other_center_denominator_lower_v13 rho sigma eps hsep hsigma hw
+    have hden :
+        eps / 2 ≤ ‖w - CenteredZeroExponentV10 sigma‖ := by
+      simpa [dist_eq] using le_of_lt hd
+    have hrec :
+        1 / ‖w - CenteredZeroExponentV10 sigma‖ ≤ 1 / (eps / 2) :=
+      one_div_le_one_div_of_le hr hden
+    unfold ZeroCauchySummandV10
+    rw [norm_div]
+    dsimp [u]
+    simpa [div_eq_mul_inv, one_div] using
+      mul_le_mul_of_nonneg_left hrec
+        (norm_nonneg (ZeroCoefficientV10 g sigma))
+
+theorem zero_cauchy_transform_split_near_pole_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ∃ eps : ℝ, 0 < eps ∧
+      ∀ w ∈ Metric.ball (CenteredZeroExponentV10 rho) (eps / 2),
+        ZeroCauchyTransformV10 g w =
+          ZeroCauchySummandV10 g w rho +
+            ZeroCauchyRemainderV13 g rho w := by
+  obtain ⟨eps, heps, hsep⟩ :=
+    centered_zero_dist_ge_isolation_v10 rho
+  refine ⟨eps, heps, ?_⟩
+  intro w hw
+  have hrem :=
+    zero_cauchy_remainder_summable_near_pole_v13
+      g rho eps heps hsep hw
+  have hfull :
+      Summable (fun sigma : RiemannNontrivialZeroIndexV2 =>
+        ZeroCauchySummandV10 g w sigma) := by
+    apply hrem.congr_cofinite
+    filter_upwards [Filter.eventually_ne_atTop rho] with sigma hsigma
+    simp [hsigma]
+  unfold ZeroCauchyTransformV10 ZeroCauchyRemainderV13
+  exact hfull.tsum_eq_add_tsum_ite rho
+
 end AEGIS.V13Scratch
