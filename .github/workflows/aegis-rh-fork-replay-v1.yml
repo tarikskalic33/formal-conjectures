@@ -196,6 +196,13 @@ jobs:
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.digamma-order.txt"
 
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
       - name: Rebind and build exact Li provider
         shell: bash
         run: |
@@ -228,6 +235,13 @@ jobs:
           PY
           lake exe cache get
           lake build Lc.LiCriterion.XiOrderBridge
+
+      - name: Save exact Li provider build
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Compile exact AEGIS RH closure
         shell: bash
