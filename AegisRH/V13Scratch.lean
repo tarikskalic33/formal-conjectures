@@ -244,4 +244,177 @@ theorem zero_cauchy_transform_split_near_pole_v13
   unfold ZeroCauchyTransformV10 ZeroCauchyRemainderV13
   exact hfull.tsum_eq_add_tsum_ite rho
 
+
+def ZeroResolventRemainderV13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2)
+    (w : ℂ) : ℂ :=
+  ∑' sigma : RiemannNontrivialZeroIndexV2,
+    if sigma = rho then 0 else
+      WeilZeroCoefficientV11 g sigma /
+        (w - WeilCenteredZeroExponentV12 sigma)
+
+private theorem other_center_denominator_lower_v12
+    (rho sigma : RiemannNontrivialZeroIndexV2)
+    (eps : ℝ)
+    (hsep : ∀ tau : RiemannNontrivialZeroIndexV2,
+      tau ≠ rho →
+      eps ≤ dist (WeilCenteredZeroExponentV12 tau)
+        (WeilCenteredZeroExponentV12 rho))
+    (hsigma : sigma ≠ rho)
+    {w : ℂ}
+    (hw : w ∈ Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2)) :
+    eps / 2 < dist w (WeilCenteredZeroExponentV12 sigma) := by
+  have hs := hsep sigma hsigma
+  have ht := dist_triangle
+    (WeilCenteredZeroExponentV12 sigma) w
+    (WeilCenteredZeroExponentV12 rho)
+  have hw' :
+      dist w (WeilCenteredZeroExponentV12 rho) < eps / 2 := by
+    simpa [Metric.mem_ball] using hw
+  rw [dist_comm (WeilCenteredZeroExponentV12 sigma) w] at ht
+  linarith
+
+theorem zero_resolvent_remainder_differentiable_near_pole_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ∃ eps : ℝ, 0 < eps ∧
+      DifferentiableOn ℂ (ZeroResolventRemainderV13 g rho)
+        (Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2)) := by
+  obtain ⟨eps, heps, hsep⟩ :=
+    centered_zero_dist_ge_isolation_v12 rho
+  have hr : 0 < eps / 2 := by linarith
+  let u : RiemannNontrivialZeroIndexV2 → ℝ := fun sigma =>
+    ‖WeilZeroCoefficientV11 g sigma‖ * (1 / (eps / 2))
+  have hu : Summable u := by
+    dsimp [u]
+    exact (zero_coefficient_norm_summable_v12 g).mul_right (1 / (eps / 2))
+
+  have hterm :
+      ∀ sigma : RiemannNontrivialZeroIndexV2,
+        DifferentiableOn ℂ
+          (fun w : ℂ =>
+            if sigma = rho then 0 else
+              WeilZeroCoefficientV11 g sigma /
+                (w - WeilCenteredZeroExponentV12 sigma))
+          (Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2)) := by
+    intro sigma
+    by_cases hsigma : sigma = rho
+    · simp [hsigma]
+    · intro w hw
+      have hd :=
+        other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
+      have hne :
+          w - WeilCenteredZeroExponentV12 sigma ≠ 0 := by
+        apply sub_ne_zero.mpr
+        intro heq
+        rw [heq, dist_self] at hd
+        linarith
+      simp only [hsigma, if_false]
+      apply DifferentiableAt.differentiableWithinAt
+      fun_prop (disch := exact hne)
+
+  have hbound :
+      ∀ (sigma : RiemannNontrivialZeroIndexV2) (w : ℂ),
+        w ∈ Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2) →
+        ‖(if sigma = rho then 0 else
+          WeilZeroCoefficientV11 g sigma /
+            (w - WeilCenteredZeroExponentV12 sigma))‖ ≤ u sigma := by
+    intro sigma w hw
+    by_cases hsigma : sigma = rho
+    · simp [hsigma, u]
+      positivity
+    · simp only [hsigma, if_false]
+      have hd :=
+        other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
+      have hden :
+          eps / 2 ≤ ‖w - WeilCenteredZeroExponentV12 sigma‖ := by
+        simpa [dist_eq_norm] using le_of_lt hd
+      have hrec :
+          1 / ‖w - WeilCenteredZeroExponentV12 sigma‖ ≤
+            1 / (eps / 2) :=
+        one_div_le_one_div_of_le hr hden
+      rw [norm_div]
+      dsimp [u]
+      simpa [div_eq_mul_inv, one_div] using
+        mul_le_mul_of_nonneg_left hrec
+          (norm_nonneg (WeilZeroCoefficientV11 g sigma))
+
+  have hd :=
+    differentiableOn_tsum_of_summable_norm
+      (F := fun sigma w =>
+        if sigma = rho then 0 else
+          WeilZeroCoefficientV11 g sigma /
+            (w - WeilCenteredZeroExponentV12 sigma))
+      hu hterm Metric.isOpen_ball hbound
+
+  refine ⟨eps, heps, ?_⟩
+  simpa [ZeroResolventRemainderV13] using hd
+
+private theorem zero_resolvent_remainder_summable_near_pole_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2)
+    (eps : ℝ) (heps : 0 < eps)
+    (hsep : ∀ sigma : RiemannNontrivialZeroIndexV2,
+      sigma ≠ rho →
+      eps ≤ dist (WeilCenteredZeroExponentV12 sigma)
+        (WeilCenteredZeroExponentV12 rho))
+    {w : ℂ}
+    (hw : w ∈ Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2)) :
+    Summable (fun sigma : RiemannNontrivialZeroIndexV2 =>
+      if sigma = rho then 0 else
+        WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma)) := by
+  let u : RiemannNontrivialZeroIndexV2 → ℝ := fun sigma =>
+    ‖WeilZeroCoefficientV11 g sigma‖ * (1 / (eps / 2))
+  have hr : 0 < eps / 2 := by linarith
+  have hu : Summable u := by
+    dsimp [u]
+    exact (zero_coefficient_norm_summable_v12 g).mul_right (1 / (eps / 2))
+  apply Summable.of_norm_bounded hu
+  intro sigma
+  by_cases hsigma : sigma = rho
+  · simp [hsigma, u]
+    positivity
+  · simp only [hsigma, if_false]
+    have hd :=
+      other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
+    have hden :
+        eps / 2 ≤ ‖w - WeilCenteredZeroExponentV12 sigma‖ := by
+      simpa [dist_eq_norm] using le_of_lt hd
+    have hrec :
+        1 / ‖w - WeilCenteredZeroExponentV12 sigma‖ ≤ 1 / (eps / 2) :=
+      one_div_le_one_div_of_le hr hden
+    rw [norm_div]
+    dsimp [u]
+    simpa [div_eq_mul_inv, one_div] using
+      mul_le_mul_of_nonneg_left hrec
+        (norm_nonneg (WeilZeroCoefficientV11 g sigma))
+
+theorem zero_resolvent_split_near_pole_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ∃ eps : ℝ, 0 < eps ∧
+      ∀ w ∈ Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2),
+        WeilZeroResolventV12 g w =
+          WeilZeroCoefficientV11 g rho /
+            (w - WeilCenteredZeroExponentV12 rho) +
+          ZeroResolventRemainderV13 g rho w := by
+  obtain ⟨eps, heps, hsep⟩ :=
+    centered_zero_dist_ge_isolation_v12 rho
+  refine ⟨eps, heps, ?_⟩
+  intro w hw
+  have hrem :=
+    zero_resolvent_remainder_summable_near_pole_v13
+      g rho eps heps hsep hw
+  have hfull :
+      Summable (fun sigma : RiemannNontrivialZeroIndexV2 =>
+        WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma)) := by
+    apply hrem.congr_cofinite
+    filter_upwards [eventually_cofinite_ne rho] with sigma hsigma
+    simp [hsigma]
+  unfold WeilZeroResolventV12 ZeroResolventRemainderV13
+  exact hfull.tsum_eq_add_tsum_ite rho
+
 end AEGIS.V13Scratch
