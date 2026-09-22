@@ -127,7 +127,7 @@ theorem zero_cauchy_remainder_differentiable_near_pole_v13
         other_center_denominator_lower_v13 rho sigma eps hsep hsigma hw
       have hden :
           eps / 2 ≤ ‖w - CenteredZeroExponentV10 sigma‖ := by
-        simpa [dist_eq] using le_of_lt hd
+        simpa [dist_eq_norm] using le_of_lt hd
       have hrec :
           1 / ‖w - CenteredZeroExponentV10 sigma‖ ≤
             1 / (eps / 2) :=
@@ -177,7 +177,7 @@ private theorem zero_cauchy_remainder_summable_near_pole_v13
       other_center_denominator_lower_v13 rho sigma eps hsep hsigma hw
     have hden :
         eps / 2 ≤ ‖w - CenteredZeroExponentV10 sigma‖ := by
-      simpa [dist_eq] using le_of_lt hd
+      simpa [dist_eq_norm] using le_of_lt hd
     have hrec :
         1 / ‖w - CenteredZeroExponentV10 sigma‖ ≤ 1 / (eps / 2) :=
       one_div_le_one_div_of_le hr hden
