@@ -77,15 +77,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          P=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
-          python3 - "$P" <<'PY'
+          REAL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
+          HALF=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesHalfPlaneV1.lean"
+          python3 - "$REAL" "$HALF" <<'PY'
           from pathlib import Path
           import sys
+
+          # --- Real-axis module: source-preserving compatibility only. ---
           p=Path(sys.argv[1])
           s=p.read_text()
           original=s
 
-          # Standalone closure does not inherit this Bochner import transitively.
           anchor="import Mathlib.MeasureTheory.Integral.Bochner.Basic\n"
           if anchor not in s:
               s=s.replace(
@@ -94,14 +96,11 @@ jobs:
                   1,
               )
 
-          # Namespace qualification required in the standalone module.
           s=s.replace(
               "exact norm_integral_le_integral_norm _",
               "exact MeasureTheory.norm_integral_le_integral_norm _",
               1,
           )
-
-          # Force the real derivative before coercing to complex.
           s=s.replace(
               "(deriv (Real.log ∘ Real.Gamma) x : ℂ)",
               "((deriv (Real.log ∘ Real.Gamma) x : ℝ) : ℂ)",
@@ -113,22 +112,17 @@ jobs:
               1,
           )
 
-          # Nat-cast nonpositivity: six identical sites.
           old="have hmnonpos : -(m : ℝ) ≤ 0 := by positivity"
           new="have hmnonpos : -(m : ℝ) ≤ 0 := neg_nonpos.mpr (Nat.cast_nonneg m)"
           count=s.count(old)
           assert count == 6, count
           s=s.replace(old,new)
 
-          # Real logarithm derivative names must be explicit here.
           assert s.count("← deriv_log,") == 1
           s=s.replace("← deriv_log,","← Real.deriv_log y,",1)
           s=s.replace("differentiableAt_log hy.ne'","Real.differentiableAt_log hy.ne'")
-
-          # The derivative-of-log theorem is in the root deriv namespace.
           s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne")
 
-          # Two cast normalizations leave definitional reflexive goals at this pin.
           assert s.count("\n  push_cast\n") == 1
           s=s.replace("\n  push_cast\n","\n  push_cast\n  rfl\n",1)
           assert s.count("          push_cast\n") == 1
@@ -136,11 +130,146 @@ jobs:
 
           assert s != original
           p.write_text(s)
+
+          # --- Half-plane module: exact 4.33.1 / 0df API elaboration repair. ---
+          p=Path(sys.argv[2])
+          s=p.read_text()
+          original=s
+
+          old="""theorem isOpen_rightHalfPlane_v1 : IsOpen RightHalfPlaneV1 := by
+            simpa [RightHalfPlaneV1] using
+              (Complex.continuous_re.isOpen_preimage (Ioi (0 : ℝ)) isOpen_Ioi)
+          """
+          new="""theorem isOpen_rightHalfPlane_v1 : IsOpen RightHalfPlaneV1 := by
+            rw [show RightHalfPlaneV1 = Complex.re ⁻¹' Ioi (0 : ℝ) by
+              ext z
+              simp [RightHalfPlaneV1]]
+            exact Complex.continuous_re.isOpen_preimage (Ioi (0 : ℝ)) isOpen_Ioi
+          """
+          assert old in s
+          s=s.replace(old,new,1)
+
+          # Three identical Nat-cast nonzero proofs, at two indentation levels.
+          old2="""  have hn1 : ((n : ℂ) + 1) ≠ 0 := by
+            intro h
+            have hre := congrArg Complex.re h
+            simp at hre
+          """
+          new2="""  have hn1 : ((n : ℂ) + 1) ≠ 0 := by
+            norm_cast
+            omega
+          """
+          assert s.count(old2)==2, s.count(old2)
+          s=s.replace(old2,new2)
+
+          old4="""    have hn1 : ((n : ℂ) + 1) ≠ 0 := by
+              intro h
+              have hre := congrArg Complex.re h
+              simp at hre
+          """
+          new4="""    have hn1 : ((n : ℂ) + 1) ≠ 0 := by
+              norm_cast
+              omega
+          """
+          assert s.count(old4)==1, s.count(old4)
+          s=s.replace(old4,new4,1)
+
+          old_factor="""  field_simp [seriesTerm, hn1, hzn]
+            <;> ring
+          """
+          new_factor="""  unfold seriesTerm
+            field_simp [hn1, hzn] <;> ring
+          """
+          assert old_factor in s
+          s=s.replace(old_factor,new_factor,1)
+
+          assert "simpa [U] using Metric.mem_ball_self hδpos" in s
+          s=s.replace(
+              "simpa [U] using Metric.mem_ball_self hδpos",
+              "simpa [U] using (Metric.mem_ball_self (x := z0) hδpos)",
+              1,
+          )
+
+          assert "simpa [Complex.add_re] using h" in s
+          s=s.replace(
+              "simpa [Complex.add_re] using h",
+              "simpa [Complex.add_re, add_comm] using h",
+              1,
+          )
+
+          old_field="""            field_simp [hδpos.ne', hn1pos.ne']
+                      ring
+          """
+          new_field="""            field_simp [hδpos.ne', hn1pos.ne'] <;> ring
+          """
+          assert old_field in s
+          s=s.replace(old_field,new_field,1)
+
+          old_mtest="""  have hdiff :
+                DifferentiableOn ℂ
+                  (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=
+              differentiableOn_tsum_of_summable_norm
+                hmajorant hterm hUopen hbound
+          """
+          new_mtest="""  have hdiff :
+                DifferentiableOn ℂ
+                  (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by
+              have hc :=
+                (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn
+              refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen
+              exact DifferentiableOn.fun_sum fun i _ => hterm i
+          """
+          assert old_mtest in s
+          s=s.replace(old_mtest,new_mtest,1)
+
+          old_dig="""  have hDigammaAnal :
+                AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by
+              simpa [Complex.digamma_def, logDeriv_apply] using
+                hGammaAnal.deriv.div hGammaAnal
+                  (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)
+          """
+          new_dig="""  have hDigammaAnal :
+                AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by
+              rw [show Complex.digamma =
+                  (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by
+                funext z
+                simp [Complex.digamma_def, logDeriv_apply]]
+              exact hGammaAnal.deriv.div hGammaAnal
+                (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)
+          """
+          assert old_dig in s
+          s=s.replace(old_dig,new_dig,1)
+
+          old_tend="""    have hzero :
+                  Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))
+                    atTop (𝓝 0) :=
+                tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ)
+          """
+          new_tend="""    have hzero :
+                  Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))
+                    atTop (𝓝 0) := by
+                simpa [Nat.cast_add, Nat.cast_one] using
+                  (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ))
+          """
+          assert old_tend in s
+          s=s.replace(old_tend,new_tend,1)
+
+          assert "    · simp [s])" in s
+          s=s.replace(
+              "    · simp [s])",
+              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\n"
+              "      simp [s, hn])",
+              1,
+          )
+
+          assert s != original
+          p.write_text(s)
           PY
-          grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$P"
-          grep -F '((deriv Real.Gamma x : ℝ) : ℂ)' "$P"
-          grep -F 'Real.deriv_log y' "$P"
-          grep -F 'Real.differentiableAt_log hy.ne' "$P"
+
+          grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$REAL"
+          grep -F 'rw [show RightHalfPlaneV1 = Complex.re ⁻¹' "$HALF"
+          grep -F 'tendstoUniformlyOn_tsum hmajorant hbound' "$HALF"
+          grep -F 'rw [show Complex.digamma =' "$HALF"
 
       - name: Fetch exact Mathlib cache
         shell: bash
@@ -165,7 +294,7 @@ jobs:
           python3 - "$SRC" "$GITHUB_WORKSPACE/.digamma-order.txt" <<'PY'
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          target='WeilDigammaSeriesRealV1'
+          target='WeilDigammaSeriesHalfPlaneV1'
           mods={p.stem:p for p in src.glob('*.lean')}
           deps={}
           for m,p in mods.items():
