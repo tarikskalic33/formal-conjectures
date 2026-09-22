@@ -99,7 +99,7 @@ jobs:
           old="have hmnonpos : -(m : ℝ) ≤ 0 := by positivity"
           new="have hmnonpos : -(m : ℝ) ≤ 0 := neg_nonpos.mpr (Nat.cast_nonneg m)"
           count=s.count(old)
-          assert count == 4, count
+          assert count == 6, count
           s=s.replace(old,new)
           old2="← deriv_log,"
           assert s.count(old2)==1, s.count(old2)
