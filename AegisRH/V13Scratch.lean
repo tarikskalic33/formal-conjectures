@@ -207,7 +207,7 @@ theorem zero_cauchy_transform_split_near_pole_v13
       Summable (fun sigma : RiemannNontrivialZeroIndexV2 =>
         ZeroCauchySummandV10 g w sigma) := by
     apply hrem.congr_cofinite
-    filter_upwards [Filter.eventually_ne_atTop rho] with sigma hsigma
+    filter_upwards [eventually_cofinite_ne rho] with sigma hsigma
     simp [hsigma]
   unfold ZeroCauchyTransformV10 ZeroCauchyRemainderV13
   exact hfull.tsum_eq_add_tsum_ite rho
