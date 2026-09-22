@@ -487,4 +487,217 @@ theorem zero_resolvent_order_eq_neg_one_v13
   filter_upwards [heq] with z hz
   simpa [smul_eq_mul] using hz
 
+
+private theorem zeta_shift_ne_zero_of_not_center_v13
+    {w : ℂ} (hw : 0 < w.re)
+    (hnopole : ∀ rho : RiemannNontrivialZeroIndexV2,
+      WeilCenteredZeroExponentV12 rho ≠ w) :
+    riemannZeta (w + (1 / 2 : ℂ)) ≠ 0 := by
+  intro hz
+  let s : ℂ := w + (1 / 2 : ℂ)
+  have hspos : 0 < s.re := by
+    dsimp [s]
+    simp
+    linarith
+  have htriv :
+      ¬ ∃ n : ℕ, s = -(2 : ℂ) * (n + 1) := by
+    rintro ⟨n, hn⟩
+    rw [hn] at hspos
+    have hnonpos :
+        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+      simp
+      positivity
+    exact (not_lt_of_ge hnonpos) hspos
+  let rho : RiemannNontrivialZeroIndexV2 :=
+    ⟨s, hz, htriv⟩
+  have hc : WeilCenteredZeroExponentV12 rho = w := by
+    dsimp [rho, s, WeilCenteredZeroExponentV12]
+    ring
+  exact hnopole rho hc
+
+private theorem centered_zero_dist_ge_of_not_center_v13
+    {w : ℂ} (hw : 0 < w.re)
+    (hnopole : ∀ rho : RiemannNontrivialZeroIndexV2,
+      WeilCenteredZeroExponentV12 rho ≠ w) :
+    ∃ eps : ℝ, 0 < eps ∧
+      ∀ sigma : RiemannNontrivialZeroIndexV2,
+        eps ≤ dist (WeilCenteredZeroExponentV12 sigma) w := by
+  let s : ℂ := w + (1 / 2 : ℂ)
+  have hz : riemannZeta s ≠ 0 := by
+    simpa [s] using zeta_shift_ne_zero_of_not_center_v13 hw hnopole
+  have hscompl : s ∈ riemannZetaZerosᶜ := by
+    simpa [mem_riemannZetaZeros] using hz
+  obtain ⟨eps, heps, hball⟩ :=
+    Metric.isOpen_iff.mp isClosed_riemannZetaZeros.isOpen_compl s hscompl
+  refine ⟨eps, heps, ?_⟩
+  intro sigma
+  by_contra hnot
+  have hlt :
+      dist (WeilCenteredZeroExponentV12 sigma) w < eps :=
+    lt_of_not_ge hnot
+  have hdist :
+      dist sigma.1 s =
+        dist (WeilCenteredZeroExponentV12 sigma) w := by
+    rw [dist_eq_norm, dist_eq_norm]
+    congr 1
+    dsimp [s, WeilCenteredZeroExponentV12]
+    ring
+  have hsball : sigma.1 ∈ Metric.ball s eps := by
+    rw [Metric.mem_ball, hdist]
+    exact hlt
+  have hsnotzero : sigma.1 ∉ riemannZetaZeros :=
+    hball hsball
+  exact hsnotzero (mem_riemannZetaZeros.mpr sigma.2.1)
+
+private theorem center_denominator_lower_from_point_v13
+    (w0 : ℂ)
+    (sigma : RiemannNontrivialZeroIndexV2)
+    (eps : ℝ)
+    (hsep : ∀ tau : RiemannNontrivialZeroIndexV2,
+      eps ≤ dist (WeilCenteredZeroExponentV12 tau) w0)
+    {w : ℂ} (hw : w ∈ Metric.ball w0 (eps / 2)) :
+    eps / 2 < dist w (WeilCenteredZeroExponentV12 sigma) := by
+  have hs := hsep sigma
+  have ht :=
+    dist_triangle (WeilCenteredZeroExponentV12 sigma) w w0
+  have hw' : dist w w0 < eps / 2 := by
+    simpa [Metric.mem_ball] using hw
+  rw [dist_comm (WeilCenteredZeroExponentV12 sigma) w] at ht
+  linarith
+
+private theorem zero_resolvent_differentiable_near_nonpole_v13
+    (g : WeilCompactSmoothGV1)
+    {w0 : ℂ} (hw0 : 0 < w0.re)
+    (hnopole : ∀ rho : RiemannNontrivialZeroIndexV2,
+      WeilCenteredZeroExponentV12 rho ≠ w0) :
+    ∃ eps : ℝ, 0 < eps ∧
+      DifferentiableOn ℂ (WeilZeroResolventV12 g)
+        (Metric.ball w0 (eps / 2)) := by
+  obtain ⟨eps, heps, hsep⟩ :=
+    centered_zero_dist_ge_of_not_center_v13 hw0 hnopole
+  have hr : 0 < eps / 2 := by linarith
+  let u : RiemannNontrivialZeroIndexV2 → ℝ := fun sigma =>
+    ‖WeilZeroCoefficientV11 g sigma‖ * (1 / (eps / 2))
+  have hu : Summable u := by
+    dsimp [u]
+    exact (zero_coefficient_norm_summable_v12 g).mul_right (1 / (eps / 2))
+
+  have hterm :
+      ∀ sigma : RiemannNontrivialZeroIndexV2,
+        DifferentiableOn ℂ
+          (fun w : ℂ =>
+            WeilZeroCoefficientV11 g sigma /
+              (w - WeilCenteredZeroExponentV12 sigma))
+          (Metric.ball w0 (eps / 2)) := by
+    intro sigma w hw
+    have hd :=
+      center_denominator_lower_from_point_v13 w0 sigma eps hsep hw
+    have hne :
+        w - WeilCenteredZeroExponentV12 sigma ≠ 0 := by
+      apply sub_ne_zero.mpr
+      intro heq
+      rw [heq, dist_self] at hd
+      linarith
+    apply DifferentiableAt.differentiableWithinAt
+    fun_prop (disch := exact hne)
+
+  have hbound :
+      ∀ (sigma : RiemannNontrivialZeroIndexV2) (w : ℂ),
+        w ∈ Metric.ball w0 (eps / 2) →
+        ‖WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma)‖ ≤ u sigma := by
+    intro sigma w hw
+    have hd :=
+      center_denominator_lower_from_point_v13 w0 sigma eps hsep hw
+    have hden :
+        eps / 2 ≤ ‖w - WeilCenteredZeroExponentV12 sigma‖ := by
+      simpa [dist_eq_norm] using le_of_lt hd
+    have hrec :
+        1 / ‖w - WeilCenteredZeroExponentV12 sigma‖ ≤
+          1 / (eps / 2) :=
+      one_div_le_one_div_of_le hr hden
+    rw [norm_div]
+    dsimp [u]
+    simpa [div_eq_mul_inv, one_div] using
+      mul_le_mul_of_nonneg_left hrec
+        (norm_nonneg (WeilZeroCoefficientV11 g sigma))
+
+  have hd :=
+    differentiableOn_tsum_of_summable_norm
+      (F := fun sigma w =>
+        WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma))
+      hu hterm Metric.isOpen_ball hbound
+
+  refine ⟨eps, heps, ?_⟩
+  simpa [WeilZeroResolventV12] using hd
+
+theorem zero_resolvent_meromorphicAt_center_v13
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    MeromorphicAt (WeilZeroResolventV12 g)
+      (WeilCenteredZeroExponentV12 rho) := by
+  let y : ℂ := WeilCenteredZeroExponentV12 rho
+  obtain ⟨epsR, hepsR, hRdiff⟩ :=
+    zero_resolvent_remainder_differentiable_near_pole_v13 g rho
+  have hRanalytic :
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    apply hRdiff.analyticAt
+    simpa [y] using
+      (Metric.ball_mem_nhds
+        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+  let G : ℂ → ℂ := fun z =>
+    WeilZeroCoefficientV11 g rho +
+      (z - y) * ZeroResolventRemainderV13 g rho z
+  have hGanalytic : AnalyticAt ℂ G y := by
+    dsimp [G]
+    fun_prop
+  obtain ⟨epsS, hepsS, hsplit⟩ :=
+    zero_resolvent_split_near_pole_v13 g rho
+  have hball :
+      Metric.ball y (epsS / 2) ∈ 𝓝 y := by
+    simpa [y] using
+      (Metric.ball_mem_nhds
+        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsS / 2))
+  have hballNE :
+      ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
+    hball.filter_mono nhdsWithin_le_nhds
+  have heq :
+      ∀ᶠ z in 𝓝[≠] y,
+        WeilZeroResolventV12 g z =
+          (z - y) ^ (-1 : ℤ) * G z := by
+    filter_upwards [hballNE, self_mem_nhdsWithin] with z hzball hzNE
+    have hzy : z - y ≠ 0 := by
+      apply sub_ne_zero.mpr
+      simpa using hzNE
+    have hs := hsplit z (by simpa [y] using hzball)
+    rw [hs]
+    dsimp [G]
+    rw [zpow_neg_one]
+    field_simp [hzy]
+    ring
+  rw [MeromorphicAt.iff_eventuallyEq_zpow_smul_analyticAt]
+  refine ⟨(-1 : ℤ), G, hGanalytic, ?_⟩
+  filter_upwards [heq] with z hz
+  simpa [smul_eq_mul] using hz
+
+theorem zero_resolvent_meromorphicOn_rightHalfPlane_v13
+    (g : WeilCompactSmoothGV1) :
+    MeromorphicOn (WeilZeroResolventV12 g) RightHalfPlaneV13 := by
+  intro w hw
+  by_cases hpole :
+      ∃ rho : RiemannNontrivialZeroIndexV2,
+        WeilCenteredZeroExponentV12 rho = w
+  · obtain ⟨rho, hrho⟩ := hpole
+    rw [← hrho]
+    exact zero_resolvent_meromorphicAt_center_v13 g rho
+  · push_neg at hpole
+    obtain ⟨eps, heps, hdiff⟩ :=
+      zero_resolvent_differentiable_near_nonpole_v13
+        g (by simpa [RightHalfPlaneV13] using hw) hpole
+    have han : AnalyticAt ℂ (WeilZeroResolventV12 g) w := by
+      apply hdiff.analyticAt
+      exact Metric.ball_mem_nhds w (by linarith)
+    exact han.meromorphicAt
+
 end AEGIS.V13Scratch
