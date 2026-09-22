@@ -2,6 +2,7 @@ import RestrictedWeilCriterionResidueCoefficientV11
 import RestrictedWeilCriterionPoleIsolationV10
 import MeromorphicIdentityPreconnectedV11
 import WeilRHImpliesFinalSignV11
+import RHZeroKernelLaplaceAnalyticV12
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.Convex
 import Mathlib.Tactic
@@ -20,6 +21,37 @@ open AEGIS.RestrictedWeilCriterionLaplaceV10
 open AEGIS.RestrictedWeilCriterionPoleIsolationV10
 open AEGIS.RestrictedWeilCriterionResidueCoefficientV11
 open AEGIS.MeromorphicIdentityPreconnectedV11
+open AEGIS.RHZeroKernelLaplaceV12
+open AEGIS.RHZeroKernelLaplaceAnalyticV12
+open AEGIS.WeilZeroTwoPointV11
+
+theorem zero_coefficient_v10_eq_v11
+    (g : WeilCompactSmoothGV1)
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ZeroCoefficientV10 g rho = WeilZeroCoefficientV11 g rho := by
+  rfl
+
+theorem centered_exponent_v12_eq_neg_v10
+    (rho : RiemannNontrivialZeroIndexV2) :
+    WeilCenteredZeroExponentV12 rho =
+      - CenteredZeroExponentV10 rho := by
+  unfold WeilCenteredZeroExponentV12 CenteredZeroExponentV10
+  ring
+
+theorem centered_zero_dist_ge_isolation_v12
+    (rho : RiemannNontrivialZeroIndexV2) :
+    ∃ eps : ℝ, 0 < eps ∧
+      ∀ sigma : RiemannNontrivialZeroIndexV2,
+        sigma ≠ rho →
+        eps ≤
+          dist (WeilCenteredZeroExponentV12 sigma)
+            (WeilCenteredZeroExponentV12 rho) := by
+  obtain ⟨eps, heps, hsep⟩ :=
+    centered_zero_dist_ge_isolation_v10 rho
+  refine ⟨eps, heps, ?_⟩
+  intro sigma hne
+  have h := hsep sigma hne
+  simpa [centered_exponent_v12_eq_neg_v10] using h
 
 def RightHalfPlaneV13 : Set ℂ := {w : ℂ | 0 < w.re}
 
