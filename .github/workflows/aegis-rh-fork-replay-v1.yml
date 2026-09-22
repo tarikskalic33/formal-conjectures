@@ -174,93 +174,99 @@ jobs:
           assert n == 3, n
           s="\\n".join(dst) + ("\\n" if original.endswith("\\n") else "")
 
-          old_factor="""  field_simp [seriesTerm, hn1, hzn]
-            <;> ring
-          """
-          new_factor="""  unfold seriesTerm
-            field_simp [hn1, hzn] <;> ring
-          """
-          assert old_factor in s
+          old_factor=(
+              "  field_simp [seriesTerm, hn1, hzn]\\n"
+              "  <;> ring"
+          )
+          new_factor=(
+              "  unfold seriesTerm\\n"
+              "  field_simp [hn1, hzn] <;> ring"
+          )
+          assert s.count(old_factor) == 1, ("factor", s.count(old_factor))
           s=s.replace(old_factor,new_factor,1)
 
-          assert "simpa [U] using Metric.mem_ball_self hδpos" in s
+          old_mem="simpa [U] using Metric.mem_ball_self hδpos"
+          assert s.count(old_mem) == 1, ("mem_ball", s.count(old_mem))
           s=s.replace(
-              "simpa [U] using Metric.mem_ball_self hδpos",
+              old_mem,
               "simpa [U] using (Metric.mem_ball_self (x := z0) hδpos)",
               1,
           )
 
-          assert "simpa [Complex.add_re] using h" in s
-          s=s.replace(
-              "simpa [Complex.add_re] using h",
-              "simpa [Complex.add_re, add_comm] using h",
-              1,
-          )
+          old_add="simpa [Complex.add_re] using h"
+          assert s.count(old_add) == 1, ("add_re", s.count(old_add))
+          s=s.replace(old_add,"simpa [Complex.add_re, add_comm] using h",1)
 
-          old_field="""            field_simp [hδpos.ne', hn1pos.ne']
-                      ring
-          """
-          new_field="""            field_simp [hδpos.ne', hn1pos.ne'] <;> ring
-          """
-          assert old_field in s
+          old_field=(
+              "            field_simp [hδpos.ne', hn1pos.ne']\\n"
+              "            ring"
+          )
+          new_field="            field_simp [hδpos.ne', hn1pos.ne'] <;> ring"
+          assert s.count(old_field) == 1, ("field", s.count(old_field))
           s=s.replace(old_field,new_field,1)
 
-          old_mtest="""  have hdiff :
-                DifferentiableOn ℂ
-                  (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=
-              differentiableOn_tsum_of_summable_norm
-                hmajorant hterm hUopen hbound
-          """
-          new_mtest="""  have hdiff :
-                DifferentiableOn ℂ
-                  (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by
-              have hc :=
-                (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn
-              refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen
-              exact DifferentiableOn.fun_sum fun i _ => hterm i
-          """
-          assert old_mtest in s
+          old_mtest=(
+              "  have hdiff :\\n"
+              "      DifferentiableOn ℂ\\n"
+              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=\\n"
+              "    differentiableOn_tsum_of_summable_norm\\n"
+              "      hmajorant hterm hUopen hbound"
+          )
+          new_mtest=(
+              "  have hdiff :\\n"
+              "      DifferentiableOn ℂ\\n"
+              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by\\n"
+              "    have hc :=\\n"
+              "      (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn\\n"
+              "    refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen\\n"
+              "    exact DifferentiableOn.fun_sum fun i _ => hterm i"
+          )
+          assert s.count(old_mtest) == 1, ("mtest", s.count(old_mtest))
           s=s.replace(old_mtest,new_mtest,1)
 
-          old_dig="""  have hDigammaAnal :
-                AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by
-              simpa [Complex.digamma_def, logDeriv_apply] using
-                hGammaAnal.deriv.div hGammaAnal
-                  (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)
-          """
-          new_dig="""  have hDigammaAnal :
-                AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by
-              rw [show Complex.digamma =
-                  (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by
-                funext z
-                simp [Complex.digamma_def, logDeriv_apply]]
-              exact hGammaAnal.deriv.div hGammaAnal
-                (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)
-          """
-          assert old_dig in s
+          old_dig=(
+              "  have hDigammaAnal :\\n"
+              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
+              "    simpa [Complex.digamma_def, logDeriv_apply] using\\n"
+              "      hGammaAnal.deriv.div hGammaAnal\\n"
+              "        (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
+          )
+          new_dig=(
+              "  have hDigammaAnal :\\n"
+              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
+              "    rw [show Complex.digamma =\\n"
+              "        (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by\\n"
+              "      funext z\\n"
+              "      simp [Complex.digamma_def, logDeriv_apply]]\\n"
+              "    exact hGammaAnal.deriv.div hGammaAnal\\n"
+              "      (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
+          )
+          assert s.count(old_dig) == 1, ("digamma", s.count(old_dig))
           s=s.replace(old_dig,new_dig,1)
 
-          old_tend="""    have hzero :
-                  Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))
-                    atTop (𝓝 0) :=
-                tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ)
-          """
-          new_tend="""    have hzero :
-                  Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))
-                    atTop (𝓝 0) := by
-                simpa [Nat.cast_add, Nat.cast_one] using
-                  (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ))
-          """
-          assert old_tend in s
+          old_tend=(
+              "    have hzero :\\n"
+              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
+              "          atTop (𝓝 0) :=\\n"
+              "      tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ)"
+          )
+          new_tend=(
+              "    have hzero :\\n"
+              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
+              "          atTop (𝓝 0) := by\\n"
+              "      simpa [Nat.cast_add, Nat.cast_one] using\\n"
+              "        (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ))"
+          )
+          assert s.count(old_tend) == 1, ("tendsto", s.count(old_tend))
           s=s.replace(old_tend,new_tend,1)
 
-          assert "    · simp [s])" in s
-          s=s.replace(
-              "    · simp [s])",
-              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\n"
-              "      simp [s, hn])",
-              1,
+          old_last="    · simp [s])"
+          new_last=(
+              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\\n"
+              "      simp [s, hn])"
           )
+          assert s.count(old_last) == 1, ("last_simp", s.count(old_last))
+          s=s.replace(old_last,new_last,1)
 
           assert s != original
           p.write_text(s)
