@@ -104,6 +104,10 @@ jobs:
           old2="← deriv_log,"
           assert s.count(old2)==1, s.count(old2)
           s=s.replace(old2,"← Real.deriv_log y,",1)
+          assert s.count("Real.deriv.log hGreal hGne") == 1
+          s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne",1)
+          assert s.count("differentiableAt_log hy.ne'") == 1
+          s=s.replace("differentiableAt_log hy.ne'","Real.differentiableAt_log hy.ne'",1)
           assert s != original
           p.write_text(s)
           PY
