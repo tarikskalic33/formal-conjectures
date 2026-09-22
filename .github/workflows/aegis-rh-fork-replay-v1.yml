@@ -149,30 +149,23 @@ jobs:
           assert old in s
           s=s.replace(old,new,1)
 
-          # Three identical Nat-cast nonzero proofs, at two indentation levels.
-          old2="""  have hn1 : ((n : ℂ) + 1) ≠ 0 := by
-            intro h
-            have hre := congrArg Complex.re h
-            simp at hre
-          """
-          new2="""  have hn1 : ((n : ℂ) + 1) ≠ 0 := by
-            norm_cast
-            omega
-          """
-          assert s.count(old2)==2, s.count(old2)
-          s=s.replace(old2,new2)
-
-          old4="""    have hn1 : ((n : ℂ) + 1) ≠ 0 := by
-              intro h
-              have hre := congrArg Complex.re h
-              simp at hre
-          """
-          new4="""    have hn1 : ((n : ℂ) + 1) ≠ 0 := by
-              norm_cast
-              omega
-          """
-          assert s.count(old4)==1, s.count(old4)
-          s=s.replace(old4,new4,1)
+          # Three identical Nat-cast nonzero proofs; preserve source indentation.
+          import re
+          pat=re.compile(
+              r"(?m)^(?P<i>\\s*)have hn1 : \\(\\(n : ℂ\\) \\+ 1\\) ≠ 0 := by\\n"
+              r"(?P=i)  intro h\\n"
+              r"(?P=i)  have hre := congrArg Complex.re h\\n"
+              r"(?P=i)  simp at hre$"
+          )
+          def repl(m):
+              i=m.group("i")
+              return (
+                  f"{i}have hn1 : ((n : ℂ) + 1) ≠ 0 := by\\n"
+                  f"{i}  norm_cast\\n"
+                  f"{i}  omega"
+              )
+          s,n=pat.subn(repl,s)
+          assert n == 3, n
 
           old_factor="""  field_simp [seriesTerm, hn1, hzn]
             <;> ring
