@@ -84,35 +84,57 @@ jobs:
           p=Path(sys.argv[1])
           s=p.read_text()
           original=s
+
+          # Standalone closure does not inherit this Bochner import transitively.
           anchor="import Mathlib.MeasureTheory.Integral.Bochner.Basic\n"
           if anchor not in s:
               s=s.replace(
-                "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n",
-                "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n"+anchor,
-                1,
+                  "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n",
+                  "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n"+anchor,
+                  1,
               )
+
+          # Namespace qualification required in the standalone module.
           s=s.replace(
-              "(deriv (Real.log ∘ Real.Gamma) x : ℂ)",
-              "((deriv (fun y : ℝ => Real.log (Real.Gamma y)) x : ℝ) : ℂ)",
+              "exact norm_integral_le_integral_norm _",
+              "exact MeasureTheory.norm_integral_le_integral_norm _",
               1,
           )
+
+          # Force the real derivative before coercing to complex.
+          s=s.replace(
+              "(deriv (Real.log ∘ Real.Gamma) x : ℂ)",
+              "((deriv (Real.log ∘ Real.Gamma) x : ℝ) : ℂ)",
+              1,
+          )
+          s=s.replace(
+              "(deriv Real.Gamma x : ℂ)",
+              "((deriv Real.Gamma x : ℝ) : ℂ)",
+              1,
+          )
+
+          # Nat-cast nonpositivity: six identical sites.
           old="have hmnonpos : -(m : ℝ) ≤ 0 := by positivity"
           new="have hmnonpos : -(m : ℝ) ≤ 0 := neg_nonpos.mpr (Nat.cast_nonneg m)"
           count=s.count(old)
           assert count == 6, count
           s=s.replace(old,new)
-          old2="← deriv_log,"
-          assert s.count(old2)==1, s.count(old2)
-          s=s.replace(old2,"← Real.deriv_log y,",1)
-          assert s.count("Real.deriv.log hGreal hGne") == 1
-          s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne",1)
-          assert s.count("differentiableAt_log hy.ne'") == 1
-          s=s.replace("differentiableAt_log hy.ne'","Real.differentiableAt_log hy.ne'",1)
+
+          # Real logarithm derivative names must be explicit here.
+          assert s.count("← deriv_log,") == 1
+          s=s.replace("← deriv_log,","← Real.deriv_log y,",1)
+          s=s.replace("differentiableAt_log hy.ne'","Real.differentiableAt_log hy.ne'")
+
+          # The derivative-of-log theorem is in the root deriv namespace.
+          s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne")
+
           assert s != original
           p.write_text(s)
           PY
-          grep -F 'Mathlib.MeasureTheory.Integral.Bochner.Basic' "$P"
+          grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$P"
+          grep -F '((deriv Real.Gamma x : ℝ) : ℂ)' "$P"
           grep -F 'Real.deriv_log y' "$P"
+          grep -F 'Real.differentiableAt_log hy.ne' "$P"
 
       - name: Fetch exact Mathlib cache
         shell: bash
