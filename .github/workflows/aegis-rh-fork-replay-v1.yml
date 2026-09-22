@@ -243,7 +243,15 @@ jobs:
           path: .li/.lake/build
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
+      - name: Restore exact AEGIS closure build
+        id: aegis-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-rh
+          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
       - name: Compile exact AEGIS RH closure
+        if: steps.aegis-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -291,6 +299,13 @@ jobs:
             echo "=== COMPILE $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.aegis-order.txt"
+
+      - name: Save exact AEGIS closure build
+        if: steps.aegis-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-rh
+          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Audit load-bearing axioms
         shell: bash
