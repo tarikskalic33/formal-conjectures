@@ -401,13 +401,6 @@ jobs:
           s = s.replace("open Complex\n", "open Complex Set\nopen scoped ComplexConjugate\n", 1)
 
           assert s.count("conj rho.1") >= 1
-          s = s.replace("conj rho.1", "conj rho.1")
-          s = s.replace(
-              "conj (mellin g.1 (1 - Complex.conj rho.1))",
-              "Complex.conj (mellin g.1 (1 - Complex.conj rho.1))",
-              1,
-          )
-
           old = (
               "  have hmult : analyticOrderNatAt riemannZeta rho.1 ≠ 0 := by\n"
               "    exact analyticOrderNatAt_ne_zero_of_eq_zero rho.2.1"
