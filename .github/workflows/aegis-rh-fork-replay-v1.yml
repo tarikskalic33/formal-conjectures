@@ -488,6 +488,34 @@ jobs:
           print("ACTUAL_ZERO_WITNESS_CONJ_SCOPE=PASS")
           PY
 
+      - name: Apply translation-gap diagonal compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAP=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTranslationGapInvariantV10.lean"
+          python3 - "$GAP" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          old = """  have h :=
+            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
+          simpa using h"""
+          new = """  have h :=
+            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
+          have h0 : translatePacket g 0 = g := by
+            apply Subtype.ext
+            funext x
+            simp [translatePacket_apply]
+          rw [h0] at h
+          exact h"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+          assert "have h0 : translatePacket g 0 = g := by" in s
+          p.write_text(s, encoding="utf-8")
+          print("TRANSLATION_GAP_DIAGONAL_COMPAT=PASS")
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
