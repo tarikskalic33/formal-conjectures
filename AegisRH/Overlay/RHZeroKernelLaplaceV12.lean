@@ -169,6 +169,9 @@ theorem zero_laplace_term_integral_v12
     apply congrArg Complex.exp
     ring
   rw [hfun, h]
+  rw [show
+    WeilCenteredZeroExponentV12 rho - w =
+      -(w - WeilCenteredZeroExponentV12 rho) by ring]
   simp [div_eq_mul_inv]
 
 /-- Norm integral of one Laplace term. -/
