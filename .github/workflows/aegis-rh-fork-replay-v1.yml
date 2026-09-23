@@ -325,6 +325,15 @@ jobs:
           echo "PR606_FULL_131_REPLAY=PASS"
           echo "PR606_FULL_131_MODULE_COUNT=$passed"
 
+      - name: Upload full PR606 replay receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr606-full-131-${{ env.AEGIS_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: evidence/pr606-full-131/
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Restore fork overlay dependency closure
         id: overlay-deps-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
