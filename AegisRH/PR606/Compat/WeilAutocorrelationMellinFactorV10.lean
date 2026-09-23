@@ -90,17 +90,14 @@ theorem logCorrelationJoint_support_subset_v10
     Function.support (logCorrelationJointV10 g z) ⊆
       logCorrelationJointEnvelopeV10 g := by
   intro p hp
-  have hprod :
-      logLift g.1 (p.1 + p.2) *
-        conj (logLift g.1 p.2) ≠ 0 := by
-    intro h
-    apply hp
-    unfold logCorrelationJointV10
-    rw [h, mul_zero]
   have hleft : logLift g.1 (p.1 + p.2) ≠ 0 := by
-    exact fun h => hprod (by simp [h])
+    intro hz
+    apply hp
+    simp [logCorrelationJointV10, hz]
   have hright : logLift g.1 p.2 ≠ 0 := by
-    exact fun h => hprod (by simp [h])
+    intro hz
+    apply hp
+    simp [logCorrelationJointV10, hz]
   have hleftS :
       p.1 + p.2 ∈ tsupport (logLift g.1) :=
     subset_tsupport _ hleft
@@ -108,9 +105,7 @@ theorem logCorrelationJoint_support_subset_v10
       p.2 ∈ tsupport (logLift g.1) :=
     subset_tsupport _ hright
   refine ⟨(p.1 + p.2, p.2), ⟨hleftS, hrightS⟩, ?_⟩
-  apply Prod.ext
-  · simp
-  · rfl
+  apply Prod.ext <;> simp <;> ring
 
 theorem logCorrelationJoint_hasCompactSupport_v10
     (g : WeilCompactSmoothGV1) (z : ℂ) :
@@ -137,12 +132,15 @@ theorem logCorrelationJoint_fubini_v10
       ∫ u : ℝ,
         ∫ v : ℝ,
           logCorrelationJointV10 g z (v, u) := by
-  exact integral_integral_swap_of_hasCompactSupport
+  have hprod :
+      Integrable (logCorrelationJointV10 g z)
+        (volume.prod volume) := by
+    exact
+      (logCorrelationJoint_continuous_v10 g z).integrable_of_hasCompactSupport
+        (logCorrelationJoint_hasCompactSupport_v10 g z)
+  exact integral_integral_swap
     (f := fun v u => logCorrelationJointV10 g z (v, u))
-    (by simpa [Function.uncurry] using
-      logCorrelationJoint_continuous_v10 g z)
-    (by simpa [Function.uncurry] using
-      logCorrelationJoint_hasCompactSupport_v10 g z)
+    (by simpa [Function.uncurry_def] using hprod)
 
 /-- Translation of the inner v-integral. -/
 theorem logLaplace_shift_v10
@@ -152,34 +150,33 @@ theorem logLaplace_shift_v10
         logLift g.1 (v + u)) =
       Complex.exp (-z * (u : ℂ)) * logLaplaceV10 g z := by
   let F : ℝ → ℂ := fun w =>
-    Complex.exp (z * ((w - u : ℝ) : ℂ)) *
-      logLift g.1 w
-  have hshift :
-      (∫ w : ℝ, F (w + u)) = ∫ w : ℝ, F w :=
-    integral_add_right_eq_self F u
-  have hleft :
-      (fun v : ℝ => F (v + u)) =
-        (fun v : ℝ =>
-          Complex.exp (z * (v : ℂ)) *
-            logLift g.1 (v + u)) := by
-    funext v
-    dsimp [F]
-    congr 2
-    push_cast
-    ring
-  have hright :
-      (fun w : ℝ => F w) =
-        (fun w : ℝ =>
-          Complex.exp (-z * (u : ℂ)) *
-            (Complex.exp (z * (w : ℂ)) * logLift g.1 w)) := by
-    funext w
-    dsimp [F]
-    rw [← Complex.exp_add]
-    congr 1
-    ring
-  rw [hleft, hright] at hshift
-  rw [integral_const_mul] at hshift
-  simpa [logLaplaceV10] using hshift
+    Complex.exp (z * (w : ℂ)) * logLift g.1 w
+  calc
+    (∫ v : ℝ,
+      Complex.exp (z * (v : ℂ)) *
+        logLift g.1 (v + u))
+      =
+    ∫ v : ℝ,
+      Complex.exp (-z * (u : ℂ)) * F (v + u) := by
+        apply integral_congr_ae
+        filter_upwards [] with v
+        dsimp [F]
+        rw [← mul_assoc, ← Complex.exp_add]
+        congr 2
+        push_cast
+        ring
+    _ =
+      Complex.exp (-z * (u : ℂ)) *
+        (∫ v : ℝ, F (v + u)) := by
+          rw [integral_const_mul]
+    _ =
+      Complex.exp (-z * (u : ℂ)) *
+        (∫ v : ℝ, F v) := by
+          rw [integral_add_right_eq_self F u]
+    _ =
+      Complex.exp (-z * (u : ℂ)) *
+        logLaplaceV10 g z := by
+          rfl
 
 /-- The reflected weighted integral is the conjugate reflected Laplace
 transform. -/
@@ -191,11 +188,10 @@ theorem reflected_logLaplace_integral_v10
       conj (logLaplaceV10 g (-conj z)) := by
   rw [logLaplaceV10, ← integral_conj]
   apply integral_congr_ae
-  exact Filter.Eventually.of_forall (fun u => by
-    rw [map_mul, ← Complex.exp_conj]
-    congr 2
-    simp
-    ring)
+  filter_upwards [] with u
+  rw [map_mul, ← Complex.exp_conj]
+  congr 2
+  simp [map_neg, map_mul, Complex.conj_ofReal]
 
 /-- Bilateral transform of additive correlation factors exactly. -/
 theorem logCorrelation_transform_factor_v10
@@ -205,51 +201,59 @@ theorem logCorrelation_transform_factor_v10
         logCorrelationV10 g v) =
       logLaplaceV10 g z *
         conj (logLaplaceV10 g (-conj z)) := by
-  have hfub := logCorrelationJoint_fubini_v10 g z
-  have hleft :
-      (∫ v : ℝ,
-        ∫ u : ℝ,
-          logCorrelationJointV10 g z (v, u)) =
-      ∫ v : ℝ,
-        Complex.exp (z * (v : ℂ)) *
-          logCorrelationV10 g v := by
-    apply integral_congr_ae
-    exact Filter.Eventually.of_forall (fun v => by
-      unfold logCorrelationJointV10 logCorrelationV10
-      rw [integral_const_mul])
-  rw [hleft] at hfub
+  have hprod :
+      Integrable (logCorrelationJointV10 g z)
+        (volume.prod volume) := by
+    exact
+      (logCorrelationJoint_continuous_v10 g z).integrable_of_hasCompactSupport
+        (logCorrelationJoint_hasCompactSupport_v10 g z)
   calc
     (∫ v : ℝ,
       Complex.exp (z * (v : ℂ)) *
         logCorrelationV10 g v)
       =
+    ∫ v : ℝ,
       ∫ u : ℝ,
-        ∫ v : ℝ,
-          logCorrelationJointV10 g z (v, u) := hfub
-    _ =
-      ∫ u : ℝ,
-        (Complex.exp (-z * (u : ℂ)) *
-          logLaplaceV10 g z) *
-          conj (logLift g.1 u) := by
+        logCorrelationJointV10 g z (v, u) := by
           apply integral_congr_ae
-          exact Filter.Eventually.of_forall (fun u => by
-            unfold logCorrelationJointV10
-            rw [← integral_mul_const]
-            have hs := logLaplace_shift_v10 g z u
-            rw [hs]
-            ring)
+          filter_upwards [] with v
+          unfold logCorrelationJointV10 logCorrelationV10
+          rw [← integral_const_mul]
+          congr 1
+          funext u
+          simp only [Prod.fst, Prod.snd]
+          ring
+    _ =
+    ∫ u : ℝ,
+      ∫ v : ℝ,
+        logCorrelationJointV10 g z (v, u) := by
+          exact integral_integral_swap
+            (f := fun v u => logCorrelationJointV10 g z (v, u))
+            (by simpa [Function.uncurry_def] using hprod)
+    _ =
+    ∫ u : ℝ,
+      (Complex.exp (-z * (u : ℂ)) *
+        logLaplaceV10 g z) *
+        conj (logLift g.1 u) := by
+          apply integral_congr_ae
+          filter_upwards [] with u
+          unfold logCorrelationJointV10
+          simp only [Prod.fst, Prod.snd]
+          rw [integral_mul_const]
+          rw [logLaplace_shift_v10 g z u]
     _ =
       logLaplaceV10 g z *
         (∫ u : ℝ,
           Complex.exp (-z * (u : ℂ)) *
             conj (logLift g.1 u)) := by
-          rw [← integral_const_mul]
-          apply integral_congr_ae
-          exact Filter.Eventually.of_forall (fun u => by ring)
+              rw [← integral_const_mul]
+              apply integral_congr_ae
+              filter_upwards [] with u
+              ring
     _ =
       logLaplaceV10 g z *
         conj (logLaplaceV10 g (-conj z)) := by
-          rw [reflected_logLaplace_integral_v10]
+              rw [reflected_logLaplace_integral_v10]
 
 /-- Mellin transform is the bilateral transform of the logarithmic lift at
 the shifted exponent s-1/2. -/
@@ -257,21 +261,23 @@ theorem logLaplace_shift_eq_mellin_v10
     (g : WeilCompactSmoothGV1) (s : ℂ) :
     logLaplaceV10 g (s - 1 / 2) = mellin g.1 s := by
   rw [mellin_eq_log_integral_v9]
-  unfold logLaplaceV10
+  unfold logLaplaceV10 WeilLogMellinIntegrandV9 logLift
   apply integral_congr_ae
-  exact Filter.Eventually.of_forall (fun u => by
-    unfold WeilLogMellinIntegrandV9 logLift
-    rw [Complex.ofReal_exp]
-    rw [← Complex.exp_ofReal]
-    have h :
-        Complex.exp ((s - 1 / 2) * (u : ℂ)) *
-          (Complex.exp ((u / 2 : ℝ) : ℂ) * g.1 (Real.exp u)) =
-        Complex.exp (s * (u : ℂ)) * g.1 (Real.exp u) := by
-      rw [← mul_assoc, ← Complex.exp_add]
-      congr 2
-      push_cast
-      ring
-    exact h)
+  filter_upwards [] with u
+  have hexp :
+      Complex.exp (s * (u : ℂ)) =
+        Complex.exp ((s - (1 / 2 : ℂ)) * (u : ℂ)) *
+          (Real.exp (u / 2) : ℂ) := by
+    rw [show
+      s * (u : ℂ) =
+        (s - (1 / 2 : ℂ)) * (u : ℂ) +
+          (((u / 2 : ℝ) : ℂ)) by
+            push_cast
+            ring,
+      Complex.exp_add,
+      ← Complex.ofReal_exp]
+  rw [hexp]
+  ring
 
 /-- THE autocorrelation Mellin factorization. -/
 theorem mellin_autocorrelation_factor_v10
@@ -281,31 +287,34 @@ theorem mellin_autocorrelation_factor_v10
         conj (mellin g.1 (1 - conj s)) := by
   let A : WeilCompactSmoothGV1 :=
     WeilAutocorrelationCompactSmoothV1 g
-  rw [show WeilAutocorrelationV1 g = A.1 by rfl]
-  rw [mellin_eq_log_integral_v9 A s]
+  have hlog := mellin_eq_log_integral_v9 A s
   have hcoord :
       (∫ v : ℝ, WeilLogMellinIntegrandV9 A s v) =
       ∫ v : ℝ,
-        Complex.exp ((s - 1 / 2) * (v : ℂ)) *
+        Complex.exp ((s - (1 / 2 : ℂ)) * (v : ℂ)) *
           logCorrelationV10 g v := by
     apply integral_congr_ae
-    exact Filter.Eventually.of_forall (fun v => by
-      unfold WeilLogMellinIntegrandV9
-      change
+    filter_upwards [] with v
+    unfold WeilLogMellinIntegrandV9
+    rw [show A.1 (Real.exp v) =
+      WeilAutocorrelationV1 g (Real.exp v) by rfl]
+    rw [autocorrelation_exp_eq_logCorrelation_v10]
+    have hexp :
         Complex.exp (s * (v : ℂ)) *
-          WeilAutocorrelationV1 g (Real.exp v) = _
-      rw [autocorrelation_exp_eq_logCorrelation_v10]
-      rw [Complex.ofReal_exp]
-      rw [← Complex.exp_ofReal]
-      rw [← mul_assoc, ← Complex.exp_add]
-      congr 2
+            ((Real.exp (-v / 2) : ℝ) : ℂ) =
+          Complex.exp ((s - (1 / 2 : ℂ)) * (v : ℂ)) := by
+      rw [Complex.ofReal_exp, ← Complex.exp_add]
+      congr 1
       push_cast
-      ring)
-  rw [hcoord, logCorrelation_transform_factor_v10]
+      ring
+    rw [hexp]
+  rw [show mellin (WeilAutocorrelationV1 g) s =
+      mellin A.1 s from rfl, hlog, hcoord,
+    logCorrelation_transform_factor_v10]
   rw [logLaplace_shift_eq_mellin_v10 g s]
   have hreflect :
-      -(conj (s - 1 / 2)) =
-        (1 - conj s) - 1 / 2 := by
+      -(conj (s - (1 / 2 : ℂ))) =
+        (1 - conj s) - (1 / 2 : ℂ) := by
     apply Complex.ext <;> simp <;> ring
   rw [hreflect]
   rw [logLaplace_shift_eq_mellin_v10 g (1 - conj s)]
