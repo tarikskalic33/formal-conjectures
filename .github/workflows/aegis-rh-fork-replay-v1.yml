@@ -99,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           lake exe cache unpack || true
-          if ! test -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib.olean; then
+          if ! test -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib/Analysis/MellinTransform.olean; then
             lake exe cache get
           fi
           test "$(python3 - <<'PY'
