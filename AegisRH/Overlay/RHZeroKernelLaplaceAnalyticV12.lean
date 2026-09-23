@@ -113,8 +113,9 @@ private theorem zero_kernel_term_local_bound_v12
     unfold WeilZeroTranslationFactorV11
     rw [Complex.norm_exp]
     exact Real.exp_le_exp.mpr hexpRe
-  exact mul_le_mul_of_nonneg_left hfactor
-    (norm_nonneg (WeilZeroCoefficientV11 g rho))
+  simpa [mul_comm] using
+    (mul_le_mul_of_nonneg_left hfactor
+      (norm_nonneg (WeilZeroCoefficientV11 g rho)))
 
 /-- The canonical zero translation kernel is a continuous function of the
 real translation parameter. -/
@@ -234,15 +235,15 @@ private theorem first_moment_exp_tail_integrable_v12
     have key :=
       Real.integral_rpow_mul_exp_neg_mul_Ioi
         (a := (2 : ℝ)) (r := δ) (by norm_num) hδ
-    apply Integrable.of_integral_ne_zero
-    rw [show
-      (fun t : ℝ => t * Real.exp (-(δ * t))) =
-      (fun t : ℝ =>
-        t ^ ((2 : ℝ) - 1) * Real.exp (-(δ * t))) by
-          funext t
-          simp]
-    rw [key]
-    positivity
+    have hint :
+        IntegrableOn
+          (fun t : ℝ =>
+            t ^ ((2 : ℝ) - 1) * Real.exp (-(δ * t)))
+          (Ioi (0 : ℝ)) :=
+      .of_integral_ne_zero (by
+        rw [key]
+        positivity)
+    simpa only [show (2 : ℝ) - 1 = 1 by norm_num, rpow_one] using hint
   exact hbase.const_mul B
 
 /-- Differentiability of the bounded-kernel Laplace transform at every point
@@ -318,7 +319,7 @@ theorem zero_kernel_laplace_differentiableAt_v12
         simpa [Complex.sub_re] using Complex.abs_re_le_norm (w - w0)
       have hwre : δ ≤ w.re := by
         have hlo := (abs_lt.mp (lt_of_le_of_lt hreDiff hdist)).1
-        dsimp [δ]
+        dsimp [δ] at hlo ⊢
         linarith
       have hK := zero_kernel_uniform_bound_v12 h g hm t
       unfold F' bound
@@ -327,7 +328,6 @@ theorem zero_kernel_laplace_differentiableAt_v12
       have hre :
           (-(w * (t : ℂ))).re = -w.re * t := by
         simp
-        ring
       rw [hre]
       have hexp :
           Real.exp (-w.re * t) ≤ Real.exp (-(δ * t)) := by
@@ -356,8 +356,8 @@ theorem zero_kernel_laplace_differentiableAt_v12
             (fun z : ℂ => Complex.exp (-(z * (t : ℂ))))
             (-(t : ℂ) *
               Complex.exp (-(w * (t : ℂ)))) w := by
-        convert
-          ((hasDerivAt_id w).mul_const (t : ℂ)).neg.cexp using 1 <;> ring
+        simpa [mul_comm] using
+          ((hasDerivAt_id w).mul_const (t : ℂ)).neg.cexp
       exact hExp.mul_const
         (WeilZeroTranslationKernelV11 g t))
 
@@ -368,7 +368,12 @@ theorem zero_kernel_laplace_differentiableAt_v12
       hs hFmeas hFint hF'meas hbound hboundInt hdiff
 
   have hder := main.2.differentiableAt
-  simpa [WeilZeroKernelLaplaceV12, F] using hder
+  change DifferentiableAt ℂ
+    (fun w : ℂ =>
+      ∫ t : ℝ in Ioi (0 : ℝ),
+        Complex.exp (-(w * (t : ℂ))) *
+          WeilZeroTranslationKernelV11 g t) w0
+  simpa [F] using hder
 
 /-- Under final sign, the zero-kernel Laplace transform is holomorphic on the
 entire open right half-plane. -/
