@@ -114,7 +114,12 @@ theorem B_translate_diagonal_v10
       B g g := by
   have h :=
     B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
-  simpa using h
+  have h0 : translatePacket g 0 = g := by
+    apply Subtype.ext
+    funext x
+    simp [translatePacket_apply]
+  rw [h0] at h
+  exact h
 
 end AEGIS.WeilTranslationGapInvariantV10
 
