@@ -23,6 +23,9 @@ env:
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   UPSTREAM_RH_BLOB: 5b1dcd5c46ab4a5f449d7d4a5c5ddce7c89c3542
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LI_FACTORIZATION_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
 
 jobs:
   direct-target:
@@ -44,6 +47,15 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Checkout exact Li provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Verify exact environment pins
         shell: bash
         run: |
@@ -51,6 +63,8 @@ jobs:
           test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
           grep -F "$MATHLIB_SHA" lake-manifest.json
           test "$(git -C .aegis-base rev-parse HEAD)" = "$AEGIS_BASE_SHA"
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
           test -f FormalConjectures/Millennium/RiemannHypothesis.lean
           grep -F 'public import RHRestrictedWeilCriterionV13' FormalConjectures/Millennium/RiemannHypothesis.lean
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' FormalConjectures/Millennium/RiemannHypothesis.lean | grep -F 'sorry'
@@ -65,6 +79,53 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           lake exe cache get
           lean --version
+
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path('lakefile.lean')
+          text=p.read_text(encoding='utf-8')
+          old=os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new=os.environ['MATHLIB_SHA']
+          assert text.count(old) == 1
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+          q=Path('Hadamard/General/Factorization.lean')
+          text=q.read_text(encoding='utf-8')
+          replacements=[
+            ('eventually_nhdsWithin_of_forall fun w hw => ite_eq_right hw',
+             'eventually_nhdsWithin_of_forall fun w hw => if_neg hw'),
+            ('have hgz : g z = Q z := ite_eq_left rfl',
+             'have hgz : g z = Q z := by simp [g]'),
+            ('rw [ite_eq_right heq, hQ_eq_div z (hz heq)]',
+             'rw [if_neg heq, hQ_eq_div z (hz heq)]'),
+          ]
+          for old,new in replacements:
+            if old in text:
+              text=text.replace(old,new,1)
+          q.write_text(text,encoding='utf-8')
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          lake exe cache get
+          lake build \
+            Hadamard.OrderOne.LogDerivMultiplicity \
+            Lc.LiCriterion.XiGrowth \
+            Lc.LiCriterion.HadamardSummabilityBridge \
+            Lc.LiCriterion.HadamardBridge
 
       - name: Compute V13 terminal dependency closure
         shell: bash
@@ -136,7 +197,7 @@ jobs:
           COMPAT="$LOCAL/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$ROOT_LEAN_PATH"
+          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
 
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
@@ -158,7 +219,7 @@ jobs:
           COMPAT="$LOCAL/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$ROOT_LEAN_PATH"
+          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
 
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
           lean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
