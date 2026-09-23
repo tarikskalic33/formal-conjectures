@@ -36,7 +36,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Complex MeasureTheory
-open scoped BigOperators
+open scoped BigOperators ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -145,7 +145,6 @@ theorem mellin_twoPointPacket_v11
     mellin_scalePacket_v11, mellin_scalePacket_v11,
     mellin_scalePacket_v11]
   simp
-  ring
 
 /-- The two-point packet remains in the exact two-moment domain whenever
 both inputs do. -/
