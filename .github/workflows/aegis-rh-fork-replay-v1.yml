@@ -158,6 +158,13 @@ jobs:
           path: .li/.lake/build
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
+      - name: Restore zero-translation dependency closure
+        id: zero-translation-deps-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-digamma
+          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
       - name: Preflight zero-translation closure
         shell: bash
         run: |
@@ -195,9 +202,25 @@ jobs:
           export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            echo "=== PREFLIGHT $MOD ==="
+            if [ "$MOD" = "WeilZeroTranslationV11" ]; then
+              continue
+            fi
+            if [ -f "$OUT/$MOD.olean" ]; then
+              echo "=== PREFLIGHT CACHED $MOD ==="
+              continue
+            fi
+            echo "=== PREFLIGHT DEP $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.digamma-order.txt"
+          echo "=== PREFLIGHT TARGET WeilZeroTranslationV11 ==="
+          lean -o "$OUT/WeilZeroTranslationV11.olean" "$SRC/WeilZeroTranslationV11.lean"
+
+      - name: Save zero-translation dependency closure
+        if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-digamma
+          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
