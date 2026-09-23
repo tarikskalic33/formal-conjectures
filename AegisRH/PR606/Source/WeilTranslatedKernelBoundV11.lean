@@ -88,31 +88,29 @@ theorem autocorrelation_translate_invariant_v11
     dsimp [F, b]
     rw [map_mul, Complex.conj_ofReal]
     push_cast
-    rw [Complex.ofReal_exp, Complex.ofReal_exp, Complex.ofReal_exp]
     have hcC :
-        Complex.exp ((-d / 2 : ℝ) : ℂ) *
-          Complex.exp ((-d / 2 : ℝ) : ℂ) =
-          Complex.exp ((-d : ℝ) : ℂ) := by
+        Complex.exp (-(d : ℂ) / 2) *
+          Complex.exp (-(d : ℂ) / 2) =
+          Complex.exp (-(d : ℂ)) := by
       rw [← Complex.exp_add]
       congr 1
-      push_cast
       ring
     calc
-      Complex.exp ((-d / 2 : ℝ) : ℂ) *
+      Complex.exp (-(d : ℂ) / 2) *
             g.1 (Real.exp (-d) * (x * y)) *
-            Complex.exp ((-d / 2 : ℝ) : ℂ) *
-            conj (g.1 (Real.exp (-d) * y))
+            (Complex.exp (-(d : ℂ) / 2) *
+              conj (g.1 (Real.exp (-d) * y)))
           =
-          (Complex.exp ((-d / 2 : ℝ) : ℂ) *
-            Complex.exp ((-d / 2 : ℝ) : ℂ)) *
+          (Complex.exp (-(d : ℂ) / 2) *
+            Complex.exp (-(d : ℂ) / 2)) *
             (g.1 (Real.exp (-d) * (x * y)) *
               conj (g.1 (Real.exp (-d) * y))) := by ring
       _ =
-          Complex.exp ((-d : ℝ) : ℂ) *
+          Complex.exp (-(d : ℂ)) *
             (g.1 (Real.exp (-d) * (x * y)) *
               conj (g.1 (Real.exp (-d) * y))) := by rw [hcC]
       _ =
-          Complex.exp ((-d : ℝ) : ℂ) *
+          Complex.exp (-(d : ℂ)) *
             (g.1 (x * (Real.exp (-d) * y)) *
               conj (g.1 (Real.exp (-d) * y))) := by
             congr 2
