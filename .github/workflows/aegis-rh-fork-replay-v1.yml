@@ -739,6 +739,13 @@ jobs:
           cat > /tmp/V13ScratchAudit.lean <<'LEAN'
           import V13Scratch
           #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.final_sign_iff_rh_v13
+          LEAN
+          lean /tmp/V13ScratchAudit.lean 2>&1 | tee /tmp/v13-scratch-axioms.log
+          ! grep -q 'sorryAx' /tmp/v13-scratch-axioms.log
+          cat > /tmp/V13ScratchAudit.lean <<'LEAN'
+          import V13Scratch
+          #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
           #print axioms AEGIS.V13Scratch.universal_zero_quadratic_implies_rh_v13
           #print axioms AEGIS.V13Scratch.restricted_weil_criterion_kernel_bridge_v13
           LEAN
