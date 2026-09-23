@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - 'proof/rh-606-port-v1'
+      - 'proof/rh-deepmind-target-direct-replay-v2'
     paths:
       - 'AegisRH/PR606/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
       - '.github/workflows/aegis-pr606-fork-replay-v1.yml'
   pull_request:
     paths:
       - 'AegisRH/PR606/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
       - '.github/workflows/aegis-pr606-fork-replay-v1.yml'
   workflow_dispatch:
 
@@ -282,6 +285,29 @@ jobs:
           LEAN
           lean /tmp/PR606V13Audit.lean 2>&1 | tee /tmp/pr606-v13-axioms.log
           ! grep -F 'sorryAx' /tmp/pr606-v13-axioms.log
+
+      - name: Compile exact DeepMind RH target
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
+          SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-pr606"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH/PR606:$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
+
+          TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
+          test -f "$TARGET"
+          ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' "$TARGET" | grep -F 'sorry'
+          lean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
+
+          cat >/tmp/DeepMindRHTargetAudit.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          #print axioms RiemannHypothesis.riemannHypothesis
+          LEAN
+          lean /tmp/DeepMindRHTargetAudit.lean 2>&1 | tee /tmp/deepmind-rh-target-axioms.log
+          ! grep -F 'sorryAx' /tmp/deepmind-rh-target-axioms.log
 
       - name: Emit exact port disposition
         if: always()
