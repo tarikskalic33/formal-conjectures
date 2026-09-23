@@ -1,3 +1,8 @@
+import WeilAutocorrelationMellinV11
+import WeilThreeBlockTranslatedPacketsV22
+import ZeroCountingMellinSummabilityV1
+import Mathlib.Tactic
+
 /-!
 Fork-local compatibility overlay.
 
@@ -9,10 +14,6 @@ Lean 4.33.1 / Mathlib 0df444a3 elaboration repairs. It is intentionally kept
 in the Formal Conjectures fork; the AEGIS anchor is treated as read-only.
 -/
 
-import WeilAutocorrelationMellinV11
-import WeilThreeBlockTranslatedPacketsV22
-import ZeroCountingMellinSummabilityV1
-import Mathlib.Tactic
 
 /-!
 AEGIS Ω — zero-side translation transport V11.
