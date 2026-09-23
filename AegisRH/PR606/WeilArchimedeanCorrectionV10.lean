@@ -61,7 +61,7 @@ private theorem correction_antideriv_tendsto_zero_v10 :
       (fun x : ℝ => Real.log x - Real.log (x + 1))
       atTop (𝓝 0) := by
   have h := (Real.tendsto_log_comp_add_sub_log 1).neg
-  simpa only [neg_sub, neg_zero] using h
+  convert h using 1 <;> simp [sub_eq_add_neg]
 
 
 /-- Integrability of the scalar correction, obtained from the same monotone-FTC
@@ -114,8 +114,8 @@ theorem integral_one_div_mul_one_add_v10 :
         1 / x - 1 / (x + 1) = 1 / (x * (x + 1)) := by
     intro x hx
     have hx' : (1 : ℝ) < x := hx
-    have hx0 : x ≠ 0 := by linarith
-    have hx1 : x + 1 ≠ 0 := by linarith
+    have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
+    have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])
     field_simp [hx0, hx1]
     ring
   calc
@@ -125,7 +125,7 @@ theorem integral_one_div_mul_one_add_v10 :
           intro x hx
           exact (hpoint x hx).symm
     _ = 0 - (Real.log 1 - Real.log (1 + 1)) := hbase
-    _ = Real.log 2 := by norm_num
+    _ = Real.log 2 := by simp
 
 end AEGIS.WeilArchimedeanCorrectionV10
 
