@@ -43,10 +43,10 @@ jobs:
           mkdir -p evidence
           python AegisRH/fixed_window_true_matrix_arb.py \
             --ell 1 \
-            --Ns 3,4,5,6,8 \
-            --prec-bits 224 \
-            --near-zero-bits 48 \
-            --tol-bits 110 \
+            --Ns 3,4,5,6,8,10,12,16,20,24,32 \
+            --prec-bits 320 \
+            --near-zero-bits 64 \
+            --tol-bits 160 \
             --epsilon-power 4 \
             --output evidence/fixed_window_R_pi.json \
             | tee evidence/fixed_window_R_pi.log
