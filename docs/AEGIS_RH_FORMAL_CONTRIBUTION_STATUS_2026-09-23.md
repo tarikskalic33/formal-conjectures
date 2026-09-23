@@ -114,6 +114,35 @@ equivalently the repository-wide final sign residual on the full moment-zero com
 
 Finite three/four-packet coercivity, zero-shift equivalence, translated-kernel bounds, or conditional O₀ globalization are strong ingredients, but none is silently treated as this universal producer.
 
+## Hosted-verified unconditional small-window producer
+
+The previously source-only small-window producer now has an independent hosted fork replay.
+
+- AEGIS source SHA: `46807c98e13398fa884a399e3559e7a9e7f9d5c5`
+- Lean: `4.33.1`
+- Mathlib: `0df444a360eaa60ab8c11dca51a86af692955474`
+- hosted run: `35928739230`
+- result: **SUCCESS**
+- target: `WindowArithmeticNonpositiveV1 (1 / 128)`
+- scope: all repository packets whose symmetric logarithmic support lies in radius `1/128`
+- RH hypothesis used: **NO**
+
+The exact theorem
+`AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_128_v1`
+was compiled and its printed axiom footprint is exactly:
+
+```text
+propext
+Classical.choice
+Quot.sound
+```
+
+with no `sorryAx`. The monotone extension to every nonnegative window
+`L ≤ 1/128` has the same footprint.
+
+This is therefore a genuine unconditional, hosted-kernel-verified member of the
+window-sign hierarchy, not merely a planned producer or a source-level claim.
+
 ## Closed compact-support exhaustion / globalization step
 
 A separate AEGIS branch, `proof/rh-window-exhaustion-v1` at
