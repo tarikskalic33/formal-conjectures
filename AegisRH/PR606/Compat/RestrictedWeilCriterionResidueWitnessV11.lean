@@ -353,7 +353,7 @@ theorem exists_residue_packet_autocorrelation_mellin_ne_zero_v11
     exists_residue_packet_v11 rho
   refine ⟨g, hm, ?_⟩
   rw [AEGIS.WeilAutocorrelationMellinV11.weil_autocorrelation_mellin_factorization_v11]
-  exact mul_ne_zero hr (map_ne_zero conj href)
+  exact mul_ne_zero hr ((map_ne_zero (starRingEnd ℂ)).2 href)
 
 end AEGIS.RestrictedWeilCriterionResidueWitnessV11
 
