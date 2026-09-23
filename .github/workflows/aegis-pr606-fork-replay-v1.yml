@@ -283,6 +283,23 @@ jobs:
           lean /tmp/PR606V13Audit.lean 2>&1 | tee /tmp/pr606-v13-axioms.log
           ! grep -F 'sorryAx' /tmp/pr606-v13-axioms.log
 
+      - name: Compile and audit restricted-Weil V13 terminal
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
+          SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-pr606"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH/PR606:$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
+
+          ! grep -n -E '\bsorry\b|\badmit\b' AegisRH/PR606/RHRestrictedWeilCriterionV13.lean
+          lean -o "$OUT/RHRestrictedWeilCriterionV13.olean" AegisRH/PR606/RHRestrictedWeilCriterionV13.lean             2>&1 | tee /tmp/rh-restricted-v13-terminal.log
+          ! grep -F 'sorryAx' /tmp/rh-restricted-v13-terminal.log
+          grep -F 'AEGIS.RHRestrictedWeilCriterionV13.restricted_weil_criterion_v13'             /tmp/rh-restricted-v13-terminal.log
+          grep -F 'AEGIS.RHRestrictedWeilCriterionV13.certificate_of_universal_zero_quadratic_v13'             /tmp/rh-restricted-v13-terminal.log
+
       - name: Emit exact port disposition
         if: always()
         shell: bash
