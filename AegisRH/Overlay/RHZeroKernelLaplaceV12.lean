@@ -63,9 +63,9 @@ theorem centered_zero_re_mem_v12
     riemann_zeta_nontrivial_zero_critical_strip_v1
       rho.2.1 rho.2.2
   unfold WeilCenteredZeroExponentV12
-  change
-    -(1 / 2 : ℝ) < rho.1.re - (1 / 2 : ℝ) ∧
-      rho.1.re - (1 / 2 : ℝ) < (1 / 2 : ℝ)
+  have hhalf : ((1 / 2 : ℂ)).re = (1 / 2 : ℝ) := by
+    norm_num
+  rw [Complex.sub_re, hhalf]
   constructor <;> linarith
 
 /-- Absolute summability of the zero coefficients, inherited from the
@@ -105,13 +105,19 @@ theorem zero_laplace_term_integrable_v12
     integrableOn_exp_mul_complex_Ioi
       (a := -(w - WeilCenteredZeroExponentV12 rho))
       hneg 0
-  refine he.const_mul (WeilZeroCoefficientV11 g rho) |>.congr_fun ?_
-    measurableSet_Ioi
+  have hc : IntegrableOn
+      (fun t : ℝ =>
+        WeilZeroCoefficientV11 g rho *
+          Complex.exp
+            ((-(w - WeilCenteredZeroExponentV12 rho)) * (t : ℂ)))
+      (Ioi (0 : ℝ)) :=
+    he.const_mul (WeilZeroCoefficientV11 g rho)
+  refine IntegrableOn.congr_fun hc ?_ measurableSet_Ioi
   intro t ht
   unfold WeilZeroLaplaceTermV12
-  congr 2
-  push_cast
-  ring
+  rw [show
+    (-(w - WeilCenteredZeroExponentV12 rho)) * (t : ℂ) =
+      -((w - WeilCenteredZeroExponentV12 rho) * (t : ℂ)) by ring]
 
 /-- Exact integral of one Laplace term. -/
 theorem zero_laplace_term_integral_v12
@@ -138,10 +144,9 @@ theorem zero_laplace_term_integral_v12
           (-((w - WeilCenteredZeroExponentV12 rho) * (t : ℂ)))) =
       (fun t : ℝ =>
         Complex.exp
-          ((-(w - WeilCenteredZeroExponentV12 rho)) * t)) := by
+          ((-(w - WeilCenteredZeroExponentV12 rho)) * (t : ℂ))) := by
     funext t
-    congr 1
-    push_cast
+    apply congrArg Complex.exp
     ring
   rw [hfun, h]
   have hden :
