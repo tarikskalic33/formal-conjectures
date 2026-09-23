@@ -55,6 +55,33 @@ theorem nonneg_of_vanishing_error_norm
     simpa using heps.neg.mul hnorm
   exact nonneg_of_tendsto_lower_bound hq hvanish hlower
 
+/-- The exact vanishing shift used by the fixed-window certificates,
+reindexed as N = n + k. -/
+def invFourthError (k n : ℕ) : ℝ :=
+  (1 / (((n + k : ℕ) : ℝ))) ^ 4
+
+theorem tendsto_invFourthError (k : ℕ) :
+    Tendsto (invFourthError k) atTop (𝓝 0) := by
+  have h :
+      Tendsto (fun n : ℕ => (1 / (n : ℝ))) atTop (𝓝 (0 : ℝ)) :=
+    tendsto_one_div_atTop_nhds_zero_nat
+  have hk :
+      Tendsto (fun n : ℕ => (1 / ((n + k : ℕ) : ℝ))) atTop (𝓝 (0 : ℝ)) :=
+    (tendsto_add_atTop_iff_nat k).2 h
+  simpa [invFourthError] using hk.pow 4
+
+/-- Concrete finite-to-limit bridge for the exact epsilon_N = N^-4 schedule
+used by the Arb fixed-window receipts. The finite sections are reindexed by
+N = n + 3, matching the first admissible matrix dimension in that lane. -/
+theorem nonneg_of_invFourth_fixed_window_lower_bound
+    {q normSq : ℕ → ℝ} {Q normSqLimit : ℝ}
+    (hq : Tendsto q atTop (𝓝 Q))
+    (hnorm : Tendsto normSq atTop (𝓝 normSqLimit))
+    (hlower : ∀ n, -(invFourthError 3 n) * normSq n ≤ q n) :
+    0 ≤ Q :=
+  nonneg_of_vanishing_error_norm
+    hq (tendsto_invFourthError 3) hnorm hlower
+
 theorem all_positive_windows_of_pi_nat_windows
     (P : ℝ → Prop)
     (hmono : ∀ {R₁ R₂ : ℝ}, R₁ ≤ R₂ → P R₂ → P R₁)
