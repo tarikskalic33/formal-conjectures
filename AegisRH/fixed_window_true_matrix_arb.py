@@ -41,43 +41,68 @@ def canonical_hash(obj: object) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
-def prime_factors(n: int) -> set[int]:
-    out: set[int] = set()
-    d = 2
-    while d * d <= n:
-        if n % d == 0:
-            out.add(d)
-            while n % d == 0:
-                n //= d
-        d = 3 if d == 2 else d + 2
-    if n > 1:
-        out.add(n)
-    return out
+def largest_integer_with_log_below(L: arb) -> int:
+    """Largest integer q >= 1 with log(q) < L, decided by Arb comparisons."""
+    lo, hi = 1, 2
+    while True:
+        y = arb(hi).log()
+        if y < L:
+            lo, hi = hi, hi * 2
+            if hi > 1_000_000_000:
+                raise RuntimeError("PRIME_CUTOFF_RESOURCE_GUARD_EXCEEDED")
+            continue
+        if y > L:
+            break
+        raise RuntimeError(f"PRIME_CUTOFF_UNDECIDED_AT_{hi}")
+
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        y = arb(mid).log()
+        if y < L:
+            lo = mid
+        elif y > L:
+            hi = mid
+        else:
+            raise RuntimeError(f"PRIME_CUTOFF_UNDECIDED_AT_{mid}")
+    return lo
 
 
-def von_mangoldt_base(n: int) -> int | None:
-    fs = prime_factors(n)
-    if len(fs) != 1:
-        return None
-    return next(iter(fs))
+def primes_up_to(n: int) -> list[int]:
+    """Exact Eratosthenes sieve; no probabilistic primality path."""
+    if n < 2:
+        return []
+    sieve = bytearray(b"\x01") * (n + 1)
+    sieve[0:2] = b"\x00\x00"
+    for p in range(2, math.isqrt(n) + 1):
+        if not sieve[p]:
+            continue
+        start = p * p
+        count = (n - start) // p + 1
+        sieve[start : n + 1 : p] = b"\x00" * count
+    return [p for p in range(2, n + 1) if sieve[p]]
 
 
 def prime_power_data_below(L: arb) -> list[tuple[int, int, arb, arb]]:
-    """Return (q,p,log q, log p/sqrt(q)) for prime powers q with log q < L."""
+    """Return all (q,p,log q, log p/sqrt(q)) for q=p^k with log(q)<L.
+
+    The cutoff is established by Arb comparisons.  Integer primality and the
+    prime-power census are then exact; Arb is used only for the transcendental
+    log/sqrt weights.
+    """
+    limit = largest_integer_with_log_below(L)
     out: list[tuple[int, int, arb, arb]] = []
-    q = 2
-    while True:
-        y = arb(q).log()
-        if y > L:
-            break
-        if not (y < L):
-            raise RuntimeError(f"PRIME_CUTOFF_UNDECIDED_AT_{q}")
-        p = von_mangoldt_base(q)
-        if p is not None:
-            out.append((q, p, y, arb(p).log() / arb(q).sqrt()))
-        q += 1
-        if q > 10_000_000:
-            raise RuntimeError("PRIME_CUTOFF_GUARD_EXCEEDED")
+    for p in primes_up_to(limit):
+        lp = arb(p).log()
+        q = p
+        while q <= limit:
+            y = arb(q).log()
+            if not (y < L):
+                raise RuntimeError(f"PRIME_CUTOFF_INTERNAL_INCONSISTENCY_AT_{q}")
+            out.append((q, p, y, lp / arb(q).sqrt()))
+            if q > limit // p:
+                break
+            q *= p
+    out.sort(key=lambda row: row[0])
     return out
 
 
