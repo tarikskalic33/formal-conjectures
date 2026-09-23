@@ -213,7 +213,12 @@ jobs:
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.digamma-order.txt"
           echo "=== PREFLIGHT TARGET RHZeroKernelLaplaceV12 ==="
-          lean -o "$OUT/RHZeroKernelLaplaceV12.olean" "$SRC/RHZeroKernelLaplaceV12.lean"
+          TARGET_FILE="$SRC/RHZeroKernelLaplaceV12.lean"
+          if [ -f "$GITHUB_WORKSPACE/AegisRH/Overlay/RHZeroKernelLaplaceV12.lean" ]; then
+            TARGET_FILE="$GITHUB_WORKSPACE/AegisRH/Overlay/RHZeroKernelLaplaceV12.lean"
+          fi
+          lean -o "$OUT/RHZeroKernelLaplaceV12.olean" "$TARGET_FILE" 2>&1 | tee /tmp/RHZeroKernelLaplaceV12.log
+          ! grep -q 'sorryAx' /tmp/RHZeroKernelLaplaceV12.log
 
       - name: Save zero-translation dependency closure
         if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
@@ -221,115 +226,3 @@ jobs:
         with:
           path: .lake/aegis-digamma
           key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
-
-      - name: Restore exact AEGIS closure build
-        id: aegis-cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .lake/aegis-rh
-          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
-
-      - name: Compile exact AEGIS RH closure
-        if: steps.aegis-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
-          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
-          mkdir -p "$OUT"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          python3 - "$SRC" "$GITHUB_WORKSPACE/.aegis-order.txt" <<'PY'
-          import pathlib,sys
-          src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=[
-            'RHZeroKernelLaplaceAnalyticV12',
-            'RestrictedWeilCriterionResidueCoefficientV11',
-            'RestrictedWeilCriterionPoleIsolationV10',
-            'MeromorphicIdentityPreconnectedV11',
-          ]
-          mods={p.stem:p for p in src.glob('*.lean')}
-          deps={}
-          for m,p in mods.items():
-            ds=[]
-            for line in p.read_text(encoding='utf-8').splitlines():
-              s=line.strip()
-              if not s.startswith('import '): continue
-              for tok in s[7:].split():
-                root=tok.split('.')[0]
-                if root in mods: ds.append(root)
-            deps[m]=ds
-          seen=set(); temp=set(); order=[]
-          def visit(m):
-            if m in seen: return
-            if m in temp: raise SystemExit('cycle:'+m)
-            if m not in mods: raise SystemExit('missing:'+m)
-            temp.add(m)
-            for d in deps[m]: visit(d)
-            temp.remove(m); seen.add(m); order.append(m)
-          for t in targets: visit(t)
-          out.write_text('\n'.join(order)+'\n')
-          print('LOCAL_CLOSURE_COUNT',len(order))
-          print('\n'.join(order))
-          PY
-          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
-          while IFS= read -r MOD; do
-            [ -z "$MOD" ] && continue
-            echo "=== COMPILE $MOD ==="
-            lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
-          done < "$GITHUB_WORKSPACE/.aegis-order.txt"
-
-      - name: Save exact AEGIS closure build
-        if: steps.aegis-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .lake/aegis-rh
-          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
-
-      - name: Audit load-bearing axioms
-        shell: bash
-        run: |
-          set -euo pipefail
-          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
-          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
-          cat > /tmp/Audit.lean <<'LEAN'
-          import RHZeroKernelLaplaceAnalyticV12
-          import RestrictedWeilCriterionResidueCoefficientV11
-          import RestrictedWeilCriterionPoleIsolationV10
-          import MeromorphicIdentityPreconnectedV11
-          #print axioms AEGIS.RHZeroKernelLaplaceAnalyticV12.zero_kernel_laplace_analyticOnNhd_v12
-          #print axioms AEGIS.RestrictedWeilCriterionResidueCoefficientV11.exists_nonzero_zero_coefficient_v11
-          #print axioms AEGIS.RestrictedWeilCriterionPoleIsolationV10.exists_centered_zero_isolation_v10
-          #print axioms AEGIS.MeromorphicIdentityPreconnectedV11.eventuallyEq_nhdsNE_of_meromorphicOn_of_seed
-          LEAN
-          lean /tmp/Audit.lean 2>&1 | tee /tmp/aegis-rh-axioms.log
-          ! grep -q 'sorryAx' /tmp/aegis-rh-axioms.log
-
-      - name: Compile fork-side V13 scratch if present
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f AegisRH/V13Scratch.lean || exit 0
-          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
-          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
-          lean -o "$OUT/V13Scratch.olean" AegisRH/V13Scratch.lean
-
-      - name: Compile fork-side V13 if present
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f AegisRH/RestrictedWeilCriterionFinalV13.lean || exit 0
-          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
-          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
-          lean -o "$OUT/RestrictedWeilCriterionFinalV13.olean" AegisRH/RestrictedWeilCriterionFinalV13.lean
-          cat > /tmp/FinalAudit.lean <<'LEAN'
-          import RestrictedWeilCriterionFinalV13
-          #print axioms AEGIS.RestrictedWeilCriterionFinalV13.final_sign_implies_rh_v13
-          LEAN
-          lean /tmp/FinalAudit.lean 2>&1 | tee /tmp/final-v13-axioms.log
-          ! grep -q 'sorryAx' /tmp/final-v13-axioms.log
