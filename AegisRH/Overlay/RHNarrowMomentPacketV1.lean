@@ -94,14 +94,20 @@ theorem phiNarrow_vanishes_below :
     ∀ u ≤ -(1 / 64 : ℝ), phiNarrow u = 0 := by
   intro u hu
   refine image_eq_zero_of_notMem_tsupport (fun hmem => ?_)
-  have hs := phiNarrow_tsupport_Icc hmem
+  have hs :
+      u ∈ tsupport psiNarrow :=
+    (tsupport_momentKiller_subset psiNarrow) hmem
+  rw [psiNarrow_tsupport, Real.closedBall_eq_Icc] at hs
   linarith [hs.1]
 
 theorem phiNarrow_vanishes_above :
     ∀ u, (1 / 64 : ℝ) ≤ u → phiNarrow u = 0 := by
   intro u hu
   refine image_eq_zero_of_notMem_tsupport (fun hmem => ?_)
-  have hs := phiNarrow_tsupport_Icc hmem
+  have hs :
+      u ∈ tsupport psiNarrow :=
+    (tsupport_momentKiller_subset psiNarrow) hmem
+  rw [psiNarrow_tsupport, Real.closedBall_eq_Icc] at hs
   linarith [hs.2]
 
 theorem phiNarrow_contDiff : ContDiff ℝ ∞ phiNarrow :=
@@ -164,6 +170,8 @@ theorem gNarrow_moments :
   constructor
   · have hreal :
         ∫ x in Ioi (0 : ℝ), x⁻¹ * narrowRealPacket x = 0 := by
+      change
+        (∫ x in Ioi (0 : ℝ), x⁻¹ * mulPacket phiNarrow x) = 0
       rw [integral_mulPacket_inv
         phiNarrow_continuous phiNarrow_vanishes_below phiNarrow_vanishes_above]
       exact phiNarrow_moments.1
@@ -178,6 +186,8 @@ theorem gNarrow_moments :
     rw [hcast, hreal, Complex.ofReal_zero]
   · have hreal :
         ∫ x in Ioi (0 : ℝ), narrowRealPacket x = 0 := by
+      change
+        (∫ x in Ioi (0 : ℝ), mulPacket phiNarrow x) = 0
       rw [integral_mulPacket
         phiNarrow_continuous phiNarrow_vanishes_below phiNarrow_vanishes_above]
       exact phiNarrow_moments.2
@@ -203,9 +213,12 @@ theorem gNarrow_ne_zero : gNarrow.1 ≠ 0 := by
 theorem logLift_gNarrow_apply (t : ℝ) :
     logLift gNarrow.1 t =
       (Real.exp (t / 2) : ℂ) * (phiNarrow t : ℂ) := by
-  unfold logLift gNarrow narrowPacketFn narrowRealPacket
+  change
+    ((Real.exp (t / 2) : ℝ) : ℂ) *
+        ((narrowRealPacket (Real.exp t) : ℝ) : ℂ) =
+      (Real.exp (t / 2) : ℂ) * (phiNarrow t : ℂ)
+  unfold narrowRealPacket
   rw [mulPacket_of_pos (Real.exp_pos t), Real.log_exp]
-  rfl
 
 /-- The actual later log-lift support predicate, not merely x-space support. -/
 theorem gNarrow_logLift_support :
