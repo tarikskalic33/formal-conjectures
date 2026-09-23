@@ -30,6 +30,8 @@ noncomputable section
 
 namespace AEGIS.V13Scratch
 
+classical
+
 open AEGIS.RHFinalClosureV1
 open AEGIS.RHMillenniumGateV10
 open AEGIS.RestrictedWeilCriterionLaplaceV10
@@ -158,7 +160,6 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
     intro sigma w hw
     by_cases hsigma : sigma = rho
     · simp [hsigma, u]
-      positivity
     · simp only [hsigma, if_false]
       have hd :=
         other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -210,7 +211,6 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   intro sigma
   by_cases hsigma : sigma = rho
   · simp [hsigma, u]
-    positivity
   · simp only [hsigma, if_false]
     have hd :=
       other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -293,7 +293,7 @@ theorem zero_resolvent_order_eq_neg_one_v13
 
   have hballNE :
       ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
-    hball.filter_mono nhdsWithin_le_nhds
+    Filter.Eventually.filter_mono nhdsWithin_le_nhds hball
 
   have heq :
       ∀ᶠ z in 𝓝[≠] y,
@@ -340,9 +340,8 @@ private theorem zeta_shift_ne_zero_of_not_center_v13
     rintro ⟨n, hn⟩
     rw [hn] at hspos
     have hnonpos :
-        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+        (-(2 : ℂ) * ((n : ℂ) + 1)).re ≤ 0 := by
       simp
-      positivity
     exact (not_lt_of_ge hnonpos) hspos
   let rho : RiemannNontrivialZeroIndexV2 :=
     ⟨s, hz, htriv⟩
@@ -498,7 +497,7 @@ theorem zero_resolvent_meromorphicAt_center_v13
         (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsS / 2))
   have hballNE :
       ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
-    hball.filter_mono nhdsWithin_le_nhds
+    Filter.Eventually.filter_mono nhdsWithin_le_nhds hball
   have heq :
       ∀ᶠ z in 𝓝[≠] y,
         WeilZeroResolventV12 g z =
@@ -549,7 +548,7 @@ theorem laplace_resolvent_seed_eventuallyEq_v13
       simp [S]]
     exact Complex.continuous_re.isOpen_preimage (Ioi (1 / 2 : ℝ)) isOpen_Ioi
   have h1S : (1 : ℂ) ∈ S := by
-    simp [S]
+    norm_num [S]
   filter_upwards [hSopen.mem_nhds h1S] with w hw
   exact zero_kernel_laplace_eq_resolvent_v12 g w hw
 
@@ -658,9 +657,8 @@ def reflectedNontrivialZeroV13
     rintro ⟨n, hn⟩
     rw [hn] at hrefpos
     have hnonpos :
-        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+        (-(2 : ℂ) * ((n : ℂ) + 1)).re ≤ 0 := by
       simp
-      positivity
     exact (not_lt_of_ge hnonpos) hrefpos
 
   exact ⟨1 - rho.1, hzref, hrefNontriv⟩
