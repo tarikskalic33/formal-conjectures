@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  AEGIS_SHA: b484f6f7a96c0331b3ef2befe0d8e1962e88851e
+  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
@@ -158,29 +158,31 @@ jobs:
           path: .li/.lake/build
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
-      - name: Restore zero-translation dependency closure
-        id: zero-translation-deps-cache
+      - name: Restore fork overlay dependency closure
+        id: overlay-deps-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .lake/aegis-digamma
-          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          path: .lake/aegis-overlay
+          key: aegis-overlay-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
-      - name: Preflight zero two-point closure
+      - name: Compile fork-local AEGIS overlays
         shell: bash
         run: |
           set -euo pipefail
           SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
-          OUT="$GITHUB_WORKSPACE/.lake/aegis-digamma"
+          OVERLAY="$GITHUB_WORKSPACE/AegisRH/Overlay"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-overlay"
           mkdir -p "$OUT"
-          python3 - "$SRC" "$GITHUB_WORKSPACE/.digamma-order.txt" <<'PY'
+          python3 - "$SRC" "$GITHUB_WORKSPACE/.overlay-order.txt" <<'PY'
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
           target='WeilZeroTwoPointV11'
+          overlay={'WeilZeroTranslationV11','WeilZeroTwoPointV11'}
           mods={p.stem:p for p in src.glob('*.lean')}
           deps={}
           for m,p in mods.items():
               ds=[]
-              for line in p.read_text().splitlines():
+              for line in p.read_text(encoding='utf-8').splitlines():
                   s=line.strip()
                   if not s.startswith('import '): continue
                   for tok in s[7:].split():
@@ -192,42 +194,46 @@ jobs:
               if m in seen: return
               if m in temp: raise SystemExit('cycle:'+m)
               temp.add(m)
-              for d in deps[m]: visit(d)
-              temp.remove(m); seen.add(m); order.append(m)
+              for d in deps[m]:
+                  if d not in overlay:
+                      visit(d)
+              temp.remove(m); seen.add(m)
+              if m not in overlay:
+                  order.append(m)
           visit(target)
           out.write_text('\n'.join(order)+'\n')
-          print('ZERO_TWO_POINT_PREFLIGHT_COUNT',len(order))
+          print('OVERLAY_DEP_COUNT',len(order))
           PY
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.lake/aegis-overlay:$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            if [ "$MOD" = "WeilZeroTwoPointV11" ]; then
-              continue
-            fi
             if [ -f "$OUT/$MOD.olean" ]; then
-              echo "=== PREFLIGHT CACHED $MOD ==="
+              echo "=== OVERLAY CACHED DEP $MOD ==="
               continue
             fi
-            echo "=== PREFLIGHT DEP $MOD ==="
+            echo "=== OVERLAY DEP $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
-          done < "$GITHUB_WORKSPACE/.digamma-order.txt"
-          echo "=== PREFLIGHT TARGET WeilZeroTwoPointV11 ==="
-          lean -o "$OUT/WeilZeroTwoPointV11.olean" "$SRC/WeilZeroTwoPointV11.lean"
+          done < "$GITHUB_WORKSPACE/.overlay-order.txt"
+          echo "=== FORK OVERLAY WeilZeroTranslationV11 ==="
+          lean -o "$OUT/WeilZeroTranslationV11.olean" "$OVERLAY/WeilZeroTranslationV11.lean"
+          echo "=== FORK OVERLAY WeilZeroTwoPointV11 ==="
+          lean -o "$OUT/WeilZeroTwoPointV11.olean" "$OVERLAY/WeilZeroTwoPointV11.lean"
+          ! grep -R -n -E '\bsorry\b|\badmit\b' "$OVERLAY"
 
-      - name: Save zero-translation dependency closure
-        if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
+      - name: Save fork overlay dependency closure
+        if: always() && steps.overlay-deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .lake/aegis-digamma
-          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          path: .lake/aegis-overlay
+          key: aegis-overlay-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-rh
-          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-rh-closure-v3-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Compile exact AEGIS RH closure
         if: steps.aegis-cache.outputs.cache-hit != 'true'
@@ -271,9 +277,15 @@ jobs:
           print('LOCAL_CLOSURE_COUNT',len(order))
           print('\n'.join(order))
           PY
-          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+          OVERLAY_OUT="$GITHUB_WORKSPACE/.lake/aegis-overlay"
+          export LEAN_PATH="$OVERLAY_OUT:$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
+            if [ "$MOD" = "WeilZeroTranslationV11" ] || [ "$MOD" = "WeilZeroTwoPointV11" ]; then
+              echo "=== USE FORK OVERLAY $MOD ==="
+              test -f "$OVERLAY_OUT/$MOD.olean"
+              continue
+            fi
             echo "=== COMPILE $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.aegis-order.txt"
@@ -283,7 +295,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-rh
-          key: aegis-rh-closure-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-rh-closure-v3-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Audit load-bearing axioms
         shell: bash
@@ -292,7 +304,7 @@ jobs:
           SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
           OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.lake/aegis-overlay:$OUT:$SRC:$BASE_LEAN_PATH"
           cat > /tmp/Audit.lean <<'LEAN'
           import RHZeroKernelLaplaceAnalyticV12
           import RestrictedWeilCriterionResidueCoefficientV11
