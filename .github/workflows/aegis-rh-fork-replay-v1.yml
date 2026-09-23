@@ -373,14 +373,13 @@ jobs:
           old = """  rw [finiteDilationMultiplierV10]
             norm_num [Complex.cpow_neg_one]"""
           new = """  rw [finiteDilationMultiplierV10]
-            norm_num [Complex.cpow_neg_one]
-            ring"""
+            norm_num [Complex.cpow_neg_one] <;> ring"""
           if old in s:
               s = s.replace(old, new, 1)
 
           assert "addPacket, hab.2]" in s
           assert "(x := (2 : ℝ))" in s
-          assert "norm_num [Complex.cpow_neg_one]\n  ring" in s
+          assert "norm_num [Complex.cpow_neg_one] <;> ring" in s
           p.write_text(s, encoding="utf-8")
           print("FINITE_DILATION_COMPAT_CHANGED", s != original)
           PY
