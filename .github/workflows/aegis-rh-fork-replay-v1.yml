@@ -172,14 +172,14 @@ jobs:
               dst.append(src[i])
               i += 1
           assert n == 3, n
-          s="\\n".join(dst) + ("\\n" if original.endswith("\\n") else "")
+          s="\n".join(dst) + ("\n" if original.endswith("\n") else "")
 
           old_factor=(
-              "  field_simp [seriesTerm, hn1, hzn]\\n"
+              "  field_simp [seriesTerm, hn1, hzn]\n"
               "  <;> ring"
           )
           new_factor=(
-              "  unfold seriesTerm\\n"
+              "  unfold seriesTerm\n"
               "  field_simp [hn1, hzn] <;> ring"
           )
           assert s.count(old_factor) == 1, ("factor", s.count(old_factor))
@@ -198,7 +198,7 @@ jobs:
           s=s.replace(old_add,"simpa [Complex.add_re, add_comm] using h",1)
 
           old_field=(
-              "            field_simp [hδpos.ne', hn1pos.ne']\\n"
+              "            field_simp [hδpos.ne', hn1pos.ne']\n"
               "            ring"
           )
           new_field="            field_simp [hδpos.ne', hn1pos.ne'] <;> ring"
@@ -206,55 +206,55 @@ jobs:
           s=s.replace(old_field,new_field,1)
 
           old_mtest=(
-              "  have hdiff :\\n"
-              "      DifferentiableOn ℂ\\n"
-              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=\\n"
-              "    differentiableOn_tsum_of_summable_norm\\n"
+              "  have hdiff :\n"
+              "      DifferentiableOn ℂ\n"
+              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=\n"
+              "    differentiableOn_tsum_of_summable_norm\n"
               "      hmajorant hterm hUopen hbound"
           )
           new_mtest=(
-              "  have hdiff :\\n"
-              "      DifferentiableOn ℂ\\n"
-              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by\\n"
-              "    have hc :=\\n"
-              "      (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn\\n"
-              "    refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen\\n"
+              "  have hdiff :\n"
+              "      DifferentiableOn ℂ\n"
+              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by\n"
+              "    have hc :=\n"
+              "      (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn\n"
+              "    refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen\n"
               "    exact DifferentiableOn.fun_sum fun i _ => hterm i"
           )
           assert s.count(old_mtest) == 1, ("mtest", s.count(old_mtest))
           s=s.replace(old_mtest,new_mtest,1)
 
           old_dig=(
-              "  have hDigammaAnal :\\n"
-              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
-              "    simpa [Complex.digamma_def, logDeriv_apply] using\\n"
-              "      hGammaAnal.deriv.div hGammaAnal\\n"
+              "  have hDigammaAnal :\n"
+              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\n"
+              "    simpa [Complex.digamma_def, logDeriv_apply] using\n"
+              "      hGammaAnal.deriv.div hGammaAnal\n"
               "        (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
           )
           new_dig=(
-              "  have hDigammaAnal :\\n"
-              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
-              "    rw [show Complex.digamma =\\n"
-              "        (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by\\n"
-              "      funext z\\n"
-              "      simp [Complex.digamma_def, logDeriv_apply]]\\n"
-              "    exact hGammaAnal.deriv.div hGammaAnal\\n"
+              "  have hDigammaAnal :\n"
+              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\n"
+              "    rw [show Complex.digamma =\n"
+              "        (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by\n"
+              "      funext z\n"
+              "      simp [Complex.digamma_def, logDeriv_apply]]\n"
+              "    exact hGammaAnal.deriv.div hGammaAnal\n"
               "      (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
           )
           assert s.count(old_dig) == 1, ("digamma", s.count(old_dig))
           s=s.replace(old_dig,new_dig,1)
 
           old_tend=(
-              "    have hzero :\\n"
-              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
-              "          atTop (𝓝 0) :=\\n"
+              "    have hzero :\n"
+              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\n"
+              "          atTop (𝓝 0) :=\n"
               "      tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ)"
           )
           new_tend=(
-              "    have hzero :\\n"
-              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
-              "          atTop (𝓝 0) := by\\n"
-              "      simpa [Nat.cast_add, Nat.cast_one] using\\n"
+              "    have hzero :\n"
+              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\n"
+              "          atTop (𝓝 0) := by\n"
+              "      simpa [Nat.cast_add, Nat.cast_one] using\n"
               "        (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ))"
           )
           assert s.count(old_tend) == 1, ("tendsto", s.count(old_tend))
@@ -262,7 +262,7 @@ jobs:
 
           old_last="    · simp [s])"
           new_last=(
-              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\\n"
+              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\n"
               "      simp [s, hn])"
           )
           assert s.count(old_last) == 1, ("last_simp", s.count(old_last))
