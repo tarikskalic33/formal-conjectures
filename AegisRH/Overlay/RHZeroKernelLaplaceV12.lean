@@ -36,6 +36,18 @@ namespace AEGIS.RHZeroKernelLaplaceV12
 open AEGIS.WeilZeroTranslationV11
 open AEGIS.WeilZeroTwoPointV11
 
+private instance countable_nontrivialZeroIndex_v12 :
+    Countable RiemannNontrivialZeroIndexV2 := by
+  have hU : (Set.univ : Set RiemannNontrivialZeroIndexV2) =
+      ⋃ n : ℕ, ZeroHeightShellSetV1 n := by
+    ext rho
+    simp [ZeroHeightShellSetV1]
+  have hc : (Set.univ : Set RiemannNontrivialZeroIndexV2).Countable := by
+    rw [hU]
+    exact Set.countable_iUnion
+      (fun n => (zero_height_shell_finite_v1 n).countable)
+  exact Set.countable_univ_iff.mp hc
+
 /-- Centered zero exponent lambda = rho - 1/2. -/
 def WeilCenteredZeroExponentV12
     (rho : RiemannNontrivialZeroIndexV2) : ℂ :=
@@ -107,7 +119,7 @@ theorem zero_laplace_term_integral_v12
     (rho : RiemannNontrivialZeroIndexV2)
     (hw : (WeilCenteredZeroExponentV12 rho).re < w.re) :
     (∫ t : ℝ in Ioi (0 : ℝ),
-      WeilZeroLaplaceTermV12 g w rho) =
+      WeilZeroLaplaceTermV12 g w rho t) =
       WeilZeroCoefficientV11 g rho /
         (w - WeilCenteredZeroExponentV12 rho) := by
   have hneg :
@@ -156,6 +168,10 @@ theorem zero_laplace_term_norm_integral_v12
   have hdelta : 0 < delta := by
     dsimp [delta]
     linarith
+  change
+    (∫ t : ℝ in Ioi (0 : ℝ),
+      ‖WeilZeroLaplaceTermV12 g w rho t‖) =
+      ‖WeilZeroCoefficientV11 g rho‖ / delta
   have hfun :
       (fun t : ℝ =>
         ‖WeilZeroLaplaceTermV12 g w rho t‖) =
@@ -172,9 +188,7 @@ theorem zero_laplace_term_norm_integral_v12
     ring
   rw [hfun, integral_const_mul,
     integral_exp_mul_Ioi (a := -delta) (by linarith) 0]
-  simp [hdelta.ne']
-  field_simp [hdelta.ne']
-  ring
+  simp [hdelta.ne', div_eq_mul_inv]
 
 /-- The family of norm integrals is summable uniformly on each half-plane
 Re(w)>1/2. -/
@@ -236,9 +250,14 @@ theorem tsum_zero_laplace_term_eq_kernel_v12
   intro rho
   unfold WeilZeroLaplaceTermV12 WeilZeroTranslationFactorV11
     WeilCenteredZeroExponentV12
-  rw [← Complex.exp_add]
-  ring_nf
-  congr 1
+  have hexp :
+      Complex.exp (-((w - (rho.1 - (1 / 2 : ℂ))) * (t : ℂ))) =
+        Complex.exp (-(w * (t : ℂ))) *
+          Complex.exp ((rho.1 - (1 / 2 : ℂ)) * (t : ℂ)) := by
+    rw [← Complex.exp_add]
+    congr 1
+    ring
+  rw [hexp]
   ring
 
 /-- Resolvent sum on the initial right half-plane. -/
@@ -277,6 +296,7 @@ theorem zero_kernel_laplace_eq_resolvent_v12
   have hswap :=
     integral_tsum_of_summable_integral_norm
       (μ := volume.restrict (Ioi (0 : ℝ)))
+      (F := fun rho t => WeilZeroLaplaceTermV12 g w rho t)
       hint hnorm
 
   unfold WeilZeroKernelLaplaceV12 WeilZeroResolventV12
@@ -295,7 +315,7 @@ theorem zero_kernel_laplace_eq_resolvent_v12
     _ =
     ∑' rho : RiemannNontrivialZeroIndexV2,
       ∫ t : ℝ in Ioi (0 : ℝ),
-        WeilZeroLaplaceTermV12 g w rho := hswap.symm
+        WeilZeroLaplaceTermV12 g w rho t := hswap.symm
     _ =
     ∑' rho : RiemannNontrivialZeroIndexV2,
       WeilZeroCoefficientV11 g rho /
