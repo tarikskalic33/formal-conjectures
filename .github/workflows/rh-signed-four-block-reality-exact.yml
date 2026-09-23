@@ -60,16 +60,11 @@ jobs:
           set -euo pipefail
           python3 .aegis/research/rh/signed_four_block_preflight_v1.py | tee signed-four-block-preflight.json
           python3 - <<'PY'
-          from fractions import Fraction as F
-          import importlib.util
-          p=".aegis/research/rh/signed_four_block_preflight_v1.py"
-          spec=importlib.util.spec_from_file_location("preflight",p)
-          m=importlib.util.module_from_spec(spec)
-          spec.loader.exec_module(m)
-          r=m.compute_preflight()
-          assert r.all_ones_rayleigh_lower == F(46617,40000)
-          assert r.old_certificate_gap == F(5417,40000)
-          assert r.old_certificate_sufficient is False
+          import json
+          d=json.load(open("signed-four-block-preflight.json",encoding="utf-8"))
+          assert d["all_ones_rayleigh_lower"] == {"numerator":46617,"denominator":40000}
+          assert d["old_certificate_gap"] == {"numerator":5417,"denominator":40000}
+          assert d["old_certificate_sufficient"] is False
           print("SIGNED_FOUR_BLOCK_103_OVER_100_NO_GO=PASS")
           PY
 
@@ -163,6 +158,7 @@ jobs:
         if: always()
         shell: bash
         run: |
+          mkdir -p evidence
           cat > evidence/DISPOSITION.txt <<EOF
           SOURCE_SHA=$SOURCE_SHA
           PARENT_SHA=$PARENT_SHA
