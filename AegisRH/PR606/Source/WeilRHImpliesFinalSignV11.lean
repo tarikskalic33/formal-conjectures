@@ -96,9 +96,9 @@ theorem rh_zero_summand_nonnegative_v11
     exact autocorrelation_mellin_critical_normSq_v11 g rho.1.im
   unfold WeilZeroIndexSummandV1
   rw [hM]
-  simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
-    Nat.cast_ofNat, zero_mul, sub_zero]
-  positivity
+  simp only [Complex.mul_re, Complex.natCast_re, Complex.natCast_im,
+    Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero]
+  exact mul_nonneg (Nat.cast_nonneg _) (Complex.normSq_nonneg _)
 
 /-- RH makes the full canonical autocorrelation zero quadratic nonnegative. -/
 theorem rh_zero_quadratic_nonnegative_v11
