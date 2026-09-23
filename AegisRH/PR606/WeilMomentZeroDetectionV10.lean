@@ -17,6 +17,8 @@ limitations under the License.
 import WeilFiniteDilationFilterV10
 import WeilOffLineSeedV10
 import ZeroCriticalStripV1
+import Mathlib.Analysis.Analytic.Order
+import Mathlib.Analysis.Normed.Module.Connected
 import Mathlib.Tactic
 
 /-!
@@ -38,7 +40,7 @@ the off-line-zero residue obstruction.
 AUTHORITY_EFFECT = NONE.
 -/
 
-open Complex
+open Complex Set
 set_option autoImplicit false
 noncomputable section
 
@@ -71,20 +73,20 @@ theorem exists_moment_zero_packet_detecting_zero_pair_v10
     ∃ g : WeilCompactSmoothGV1,
       WeilMomentConditionsV1 g ∧
       mellin g.1 rho.1 ≠ 0 ∧
-      mellin g.1 (1 - conj rho.1) ≠ 0 := by
+      mellin g.1 (1 - Complex.conj rho.1) ≠ 0 := by
   have hstrip :=
     riemann_zeta_nontrivial_zero_critical_strip_v1
       rho.2.1 rho.2.2
   have hr0 : 0 < rho.1.re := hstrip.1
   have hr1 : rho.1.re < 1 := hstrip.2
-  have ht0 : 0 < (1 - conj rho.1).re := by
+  have ht0 : 0 < (1 - Complex.conj rho.1).re := by
     simp
     linarith
-  have ht1 : (1 - conj rho.1).re < 1 := by
+  have ht1 : (1 - Complex.conj rho.1).re < 1 := by
     simp
     linarith
   exact exists_moment_zero_packet_detecting_pair_v10
-    rho.1 (1 - conj rho.1) hr0 hr1 ht0 ht1
+    rho.1 (1 - Complex.conj rho.1) hr0 hr1 ht0 ht1
 
 /-- The multiplicity-weighted paired Mellin coefficient at every nontrivial
 zero can be made nonzero by a repository-admissible moment-zero packet. -/
@@ -94,15 +96,59 @@ theorem exists_nonzero_zero_pair_coefficient_v10
       WeilMomentConditionsV1 g ∧
       ((analyticOrderNatAt riemannZeta rho.1 : ℂ) *
         (mellin g.1 rho.1 *
-          conj (mellin g.1 (1 - conj rho.1)))) ≠ 0 := by
+          Complex.conj (mellin g.1 (1 - Complex.conj rho.1)))) ≠ 0 := by
   obtain ⟨g, hm, h1, h2⟩ :=
     exists_moment_zero_packet_detecting_zero_pair_v10 rho
   have hmult : analyticOrderNatAt riemannZeta rho.1 ≠ 0 := by
-    exact analyticOrderNatAt_ne_zero_of_eq_zero rho.2.1
+    have hstrip :=
+      riemann_zeta_nontrivial_zero_critical_strip_v1
+        rho.2.1 rho.2.2
+    have hr1 : rho.1 ≠ 1 := by
+      intro h
+      have hre := congrArg Complex.re h
+      simp at hre
+      linarith [hstrip.2]
+    have hAnal : AnalyticAt ℂ riemannZeta rho.1 :=
+      analyticOn_riemannZeta rho.1 (by simpa using hr1)
+    have hOrderNeZero :
+        analyticOrderAt riemannZeta rho.1 ≠ 0 :=
+      (hAnal.analyticOrderAt_ne_zero).2 rho.2.1
+    have hPre :
+        IsPreconnected ({(1 : ℂ)}ᶜ : Set ℂ) :=
+      (isConnected_compl_singleton_of_one_lt_rank
+        (rank_real_complex ▸ Nat.one_lt_ofNat) (1 : ℂ)).isPreconnected
+    have h2mem : (2 : ℂ) ∈ ({(1 : ℂ)}ᶜ : Set ℂ) := by simp
+    have hrmem : rho.1 ∈ ({(1 : ℂ)}ᶜ : Set ℂ) := by
+      simpa using hr1
+    have h2Anal : AnalyticAt ℂ riemannZeta (2 : ℂ) :=
+      analyticOn_riemannZeta 2 (by simp)
+    have hz2 : riemannZeta (2 : ℂ) ≠ 0 :=
+      riemannZeta_ne_zero_of_one_le_re (by norm_num)
+    have h2ord0 :
+        analyticOrderAt riemannZeta (2 : ℂ) = 0 :=
+      (h2Anal.analyticOrderAt_eq_zero).2 hz2
+    have h2finite :
+        analyticOrderAt riemannZeta (2 : ℂ) ≠ ⊤ := by
+      rw [h2ord0]
+      simp
+    have hfinite :
+        analyticOrderAt riemannZeta rho.1 ≠ ⊤ :=
+      analyticOn_riemannZeta.analyticOrderAt_ne_top_of_isPreconnected
+        hPre h2mem hrmem h2finite
+    intro hnat
+    have hcast :
+        analyticOrderAt riemannZeta rho.1 = 0 := by
+      rw [← Nat.cast_analyticOrderNatAt hfinite]
+      simp [hnat]
+    exact hOrderNeZero hcast
   refine ⟨g, hm, ?_⟩
   apply mul_ne_zero
   · exact_mod_cast hmult
-  · exact mul_ne_zero h1 (map_ne_zero_of_injective Complex.conj_injective h2)
+  · apply mul_ne_zero h1
+    intro hc
+    apply h2
+    have hc' := congrArg Complex.conj hc
+    simpa using hc'
 
 end AEGIS.WeilMomentZeroDetectionV10
 
