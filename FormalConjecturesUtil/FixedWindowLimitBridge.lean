@@ -57,7 +57,7 @@ theorem nonneg_of_vanishing_error_norm
 
 /-- The exact vanishing shift used by the fixed-window certificates,
 reindexed as N = n + k. -/
-def invFourthError (k n : ℕ) : ℝ :=
+noncomputable def invFourthError (k n : ℕ) : ℝ :=
   (1 / (((n + k : ℕ) : ℝ))) ^ 4
 
 theorem tendsto_invFourthError (k : ℕ) :
@@ -68,7 +68,10 @@ theorem tendsto_invFourthError (k : ℕ) :
   have hk :
       Tendsto (fun n : ℕ => (1 / ((n + k : ℕ) : ℝ))) atTop (𝓝 (0 : ℝ)) :=
     (tendsto_add_atTop_iff_nat k).2 h
-  simpa [invFourthError] using hk.pow 4
+  change Tendsto
+    (fun n : ℕ => (1 / ((n + k : ℕ) : ℝ)) ^ 4)
+    atTop (𝓝 (0 : ℝ))
+  exact hk.pow 4
 
 /-- Concrete finite-to-limit bridge for the exact epsilon_N = N^-4 schedule
 used by the Arb fixed-window receipts. The finite sections are reindexed by
