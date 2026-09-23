@@ -99,7 +99,9 @@ jobs:
         run: |
           set -euo pipefail
           lake exe cache unpack || true
-          lake exe cache get
+          if ! test -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib.olean; then
+            lake exe cache get
+          fi
           test "$(python3 - <<'PY'
           import json
           m=json.load(open('lake-manifest.json'))
@@ -157,6 +159,7 @@ jobs:
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
