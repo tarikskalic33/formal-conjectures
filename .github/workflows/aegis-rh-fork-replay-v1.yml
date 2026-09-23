@@ -163,7 +163,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v2-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-overlay-deps-v3-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Compile fork-local AEGIS overlays
         shell: bash
@@ -176,8 +176,8 @@ jobs:
           python3 - "$SRC" "$GITHUB_WORKSPACE/.overlay-order.txt" <<'PY'
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          target='WeilZeroTwoPointV11'
-          overlay={'WeilZeroTranslationV11','WeilZeroTwoPointV11'}
+          target='WeilZeroKernelHermitianV11'
+          overlay={'WeilZeroTranslationV11','WeilZeroTwoPointV11','WeilZeroKernelHermitianV11'}
           mods={p.stem:p for p in src.glob('*.lean')}
           deps={}
           for m,p in mods.items():
@@ -218,6 +218,8 @@ jobs:
           lean -o "$OUT/WeilZeroTranslationV11.olean" "$OVERLAY/WeilZeroTranslationV11.lean"
           echo "=== FORK OVERLAY WeilZeroTwoPointV11 ==="
           lean -o "$OUT/WeilZeroTwoPointV11.olean" "$OVERLAY/WeilZeroTwoPointV11.lean"
+          echo "=== FORK OVERLAY WeilZeroKernelHermitianV11 ==="
+          lean -o "$OUT/WeilZeroKernelHermitianV11.olean" "$OVERLAY/WeilZeroKernelHermitianV11.lean"
           ! grep -R -n -E '\bsorry\b|\badmit\b' "$OVERLAY"
 
       - name: Save fork overlay dependency closure
@@ -225,7 +227,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v2-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-overlay-deps-v3-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
@@ -280,7 +282,7 @@ jobs:
           export LEAN_PATH="$OVERLAY_OUT:$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            if [ "$MOD" = "WeilZeroTranslationV11" ] || [ "$MOD" = "WeilZeroTwoPointV11" ]; then
+            if [ "$MOD" = "WeilZeroTranslationV11" ] || [ "$MOD" = "WeilZeroTwoPointV11" ] || [ "$MOD" = "WeilZeroKernelHermitianV11" ]; then
               echo "=== USE FORK OVERLAY $MOD ==="
               test -f "$OVERLAY_OUT/$MOD.olean"
               continue
