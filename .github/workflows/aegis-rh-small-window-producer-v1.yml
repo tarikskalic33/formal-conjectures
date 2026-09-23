@@ -147,9 +147,11 @@ jobs:
 
           cat > /tmp/RHSmallWindowProducerAudit.lean <<'EOF'
           import RHSmallWindowProducerV1
-          #print axioms AEGIS.RHSmallWindowProducerV1.window_one_over_128_implies_narrow_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.window_one_over_64_implies_retained_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.middle_three_block_eq_base_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_64_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_64_v1
           #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_128_v1
-          #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_128_v1
           EOF
           lean /tmp/RHSmallWindowProducerAudit.lean 2>&1 | tee evidence/small-window-axioms.log
           ! grep -F 'sorryAx' evidence/small-window-axioms.log
@@ -162,7 +164,7 @@ jobs:
           FORK_SOURCE_SHA=$SOURCE_SHA
           AEGIS_DEP_SHA=$AEGIS_DEP_SHA
           MATHLIB_SHA=$MATHLIB_SHA
-          TARGET=WindowArithmeticNonpositiveV1(1/128)
+          TARGET=WindowArithmeticNonpositiveV1(1/64)
           UNIVERSAL_FINAL_SIGN=NOT_CLAIMED
           RIEMANN_HYPOTHESIS=NOT_CLAIMED
           AUTHORITY_EFFECT=NONE
