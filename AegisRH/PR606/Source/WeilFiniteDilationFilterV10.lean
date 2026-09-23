@@ -238,7 +238,10 @@ theorem finiteDilationFilter_mellin_ne_zero_v10
 /-- The filter multiplier vanishes at s=0. -/
 theorem finiteDilationMultiplier_zero_v10 :
     finiteDilationMultiplierV10 0 = 0 := by
-  simp [finiteDilationMultiplierV10]
+  rw [finiteDilationMultiplier_factor_v10]
+  apply mul_eq_zero.mpr
+  left
+  norm_num
 
 /-- The filter multiplier vanishes at s=1. -/
 theorem finiteDilationMultiplier_one_v10 :
