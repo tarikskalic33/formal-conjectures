@@ -1,7 +1,6 @@
 import RestrictedWeilCriterionResidueCoefficientV11
 import RestrictedWeilCriterionPoleIsolationV10
 import MeromorphicIdentityPreconnectedV11
-import WeilRHImpliesFinalSignV11
 import RHZeroKernelLaplaceAnalyticV12
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.Convex
@@ -24,7 +23,6 @@ open AEGIS.MeromorphicIdentityPreconnectedV11
 open AEGIS.RHZeroKernelLaplaceV12
 open AEGIS.RHZeroKernelLaplaceAnalyticV12
 open AEGIS.WeilZeroTwoPointV11
-open AEGIS.WeilRHImpliesFinalSignV11
 
 theorem zero_coefficient_v10_eq_v11
     (g : WeilCompactSmoothGV1)
@@ -682,10 +680,5 @@ theorem final_sign_implies_rh_v13
   simpa [rho] using
     all_nontrivial_zeros_critical_of_final_sign_v13 h rho
 
-theorem final_sign_iff_rh_v13 :
-    FinalSignResidualV1 ↔ RiemannHypothesis := by
-  constructor
-  · exact final_sign_implies_rh_v13
-  · exact rh_implies_final_sign_residual_v11
 
 end AEGIS.V13Scratch
