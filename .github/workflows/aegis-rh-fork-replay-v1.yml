@@ -391,6 +391,92 @@ jobs:
           print("FINITE_DILATION_COMPAT_CHANGED", s != original)
           PY
 
+      - name: Apply Gamma X-space source-bound compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAMMA=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaXSpaceV10.lean"
+          python3 - "$GAMMA" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          replacements = [
+              (
+                  "    exact Real.one_lt_exp hv",
+                  "    have h := Real.exp_lt_exp.mpr hv\n    rwa [Real.exp_zero] at h",
+              ),
+              (
+                  "      Real.exp_neg, Real.exp_neg]",
+                  "      Real.exp_neg]",
+              ),
+              (
+                  """  field_simp [hxC0, hxden]
+            ring""",
+                  """  have hxe : Real.exp v = x := rfl
+            rw [hxe]
+            have hxden' : (-1 + (x : ℂ) ^ 2) ≠ 0 := by
+              rw [show (-1 + (x : ℂ) ^ 2) = (x : ℂ) ^ 2 - 1 by ring]
+              exact hxden
+            have hxinv : (1 - ((x : ℂ)⁻¹) ^ 2) ≠ 0 := by
+              rw [show (1 - ((x : ℂ)⁻¹) ^ 2) = ((x : ℂ) ^ 2 - 1) / (x : ℂ) ^ 2 by
+                field_simp]
+              exact div_ne_zero hxden (pow_ne_zero 2 hxC0)
+            field_simp""",
+              ),
+              (
+                  """            rw [← hscale]
+                      ring""",
+                  """            rw [← hscale]
+                      push_cast
+                      ring""",
+              ),
+              (
+                  "  field_simp [hx0, hx1, hx2]",
+                  """  have hx0C : (x : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hx0
+            have hx1C : (x : ℂ) + 1 ≠ 0 := by exact_mod_cast hx1
+            have hx2C : (x : ℂ) ^ 2 - 1 ≠ 0 := by exact_mod_cast hx2
+            have hx2C' : (-1 + (x : ℂ) ^ 2) ≠ 0 := by
+              rw [show (-1 + (x : ℂ) ^ 2) = (x : ℂ) ^ 2 - 1 by ring]
+              exact hx2C
+            have hx1C' : (1 + (x : ℂ)) ≠ 0 := by rw [add_comm]; exact hx1C
+            field_simp""",
+              ),
+              (
+                  """  rw [integral_const_mul, integral_ofReal,
+              integral_one_div_mul_one_add_v10]""",
+                  """  rw [integral_const_mul]
+            have hI :
+                (∫ a : ℝ in Ioi (1 : ℝ), (((1 / (a * (a + 1)) : ℝ)) : ℂ)) =
+                  (((∫ a : ℝ in Ioi (1 : ℝ), 1 / (a * (a + 1))) : ℝ) : ℂ) :=
+              integral_ofReal
+            rw [hI, integral_one_div_mul_one_add_v10]""",
+              ),
+              (
+                  "          rw [integral_sub harch.neg hcorr]",
+                  "          exact integral_sub harch.neg hcorr",
+              ),
+          ]
+
+          changed = 0
+          for old, new in replacements:
+              if old in s:
+                  s = s.replace(old, new, 1)
+                  changed += 1
+
+          assert "Real.one_lt_exp" not in s
+          assert "have h := Real.exp_lt_exp.mpr hv" in s
+          assert "have hxinv : (1 - ((x : ℂ)⁻¹) ^ 2) ≠ 0 := by" in s
+          assert "have hI :" in s
+          assert "exact integral_sub harch.neg hcorr" in s
+          assert changed >= 5, changed
+          p.write_text(s, encoding="utf-8")
+          print("GAMMA_XSPACE_COMPAT_CHANGED", changed)
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
