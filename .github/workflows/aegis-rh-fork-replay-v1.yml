@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  AEGIS_SHA: 1bdc7abc06d44f39f1379503caabf7e66a708956
+  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
@@ -73,209 +73,18 @@ jobs:
           ./elan-init -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Apply exact-head standalone Lean compatibility patch
+      - name: Verify source-bound RH compatibility fixes
         shell: bash
         run: |
           set -euo pipefail
           REAL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
           HALF=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesHalfPlaneV1.lean"
-          python3 - "$REAL" "$HALF" <<'PY'
-          from pathlib import Path
-          import sys
-
-          # --- Real-axis module: source-preserving compatibility only. ---
-          p=Path(sys.argv[1])
-          s=p.read_text()
-          original=s
-
-          anchor="import Mathlib.MeasureTheory.Integral.Bochner.Basic\n"
-          if anchor not in s:
-              s=s.replace(
-                  "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n",
-                  "import Mathlib.Analysis.SpecialFunctions.Log.Deriv\n"+anchor,
-                  1,
-              )
-
-          s=s.replace(
-              "exact norm_integral_le_integral_norm _",
-              "exact MeasureTheory.norm_integral_le_integral_norm _",
-              1,
-          )
-          s=s.replace(
-              "(deriv (Real.log ∘ Real.Gamma) x : ℂ)",
-              "((deriv (Real.log ∘ Real.Gamma) x : ℝ) : ℂ)",
-              1,
-          )
-          s=s.replace(
-              "(deriv Real.Gamma x : ℂ)",
-              "((deriv Real.Gamma x : ℝ) : ℂ)",
-              1,
-          )
-
-          old="have hmnonpos : -(m : ℝ) ≤ 0 := by positivity"
-          new="have hmnonpos : -(m : ℝ) ≤ 0 := neg_nonpos.mpr (Nat.cast_nonneg m)"
-          count=s.count(old)
-          assert count == 6, count
-          s=s.replace(old,new)
-
-          assert s.count("← deriv_log,") == 1
-          s=s.replace("← deriv_log,","← Real.deriv_log y,",1)
-          s=s.replace("differentiableAt_log hy.ne'","Real.differentiableAt_log hy.ne'")
-          s=s.replace("Real.deriv.log hGreal hGne","deriv.log hGreal hGne")
-
-          assert s.count("\n  push_cast\n") == 1
-          s=s.replace("\n  push_cast\n","\n  push_cast\n  rfl\n",1)
-          assert s.count("          push_cast\n") == 1
-          s=s.replace("          push_cast\n","          push_cast\n          rfl\n",1)
-
-          assert s != original
-          p.write_text(s)
-
-          # --- Half-plane module: exact 4.33.1 / 0df API elaboration repair. ---
-          p=Path(sys.argv[2])
-          s=p.read_text()
-          original=s
-
-          old="""theorem isOpen_rightHalfPlane_v1 : IsOpen RightHalfPlaneV1 := by
-            simpa [RightHalfPlaneV1] using
-              (Complex.continuous_re.isOpen_preimage (Ioi (0 : ℝ)) isOpen_Ioi)
-          """
-          new="""theorem isOpen_rightHalfPlane_v1 : IsOpen RightHalfPlaneV1 := by
-            rw [show RightHalfPlaneV1 = Complex.re ⁻¹' Ioi (0 : ℝ) by
-              ext z
-              simp [RightHalfPlaneV1]]
-            exact Complex.continuous_re.isOpen_preimage (Ioi (0 : ℝ)) isOpen_Ioi
-          """
-          assert old in s
-          s=s.replace(old,new,1)
-
-          # Three identical Nat-cast nonzero proofs; preserve source indentation.
-          src=s.splitlines()
-          dst=[]
-          i=0
-          n=0
-          while i < len(src):
-              if (
-                  src[i].strip() == "have hn1 : ((n : ℂ) + 1) ≠ 0 := by"
-                  and i + 3 < len(src)
-                  and src[i+1].strip() == "intro h"
-                  and src[i+2].strip() == "have hre := congrArg Complex.re h"
-                  and src[i+3].strip() == "simp at hre"
-              ):
-                  indent=src[i][:len(src[i])-len(src[i].lstrip())]
-                  dst.append(indent+"have hn1 : ((n : ℂ) + 1) ≠ 0 := by")
-                  dst.append(indent+"  norm_cast")
-                  dst.append(indent+"  omega")
-                  i += 4
-                  n += 1
-                  continue
-              dst.append(src[i])
-              i += 1
-          assert n == 3, n
-          s="\\n".join(dst) + ("\\n" if original.endswith("\\n") else "")
-
-          old_factor=(
-              "  field_simp [seriesTerm, hn1, hzn]\\n"
-              "  <;> ring"
-          )
-          new_factor=(
-              "  unfold seriesTerm\\n"
-              "  field_simp [hn1, hzn] <;> ring"
-          )
-          assert s.count(old_factor) == 1, ("factor", s.count(old_factor))
-          s=s.replace(old_factor,new_factor,1)
-
-          old_mem="simpa [U] using Metric.mem_ball_self hδpos"
-          assert s.count(old_mem) == 1, ("mem_ball", s.count(old_mem))
-          s=s.replace(
-              old_mem,
-              "simpa [U] using (Metric.mem_ball_self (x := z0) hδpos)",
-              1,
-          )
-
-          old_add="simpa [Complex.add_re] using h"
-          assert s.count(old_add) == 1, ("add_re", s.count(old_add))
-          s=s.replace(old_add,"simpa [Complex.add_re, add_comm] using h",1)
-
-          old_field=(
-              "            field_simp [hδpos.ne', hn1pos.ne']\\n"
-              "            ring"
-          )
-          new_field="            field_simp [hδpos.ne', hn1pos.ne'] <;> ring"
-          assert s.count(old_field) == 1, ("field", s.count(old_field))
-          s=s.replace(old_field,new_field,1)
-
-          old_mtest=(
-              "  have hdiff :\\n"
-              "      DifferentiableOn ℂ\\n"
-              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U :=\\n"
-              "    differentiableOn_tsum_of_summable_norm\\n"
-              "      hmajorant hterm hUopen hbound"
-          )
-          new_mtest=(
-              "  have hdiff :\\n"
-              "      DifferentiableOn ℂ\\n"
-              "        (fun z : ℂ => ∑' n : ℕ, seriesTerm z n) U := by\\n"
-              "    have hc :=\\n"
-              "      (tendstoUniformlyOn_tsum hmajorant hbound).tendstoLocallyUniformlyOn\\n"
-              "    refine hc.differentiableOn (Eventually.of_forall fun s => ?_) hUopen\\n"
-              "    exact DifferentiableOn.fun_sum fun i _ => hterm i"
-          )
-          assert s.count(old_mtest) == 1, ("mtest", s.count(old_mtest))
-          s=s.replace(old_mtest,new_mtest,1)
-
-          old_dig=(
-              "  have hDigammaAnal :\\n"
-              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
-              "    simpa [Complex.digamma_def, logDeriv_apply] using\\n"
-              "      hGammaAnal.deriv.div hGammaAnal\\n"
-              "        (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
-          )
-          new_dig=(
-              "  have hDigammaAnal :\\n"
-              "      AnalyticOnNhd ℂ Complex.digamma RightHalfPlaneV1 := by\\n"
-              "    rw [show Complex.digamma =\\n"
-              "        (fun z : ℂ => deriv Complex.Gamma z / Complex.Gamma z) by\\n"
-              "      funext z\\n"
-              "      simp [Complex.digamma_def, logDeriv_apply]]\\n"
-              "    exact hGammaAnal.deriv.div hGammaAnal\\n"
-              "      (fun z hz => Complex.Gamma_ne_zero_of_re_pos hz)"
-          )
-          assert s.count(old_dig) == 1, ("digamma", s.count(old_dig))
-          s=s.replace(old_dig,new_dig,1)
-
-          old_tend=(
-              "    have hzero :\\n"
-              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
-              "          atTop (𝓝 0) :=\\n"
-              "      tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ)"
-          )
-          new_tend=(
-              "    have hzero :\\n"
-              "        Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℂ))\\n"
-              "          atTop (𝓝 0) := by\\n"
-              "      simpa [Nat.cast_add, Nat.cast_one] using\\n"
-              "        (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℂ))"
-          )
-          assert s.count(old_tend) == 1, ("tendsto", s.count(old_tend))
-          s=s.replace(old_tend,new_tend,1)
-
-          old_last="    · simp [s])"
-          new_last=(
-              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\\n"
-              "      simp [s, hn])"
-          )
-          assert s.count(old_last) == 1, ("last_simp", s.count(old_last))
-          s=s.replace(old_last,new_last,1)
-
-          assert s != original
-          p.write_text(s)
-          PY
-
+          LAP=".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionLaplaceV10.lean"
           grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$REAL"
-          grep -F 'rw [show RightHalfPlaneV1 = Complex.re ⁻¹' "$HALF"
-          grep -F 'tendstoUniformlyOn_tsum hmajorant hbound' "$HALF"
-          grep -F 'rw [show Complex.digamma =' "$HALF"
+          grep -F 'Nat.cast_add_one_ne_zero' "$HALF"
+          grep -F 'Complex.differentiableOn_tsum_of_summable_norm' "$HALF"
+          grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
+          test "$(git -C .aegis status --porcelain)" = ""
 
       - name: Fetch exact Mathlib cache
         shell: bash
