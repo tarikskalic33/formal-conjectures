@@ -81,7 +81,15 @@ jobs:
           lake exe cache get
           lean --version
 
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
       - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -122,6 +130,13 @@ jobs:
           PY
           lake exe cache get
           lake build             Hadamard.OrderOne.LogDerivMultiplicity             Lc.LiCriterion.XiGrowth             Lc.LiCriterion.HadamardSummabilityBridge             Lc.LiCriterion.HadamardBridge
+
+      - name: Save exact Li provider build
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Compute full #606 fork closure
         shell: bash
@@ -182,6 +197,15 @@ jobs:
           ))
           PY
 
+      - name: Restore incremental PR606 fork closure cache
+        id: pr606-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-pr606
+          key: pr606-fork-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_HEAD_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+          restore-keys: |
+            pr606-fork-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_HEAD_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-
+
       - name: Compile full #606 fork closure
         shell: bash
         run: |
@@ -193,15 +217,35 @@ jobs:
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
 
+          dirty=0
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
             FILE="$BASE/$MOD.lean"
             KIND="BASE580"
             if [ -f "$SRC/$MOD.lean" ]; then FILE="$SRC/$MOD.lean"; KIND="PR606"; fi
             if [ -f "$COMPAT/$MOD.lean" ]; then FILE="$COMPAT/$MOD.lean"; KIND="COMPAT"; fi
+            FILE_SHA="$(sha256sum "$FILE" | awk '{print $1}')"
+            STAMP="$OUT/$MOD.source.sha256"
+            if [ "$dirty" -eq 0 ] && [ -f "$OUT/$MOD.olean" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$FILE_SHA" ]; then
+              echo "=== $KIND $MOD (CACHED) ==="
+              continue
+            fi
+            dirty=1
             echo "=== $KIND $MOD ==="
-            lean -o "$OUT/$MOD.olean" "$FILE"
+            if lean -o "$OUT/$MOD.olean" "$FILE"; then
+              printf '%s\n' "$FILE_SHA" > "$STAMP"
+            else
+              rm -f "$OUT/$MOD.olean" "$STAMP"
+              exit 1
+            fi
           done < "$GITHUB_WORKSPACE/.pr606-order.txt"
+
+      - name: Save incremental PR606 fork closure cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-pr606
+          key: pr606-fork-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_HEAD_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Compile upstream #606 spec
         shell: bash
