@@ -43,7 +43,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Filter Topology Complex MeasureTheory
-open scoped BigOperators
+open scoped BigOperators ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -51,6 +51,7 @@ noncomputable section
 namespace AEGIS.WeilTranslatedZeroSeriesV10
 
 open AEGIS.WeilAutocorrelationMellinFactorV10
+open AEGIS.WeilLogCoordinateIsometryV21
 open AEGIS.WeilMixedMellinFactorV10
 open AEGIS.WeilMixedClosureV2
 open AEGIS.WeilMixedAlgebraV2
@@ -128,8 +129,8 @@ theorem zeroPairCoeff_eq_actual_zero_summand_v10
         (WeilAutocorrelationV1 g) rho := by
   symm
   exact
-    AEGIS.WeilActualZeroSummandWitnessV10
-      .actual_zero_summand_eq_paired_mellin_v10 g rho
+    AEGIS.WeilActualZeroSummandWitnessV10.actual_zero_summand_eq_paired_mellin_v10
+      g rho
 
 private theorem moment_mellin_endpoints_v10
     (g : WeilCompactSmoothGV1)
@@ -171,7 +172,8 @@ theorem B_eq_neg_mixed_zero_tsum_v10
       mellin (mixed a b) 0 + mellin (mixed a b) 1 -
         B a b at hEF
   rw [hends.1, hends.2, zero_add, zero_sub] at hEF
-  exact neg_eq_iff_eq_neg.mpr hEF.symm
+  have hneg := congrArg Neg.neg hEF
+  simpa using hneg.symm
 
 /-- Pointwise translated mixed zero summand. -/
 theorem translated_mixed_zero_summand_v10
