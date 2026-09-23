@@ -66,7 +66,10 @@ def dilatePacketV11
       tsupport_comp_subset_preimage
         (f := fun y : ℝ => y * a) f.1 (by fun_prop) hx
     have hpos : 0 < x * a := f.2.2.2 hxa
-    nlinarith
+    rcases mul_pos_iff.mp hpos with h | h
+    · exact h.1
+    · exfalso
+      linarith [ha, h.2]
 
 @[simp] theorem dilatePacketV11_apply
     (f : WeilCompactSmoothGV1) (a : ℝ) (ha : 0 < a) (x : ℝ) :
@@ -90,7 +93,11 @@ def FiniteDilationFilterV11
     (f : WeilCompactSmoothGV1) (x : ℝ) :
     (FiniteDilationFilterV11 f).1 x =
       f.1 x - 3 * f.1 (x * 2) + 2 * f.1 (x * 4) := by
-  simp [FiniteDilationFilterV11, AEGIS.WeilMixedAlgebraV2.combo]
+  change
+    (1 : ℂ) * f.1 x +
+        (-3 : ℂ) * f.1 (x * 2) +
+        (2 : ℂ) * f.1 (x * 4) =
+      f.1 x - 3 * f.1 (x * 2) + 2 * f.1 (x * 4)
   ring
 
 /-- Exact Mellin multiplier identity for the finite-dilation filter. -/
@@ -141,8 +148,20 @@ theorem mellin_finiteDilationFilter_v11
           mellin (fun x : ℝ => (2 : ℂ) * f4.1 x) s) :=
     hasMellin_add hfirst.1 htwo
 
+  have hneg3M :
+      mellin (fun x : ℝ => (-3 : ℂ) * f2.1 x) s =
+        (-3 : ℂ) * mellin f2.1 s := by
+    simpa [smul_eq_mul] using
+      (mellin_const_smul f2.1 s (-3 : ℂ))
+  have htwoM :
+      mellin (fun x : ℝ => (2 : ℂ) * f4.1 x) s =
+        (2 : ℂ) * mellin f4.1 s := by
+    simpa [smul_eq_mul] using
+      (mellin_const_smul f4.1 s (2 : ℂ))
+  have hfirstEq := hfirst.2
+  rw [hneg3M] at hfirstEq
   have hlin := hall.2
-  rw [mellin_const_smul, mellin_const_smul] at hlin
+  rw [htwoM] at hlin
 
   change
     mellin (FiniteDilationFilterV11 f).1 s =
@@ -152,22 +171,15 @@ theorem mellin_finiteDilationFilter_v11
         fun x : ℝ =>
           (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by
     funext x
-    simp [FiniteDilationFilterV11, f2, f4,
-      AEGIS.WeilMixedAlgebraV2.combo]
+    change
+      (1 : ℂ) * f.1 x +
+          (-3 : ℂ) * f2.1 x +
+          (2 : ℂ) * f4.1 x =
+        (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x
     ring
-  rw [hfun, hlin, h2, h4]
+  rw [hfun, hlin, hfirstEq, h2, h4]
   unfold FiniteDilationFactorV11
   ring
-
-@[simp] theorem finiteDilationFactor_zero_v11 :
-    FiniteDilationFactorV11 0 = 0 := by
-  simp [FiniteDilationFactorV11]
-
-@[simp] theorem finiteDilationFactor_one_v11 :
-    FiniteDilationFactorV11 1 = 0 := by
-  simp [FiniteDilationFactorV11, Complex.cpow_neg_one]
-  norm_num
-
 
 /-- Algebraic factorization of the finite-dilation multiplier. -/
 theorem finiteDilationFactor_factor_v11 (s : ℂ) :
@@ -197,6 +209,20 @@ theorem finiteDilationFactor_factor_v11 (s : ℂ) :
   rw [FiniteDilationFactorV11, h4, h2]
   ring
 
+@[simp] theorem finiteDilationFactor_zero_v11 :
+    FiniteDilationFactorV11 0 = 0 := by
+  rw [finiteDilationFactor_factor_v11]
+  apply mul_eq_zero.mpr
+  left
+  norm_num
+
+@[simp] theorem finiteDilationFactor_one_v11 :
+    FiniteDilationFactorV11 1 = 0 := by
+  rw [finiteDilationFactor_factor_v11]
+  apply mul_eq_zero.mpr
+  right
+  norm_num [Complex.cpow_neg_one]
+
 /-- NEW LOAD-BEARING PRODUCER: the two-moment filter does not kill any
 Mellin value in the strict critical strip. -/
 theorem finiteDilationFactor_ne_zero_in_strip_v11
@@ -207,19 +233,32 @@ theorem finiteDilationFactor_ne_zero_in_strip_v11
   · intro h
     have heq : (2 : ℂ) ^ (-s) = 1 := by
       exact (sub_eq_zero.mp h).symm
+    have hnormEq :
+        ‖(2 : ℂ) ^ (-s)‖ = (2 : ℝ) ^ (-s.re) := by
+      simpa using
+        (Complex.norm_cpow_eq_rpow_re_of_pos
+          (x := (2 : ℝ))
+          (by norm_num : (0 : ℝ) < 2)
+          (-s))
     have hnorm :
         ‖(2 : ℂ) ^ (-s)‖ < 1 := by
-      rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
-      simp only [neg_re]
+      rw [hnormEq]
       exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)
     rw [heq, norm_one] at hnorm
     exact (lt_irrefl (1 : ℝ)) hnorm
   · intro h
     have heq : (2 : ℂ) ^ (1 - s) = 1 := by
       exact (sub_eq_zero.mp h).symm
+    have hnormEq :
+        ‖(2 : ℂ) ^ (1 - s)‖ = (2 : ℝ) ^ ((1 - s).re) := by
+      simpa using
+        (Complex.norm_cpow_eq_rpow_re_of_pos
+          (x := (2 : ℝ))
+          (by norm_num : (0 : ℝ) < 2)
+          (1 - s))
     have hnorm :
         1 < ‖(2 : ℂ) ^ (1 - s)‖ := by
-      rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+      rw [hnormEq]
       apply Real.one_lt_rpow (by norm_num)
       simp only [sub_re, one_re]
       linarith
