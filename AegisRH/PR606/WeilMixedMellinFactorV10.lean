@@ -76,23 +76,18 @@ theorem logCrossJoint_support_subset_v10
     Function.support (logCrossJointV10 a b z) ⊆
       logCrossJointEnvelopeV10 a b := by
   intro p hp
-  have hprod :
-      logLift a.1 (p.1 + p.2) *
-        conj (logLift b.1 p.2) ≠ 0 := by
-    intro h
-    apply hp
-    unfold logCrossJointV10
-    rw [h, mul_zero]
   have ha : logLift a.1 (p.1 + p.2) ≠ 0 := by
-    exact fun h => hprod (by simp [h])
+    intro hz
+    apply hp
+    simp [logCrossJointV10, hz]
   have hb : logLift b.1 p.2 ≠ 0 := by
-    exact fun h => hprod (by simp [h])
+    intro hz
+    apply hp
+    simp [logCrossJointV10, hz]
   refine
     ⟨(p.1 + p.2, p.2),
       ⟨subset_tsupport _ ha, subset_tsupport _ hb⟩, ?_⟩
-  apply Prod.ext
-  · simp
-  · rfl
+  apply Prod.ext <;> simp <;> ring
 
 theorem logCrossJoint_hasCompactSupport_v10
     (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -118,15 +113,15 @@ theorem logCrossJoint_fubini_v10
       ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
       ∫ u : ℝ,
         ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
-  let F : ℝ → ℝ → ℂ := fun v u => logCrossJointV10 a b z (v, u)
-  have hcont : Continuous F.uncurry := by
-    simpa [F, Function.uncurry] using
-      (logCrossJoint_continuous_v10 a b z)
-  have hcompact : HasCompactSupport F.uncurry := by
-    simpa [F, Function.uncurry] using
-      (logCrossJoint_hasCompactSupport_v10 a b z)
-  simpa [F] using
-    (integral_integral_swap_of_hasCompactSupport hcont hcompact)
+  have hprod :
+      Integrable (logCrossJointV10 a b z)
+        (volume.prod volume) := by
+    exact
+      (logCrossJoint_continuous_v10 a b z).integrable_of_hasCompactSupport
+        (logCrossJoint_hasCompactSupport_v10 a b z)
+  exact integral_integral_swap
+    (f := fun v u => logCrossJointV10 a b z (v, u))
+    (by simpa [Function.uncurry_def] using hprod)
 
 theorem logCross_transform_factor_v10
     (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -135,49 +130,59 @@ theorem logCross_transform_factor_v10
         logCrossV28 a b v) =
       logLaplaceV10 a z *
         conj (logLaplaceV10 b (-conj z)) := by
-  have hfub := logCrossJoint_fubini_v10 a b z
-  have hleft :
-      (∫ v : ℝ,
-        ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
-      ∫ v : ℝ,
-        Complex.exp (z * (v : ℂ)) *
-          logCrossV28 a b v := by
-    apply integral_congr_ae
-    exact Filter.Eventually.of_forall (fun v => by
-      unfold logCrossJointV10 logCrossV28
-      rw [integral_const_mul])
-  rw [hleft] at hfub
+  have hprod :
+      Integrable (logCrossJointV10 a b z)
+        (volume.prod volume) := by
+    exact
+      (logCrossJoint_continuous_v10 a b z).integrable_of_hasCompactSupport
+        (logCrossJoint_hasCompactSupport_v10 a b z)
   calc
     (∫ v : ℝ,
       Complex.exp (z * (v : ℂ)) *
         logCrossV28 a b v)
       =
+    ∫ v : ℝ,
       ∫ u : ℝ,
-        ∫ v : ℝ, logCrossJointV10 a b z (v,u) := hfub
-    _ =
-      ∫ u : ℝ,
-        (Complex.exp (-z * (u : ℂ)) *
-          logLaplaceV10 a z) *
-          conj (logLift b.1 u) := by
+        logCrossJointV10 a b z (v, u) := by
           apply integral_congr_ae
-          exact Filter.Eventually.of_forall (fun u => by
-            unfold logCrossJointV10
-            rw [← integral_mul_const]
-            have hs := logLaplace_shift_v10 a z u
-            rw [hs]
-            ring)
+          filter_upwards [] with v
+          unfold logCrossJointV10 logCrossV28
+          rw [← integral_const_mul]
+          congr 1
+          funext u
+          simp only [Prod.fst, Prod.snd]
+          ring
+    _ =
+    ∫ u : ℝ,
+      ∫ v : ℝ,
+        logCrossJointV10 a b z (v, u) := by
+          exact integral_integral_swap
+            (f := fun v u => logCrossJointV10 a b z (v, u))
+            (by simpa [Function.uncurry_def] using hprod)
+    _ =
+    ∫ u : ℝ,
+      (Complex.exp (-z * (u : ℂ)) *
+        logLaplaceV10 a z) *
+        conj (logLift b.1 u) := by
+          apply integral_congr_ae
+          filter_upwards [] with u
+          unfold logCrossJointV10
+          simp only [Prod.fst, Prod.snd]
+          rw [integral_mul_const]
+          rw [logLaplace_shift_v10 a z u]
     _ =
       logLaplaceV10 a z *
         (∫ u : ℝ,
           Complex.exp (-z * (u : ℂ)) *
             conj (logLift b.1 u)) := by
-          rw [← integral_const_mul]
-          apply integral_congr_ae
-          exact Filter.Eventually.of_forall (fun u => by ring)
+              rw [← integral_const_mul]
+              apply integral_congr_ae
+              filter_upwards [] with u
+              ring
     _ =
       logLaplaceV10 a z *
         conj (logLaplaceV10 b (-conj z)) := by
-          rw [reflected_logLaplace_integral_v10]
+              rw [reflected_logLaplace_integral_v10]
 
 /-- Exact mixed Mellin factorization. -/
 theorem mellin_mixed_factor_v10
@@ -202,8 +207,7 @@ theorem mellin_mixed_factor_v10
           Complex.exp ((s - 1 / 2) * (v : ℂ)) *
             logCrossV28 a b v
       have hcross := logCross_eq_mixed_v28 a b v
-      rw [hcross]
-      rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]
+      rw [hcross, Complex.ofReal_exp]
       rw [← mul_assoc, ← Complex.exp_add]
       congr 2 <;> push_cast <;> ring)
   rw [hcoord, logCross_transform_factor_v10]
