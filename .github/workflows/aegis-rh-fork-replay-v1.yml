@@ -241,6 +241,90 @@ jobs:
           path: .li/.lake/build
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
+      - name: Compile full PR606 131-module Lean DAG
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OVERLAY="$GITHUB_WORKSPACE/AegisRH/Overlay"
+          OUT="$GITHUB_WORKSPACE/.lake/pr606-full-131"
+          EVID="$GITHUB_WORKSPACE/evidence/pr606-full-131"
+          mkdir -p "$OUT" "$EVID"
+
+          python3 - "$SRC" "$EVID/order.txt" <<'PY'
+          from pathlib import Path
+          import re, sys
+
+          root=Path(sys.argv[1])
+          out=Path(sys.argv[2])
+          files={p.stem:p for p in root.glob("*.lean")}
+          assert len(files)==131, len(files)
+
+          pat=re.compile(r"^\s*import\s+(.+?)\s*$")
+          deps={}
+          for name,path in files.items():
+              local=[]
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m=pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf=token.split(".")[-1]
+                      if leaf in files:
+                          local.append(leaf)
+              deps[name]=sorted(set(local))
+
+          temp,done,order=set(),set(),[]
+          def visit(name):
+              if name in done:
+                  return
+              if name in temp:
+                  raise RuntimeError("cycle:"+name)
+              temp.add(name)
+              for dep in deps[name]:
+                  visit(dep)
+              temp.remove(name)
+              done.add(name)
+              order.append(name)
+
+          for name in sorted(files):
+              visit(name)
+          assert len(order)==131, len(order)
+          out.write_text("\n".join(order)+"\n",encoding="utf-8")
+          print("PR606_FULL_DAG_COUNT",len(order))
+          PY
+
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+
+          : > "$EVID/status.tsv"
+          passed=0
+          while IFS= read -r MOD; do
+            [ -z "$MOD" ] && continue
+            FILE="$SRC/$MOD.lean"
+            KIND="SOURCE"
+            if [ -f "$OVERLAY/$MOD.lean" ]; then
+              FILE="$OVERLAY/$MOD.lean"
+              KIND="OVERLAY"
+            fi
+            echo "=== PR606 FULL 131: $MOD ($KIND) ==="
+            if lean -o "$OUT/$MOD.olean" "$FILE" >"$EVID/$MOD.log" 2>&1; then
+              printf '%s\tPASS\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              passed=$((passed+1))
+            else
+              printf '%s\tFAIL\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              cat "$EVID/$MOD.log"
+              printf 'FIRST_FAIL_MODULE=%s\nFIRST_FAIL_KIND=%s\nPASSED_BEFORE_FAIL=%s\n'                 "$MOD" "$KIND" "$passed" > "$EVID/FIRST_FAILURE.txt"
+              echo "PR606_FULL_131_FIRST_FAIL=$MOD"
+              echo "PR606_FULL_131_PASSED_BEFORE_FAIL=$passed"
+              exit 1
+            fi
+          done < "$EVID/order.txt"
+
+          printf 'FULL_131_REPLAY=PASS\nMODULE_COUNT=131\n' > "$EVID/DISPOSITION.txt"
+          echo "PR606_FULL_131_REPLAY=PASS"
+          echo "PR606_FULL_131_MODULE_COUNT=$passed"
+
       - name: Restore fork overlay dependency closure
         id: overlay-deps-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
