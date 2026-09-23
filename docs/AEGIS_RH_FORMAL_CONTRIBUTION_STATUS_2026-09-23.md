@@ -107,6 +107,40 @@ equivalently the repository-wide final sign residual on the full moment-zero com
 
 Finite three/four-packet coercivity, zero-shift equivalence, translated-kernel bounds, or conditional O₀ globalization are strong ingredients, but none is silently treated as this universal producer.
 
+## Closed compact-support exhaustion / globalization step
+
+A separate AEGIS branch, `proof/rh-window-exhaustion-v1` at
+`05b6a49692baa7b88cc580c8bbf52e6eb6658450`, closes an important logical
+globalization boundary.
+
+Its theorem
+`weil_compact_smooth_negativity_iff_all_windows_v1` proves that the full
+compact-smooth moment-zero sign obligation is equivalent to the sign obligation
+on every finite symmetric logarithmic support window. The subsequent theorem
+`weil_compact_smooth_negativity_iff_positive_nat_windows_v1` reduces the
+continuum of positive real windows to the cofinal countable family of positive
+integer windows.
+
+This means **compact-support exhaustion itself is closed**: no density or
+limit argument is needed merely to pass from all finite windows to the full
+repository packet class.
+
+The remaining producer is sharper and narrower:
+
+```text
+for every positive window radius n,
+prove WindowArithmeticNonpositiveV1 n
+```
+
+That distinction matters. “Globalization/exhaustion” is not the same open
+problem as “prove the sign on each arbitrary window.” The former has a formal
+theorem; the latter is the load-bearing analytic producer.
+
+The older O₀/Coq globalization lane is a different abstraction: it proves
+`GlobalizationReadyV1 → GlobalWeilPositivityV1` and still requires a
+`GlobalizationReadyV1` inhabitant. It should not be conflated with the
+already-closed Lean compact-window exhaustion theorem.
+
 ## Alternative terminal: Li criterion
 
 AEGIS also contains a provider-bound Li-criterion terminal that proves the exact equivalence
