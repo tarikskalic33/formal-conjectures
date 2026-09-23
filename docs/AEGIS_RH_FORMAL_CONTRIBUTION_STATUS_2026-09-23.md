@@ -78,6 +78,46 @@ A parallel AEGIS closure-swarm branch (`4f1b52a454be9779bf39245cb4343d8d8e4b7270
 
 These results are recorded as a separate producer lane and are not silently promoted into the `589adf...` proof source.
 
+## Exact-head verified radius-1/128 window producer
+
+AEGIS PR #659 source head
+`46807c98e13398fa884a399e3559e7a9e7f9d5c5` has now been replayed independently on the fork.
+
+Hosted replay:
+- fork PR: #14
+- workflow run: `35929015988`
+- job: `107411211400`
+- Lean: `4.33.1`
+- Mathlib: `0df444a360eaa60ab8c11dca51a86af692955474`
+- exact module closure rebuilt: 34 modules
+- source/head binding: PASS
+- compile: PASS
+- `sorryAx` rejection: PASS
+- evidence upload: PASS
+
+The following exact-source declarations were kernel elaborated and audited:
+
+```lean
+AEGIS.RHSmallWindowProducerV1.window_one_over_128_implies_narrow_v1
+AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_128_v1
+AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_128_v1
+```
+
+Each printed axiom footprint is exactly:
+
+```text
+[propext, Classical.choice, Quot.sound]
+```
+
+Therefore the verified mathematical transition is:
+
+```text
+WindowArithmeticNonpositiveV1 (1/128) = VERIFIED
+∀ L, 0 ≤ L → L ≤ 1/128 → WindowArithmeticNonpositiveV1 L = VERIFIED
+```
+
+This does not by itself establish arbitrary positive-window nonpositivity. Combined with the already-formalized compact-window exhaustion theorem, it sharpens the remaining analytic target to **cofinal window growth** rather than a density/globalization problem.
+
 ## Current hosted replay boundary
 
 Hosted execution is no longer globally absent: the fork has produced real GitHub-hosted jobs with non-empty runner steps and has compiled successive parts of the 131-module PR606 closure.
@@ -299,7 +339,7 @@ These are presented as **novelty candidates**, not priority claims.
 
 ```text
 RH_SOURCE_DAG        = ADVANCED
-HOSTED_FORK_REPLAY   = EXECUTED_PARTIALLY
+HOSTED_FORK_REPLAY   = EXECUTED_WITH_VERIFIED_1_OVER_128_WINDOW
 RH_CERTIFICATE       = NOT_YET_INHABITED
 UNIVERSAL_PRODUCER   = OPEN
 RESTRICTED_IMPL      = OPEN_AS_TERMINAL_TERM
