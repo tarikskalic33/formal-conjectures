@@ -14,9 +14,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: signed-four-block-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 env:
-  SOURCE_SHA: 62c7aba1115c5826a87c6acdcbe82786bcc3b42b
-  PARENT_SHA: e61933f4a4eec0f01b41b09d7bf6c0c3f5aed598
+  SOURCE_SHA: a7b94b2888fd5c47ec181b997547ac87a6fbcf60
+  PARENT_SHA: 085a0a03af8f6676eeae678489bef3473c1f8fcc
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   TARGET_MODULE: RHSignedFourBlockRealityV1
@@ -65,7 +69,22 @@ jobs:
           assert d["all_ones_rayleigh_lower"] == {"numerator":46617,"denominator":40000}
           assert d["old_certificate_gap"] == {"numerator":5417,"denominator":40000}
           assert d["old_certificate_sufficient"] is False
+          assert d["old_comparison_ldlt_pivots"] == [
+              {"numerator":-103,"denominator":100},
+              {"numerator":-2002,"denominator":2575},
+              {"numerator":-236161,"denominator":800800},
+              {"numerator":14004033,"denominator":4723220},
+          ]
+          assert d["old_comparison_inertia"] == [1,3,0]
+          assert d["narrow_comparison_ldlt_pivots"] == [
+              {"numerator":-32,"denominator":25},
+              {"numerator":-13783,"denominator":12800},
+              {"numerator":-269534,"denominator":344575},
+              {"numerator":-82023,"denominator":1134880},
+          ]
+          assert d["narrow_comparison_inertia"] == [0,4,0]
           print("SIGNED_FOUR_BLOCK_103_OVER_100_NO_GO=PASS")
+          print("SIGNED_FOUR_BLOCK_COMPARISON_INERTIA=PASS")
           PY
 
       - name: Obtain exact Lean and Mathlib cache
@@ -164,7 +183,7 @@ jobs:
           PARENT_SHA=$PARENT_SHA
           TARGET_MODULE=$TARGET_MODULE
           CLAIM=REAL_SYMMETRIC_TOEPLITZ_REDUCTION_FOR_GFINE_DYADIC_B
-          SCHUR_INERTIA=NOT_YET_COMPUTED
+          COMPARISON_SCHUR_INERTIA=EXACT_RATIONAL_RECEIPT
           GLOBAL_WEIL_SIGN=NOT_CLAIMED
           RH=NOT_CLAIMED
           AUTHORITY_EFFECT=NONE
