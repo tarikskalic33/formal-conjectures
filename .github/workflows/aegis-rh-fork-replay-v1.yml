@@ -164,7 +164,7 @@ jobs:
               ):
                   indent=src[i][:len(src[i])-len(src[i].lstrip())]
                   dst.append(indent+"have hn1 : ((n : ℂ) + 1) ≠ 0 := by")
-                  dst.append(indent+"  norm_num")
+                  dst.append(indent+"  norm_cast")
                   i += 4
                   n += 1
                   continue
@@ -261,10 +261,8 @@ jobs:
 
           old_last="    · simp [s])"
           new_last=(
-              "    · have hn : (((n + 1 : ℕ) : ℂ)) ≠ 0 := by norm_num\n"
-              "      have hn' : ((n : ℂ) + 1) ≠ 0 := by\n"
-              "        simpa [Nat.cast_add, Nat.cast_one] using hn\n"
-              "      simp [s, hn, hn'])"
+              "    · have hn' : ((n : ℂ) + 1) ≠ 0 := by norm_cast\n"
+              "      simp [s, hn'])"
           )
           assert s.count(old_last) == 1, ("last_simp", s.count(old_last))
           s=s.replace(old_last,new_last,1)
