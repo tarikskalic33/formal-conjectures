@@ -103,7 +103,45 @@ jobs:
               json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           Path("evidence/pr606-terminal-modules.txt").write_text(
               "\n".join(order) + "\n", encoding="utf-8")
+
+          external_imports = {}
+          for name, path in files.items():
+              ext = []
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m = pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf = token.split(".")[-1]
+                      if leaf not in files:
+                          ext.append(token)
+              if ext:
+                  external_imports[name] = sorted(set(ext))
+          Path("evidence/pr606-external-imports.json").write_text(
+              json.dumps(external_imports, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+          # Full local DAG order across all 131 modules, not a terminal subset.
+          temp_all, done_all, full_order = set(), set(), []
+          def visit_all(name):
+              if name in done_all:
+                  return
+              if name in temp_all:
+                  raise RuntimeError(f"cycle:{name}")
+              temp_all.add(name)
+              for dep in deps[name]:
+                  visit_all(dep)
+              temp_all.remove(name)
+              done_all.add(name)
+              full_order.append(name)
+          for name in sorted(files):
+              visit_all(name)
+          assert len(full_order) == 131, len(full_order)
+          Path("evidence/pr606-all-131-topological-order.txt").write_text(
+              "\n".join(full_order) + "\n", encoding="utf-8")
+
           print("PR606_LEAN_INVENTORY_COUNT=" + str(len(files)))
+          print("PR606_FULL_LOCAL_DAG_COUNT=" + str(len(full_order)))
+          print("PR606_EXTERNAL_IMPORT_MODULE_COUNT=" + str(len(external_imports)))
           print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT=" + str(len(order)))
           print("PR606_MODULES_OUTSIDE_TERMINAL_CLOSURE=" + str(len(outside)))
           print("PR606_OUTSIDE_MODULES_BEGIN")
