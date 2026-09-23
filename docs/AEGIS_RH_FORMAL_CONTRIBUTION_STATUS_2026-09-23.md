@@ -23,7 +23,7 @@ It does **not** mark the Riemann Hypothesis as solved. It records substantially 
 ## Exact sources
 
 - External target repository: `google-deepmind/formal-conjectures`
-- External target: `FormalConjectures/Millenium/RiemannHypothesis.lean::riemannHypothesis`
+- External target: `FormalConjectures/Millennium/RiemannHypothesis.lean::riemannHypothesis`
 - Target type: Mathlib `RiemannHypothesis`
 - Lean toolchain: `leanprover/lean4:v4.33.1`
 - Mathlib pin: `0df444a360eaa60ab8c11dca51a86af692955474`
@@ -147,6 +147,61 @@ The older O₀/Coq globalization lane is a different abstraction: it proves
 `GlobalizationReadyV1 → GlobalWeilPositivityV1` and still requires a
 `GlobalizationReadyV1` inhabitant. It should not be conflated with the
 already-closed Lean compact-window exhaustion theorem.
+
+## Hosted unconditional small-window producer
+
+The fork now has a real hosted-kernel receipt for an unconditional finite-window sign producer.
+
+Exact fork head:
+
+`448e4174a068f33d3457a390d721ad05bd113e55`
+
+Hosted run:
+
+`35920869409` — **SUCCESS**
+
+The run compiled the dependency chain, `WeilWindowExhaustionV1`, and
+`RHSmallWindowProducerV1`, then audited these theorems:
+
+- `window_one_over_64_implies_retained_v1`
+- `middle_three_block_eq_base_v1`
+- `windowArithmeticNonpositive_one_over_64_v1`
+- `windowArithmeticNonpositive_of_nonneg_le_one_over_64_v1`
+- `windowArithmeticNonpositive_one_over_128_v1`
+
+The observed axiom footprint is only
+`propext, Classical.choice, Quot.sound`; no `sorryAx` was observed.
+
+The strongest unconditional statement in this receipt is
+
+```lean
+WindowArithmeticNonpositiveV1 (1 / 64 : ℝ)
+```
+
+and by monotonicity every nonnegative smaller window inherits it.
+
+This is a genuine producer, but it is not silently promoted to the all-window
+producer required by the exhaustion equivalence.
+
+## Direct DeepMind target lane
+
+The exact upstream target currently lives at
+
+`FormalConjectures/Millennium/RiemannHypothesis.lean`
+
+and has been bound by SHA/blob in dedicated direct-target workflows.
+
+The fork contains direct target replay branches that replace only the
+`riemannHypothesis : RiemannHypothesis` body with an AEGIS terminal import and
+attempt to compile the exact target under the pinned Lean/Mathlib environment.
+
+This separates two questions cleanly:
+
+1. does the AEGIS terminal dependency closure kernel-replay?
+2. does the actual DeepMind theorem body typecheck and audit without `sorryAx`?
+
+A target run is not counted as target proof evidence unless it reaches the
+second step.
 
 ## Alternative terminal: Li criterion
 
