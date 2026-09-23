@@ -40,6 +40,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Complex
+open scoped ComplexConjugate
 set_option autoImplicit false
 noncomputable section
 
