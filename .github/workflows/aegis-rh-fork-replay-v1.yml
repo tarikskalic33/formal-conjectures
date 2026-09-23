@@ -293,29 +293,51 @@ jobs:
           s = p.read_text(encoding="utf-8")
           original = s
 
-          old = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
-            simpa only [neg_sub, neg_zero] using h"""
-          new = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+          robust_tendsto = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
             convert h using 1 <;> simp [sub_eq_add_neg]"""
-          assert s.count(old) == 1, s.count(old)
-          s = s.replace(old, new, 1)
 
-          old = """    have hx' : (1 : ℝ) < x := hx
+          old_tendsto_v1 = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+            simpa only [neg_sub, neg_zero] using h"""
+          if old_tendsto_v1 in s:
+              s = s.replace(old_tendsto_v1, robust_tendsto, 1)
+
+          old_tendsto_v2 = """  simpa only [neg_sub] using
+              (Real.tendsto_log_comp_add_sub_log 1).neg"""
+          if old_tendsto_v2 in s:
+              s = s.replace(old_tendsto_v2, robust_tendsto, 1)
+
+          old_hpoint_v1 = """    have hx' : (1 : ℝ) < x := hx
               have hx0 : x ≠ 0 := by linarith
               have hx1 : x + 1 ≠ 0 := by linarith"""
-          new = """    have hx' : (1 : ℝ) < x := hx
+          new_hpoint = """    have hx' : (1 : ℝ) < x := hx
               have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
               have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])"""
-          assert s.count(old) == 1, s.count(old)
-          s = s.replace(old, new, 1)
+          if old_hpoint_v1 in s:
+              s = s.replace(old_hpoint_v1, new_hpoint, 1)
 
-          old = "    _ = Real.log 2 := by norm_num"
-          new = "    _ = Real.log 2 := by simp"
-          assert s.count(old) == 1, s.count(old)
-          s = s.replace(old, new, 1)
+          old_hpoint_v2 = """    intro x hx
+              have hx0 : x ≠ 0 := by linarith
+              have hx1 : x + 1 ≠ 0 := by linarith"""
+          new_hpoint_v2 = """    intro x hx
+              have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
+              have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])"""
+          if old_hpoint_v2 in s:
+              s = s.replace(old_hpoint_v2, new_hpoint_v2, 1)
 
-          assert s != original
+          s = s.replace(
+              "    _ = Real.log 2 := by norm_num",
+              "    _ = Real.log 2 := by simp",
+              1,
+          )
+
+          assert "convert h using 1 <;> simp [sub_eq_add_neg]" in s
+          assert "have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])" in s
+          assert "have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])" in s
+          assert "    _ = Real.log 2 := by simp" in s
+
           p.write_text(s, encoding="utf-8")
+          print("ARCH_COMPAT_CHANGED", s != original)
           PY
 
       - name: Fetch exact Mathlib cache
