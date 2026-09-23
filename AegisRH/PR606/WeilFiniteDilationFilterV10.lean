@@ -244,8 +244,7 @@ theorem finiteDilationMultiplier_zero_v10 :
 theorem finiteDilationMultiplier_one_v10 :
     finiteDilationMultiplierV10 1 = 0 := by
   rw [finiteDilationMultiplierV10]
-  norm_num [Complex.cpow_neg_one]
-  ring
+  norm_num [Complex.cpow_neg_one] <;> ring
 
 theorem mellin_finiteDilationFilter_zero_v10
     (g : WeilCompactSmoothGV1) :
