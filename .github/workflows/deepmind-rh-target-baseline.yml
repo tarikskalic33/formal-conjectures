@@ -1,0 +1,98 @@
+name: DeepMind RH Target Exact Baseline
+
+on:
+  push:
+    branches:
+      - 'evidence/deepmind-rh-target-baseline-v1'
+    paths:
+      - '.github/workflows/deepmind-rh-target-baseline.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/deepmind-rh-target-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORMAL_CONJECTURES_SHA: 0771383387505c96d1b2f6a3d35088ad00892c5c
+  TARGET_FILE: FormalConjectures/Millennium/RiemannHypothesis.lean
+  TARGET_BLOB_SHA: 5b1dcd5c46ab4a5f449d7d4a5c5ddce7c89c3542
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact Formal Conjectures
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: google-deepmind/formal-conjectures
+          ref: ${{ env.FORMAL_CONJECTURES_SHA }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FORMAL_CONJECTURES_SHA"
+          test -f "$TARGET_FILE"
+          git hash-object "$TARGET_FILE" | tee target-blob.txt
+          test "$(cat target-blob.txt)" = "$TARGET_BLOB_SHA"
+
+      - name: Install pinned project toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake exe cache get
+          lean --version
+
+      - name: Compile exact DeepMind RH target file
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean "$TARGET_FILE" 2>&1 | tee deepmind-rh-target.log
+
+      - name: Audit target theorem axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/RHTargetAudit.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          #check RiemannHypothesis
+          #check RiemannHypothesis.riemannHypothesis
+          #print axioms RiemannHypothesis.riemannHypothesis
+          LEAN
+          lake env lean /tmp/RHTargetAudit.lean 2>&1 | tee deepmind-rh-target-axioms.log
+          grep -F 'sorryAx' deepmind-rh-target-axioms.log
+
+      - name: Emit baseline disposition
+        shell: bash
+        run: |
+          cat > DEEPMIND_RH_TARGET_BASELINE.txt <<EOF
+          FORMAL_CONJECTURES_SHA=$FORMAL_CONJECTURES_SHA
+          TARGET_FILE=$TARGET_FILE
+          TARGET_THEOREM=RiemannHypothesis.riemannHypothesis
+          TARGET_TYPE=RiemannHypothesis
+          UPSTREAM_PROOF_BODY=SORRY
+          EXPECTED_AXIOM=sorryAx
+          PURPOSE=EXACT_NATIVE_TARGET_BASELINE_ONLY
+          RH_PROOF_CLAIM=NONE
+          EOF
+
+      - name: Upload baseline evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: deepmind-rh-target-baseline
+          path: |
+            deepmind-rh-target.log
+            deepmind-rh-target-axioms.log
+            DEEPMIND_RH_TARGET_BASELINE.txt
+            target-blob.txt
+          if-no-files-found: error
+          retention-days: 30
