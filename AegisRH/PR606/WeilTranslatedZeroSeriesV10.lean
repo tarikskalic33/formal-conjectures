@@ -68,7 +68,9 @@ theorem logLaplace_translatePacket_v10
   let F : ℝ → ℂ := fun w =>
     Complex.exp (z * ((w + d : ℝ) : ℂ)) *
       logLift g.1 w
-  have hshift := integral_add_right_eq_self F (-d)
+  have hshift :
+      (∫ u : ℝ, F (u + (-d))) = ∫ u : ℝ, F u :=
+    integral_add_right_eq_self F (-d)
   have hleft :
       (fun u : ℝ => F (u + (-d))) =
         (fun u : ℝ =>
@@ -190,7 +192,9 @@ theorem translated_mixed_zero_summand_v10
       conj
         (((1 - conj rho.1) - 1 / 2) * (d : ℂ)) =
         ((1 / 2 : ℂ) - rho.1) * (d : ℂ) := by
-    apply Complex.ext <;> simp <;> ring
+    rw [map_mul]
+    simp only [map_sub, map_one, Complex.conj_ofReal, map_map]
+    ring
   rw [hexp]
   ring
 
