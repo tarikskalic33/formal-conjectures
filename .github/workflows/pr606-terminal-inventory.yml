@@ -119,6 +119,15 @@ jobs:
                   external_imports[name] = sorted(set(ext))
           Path("evidence/pr606-external-imports.json").write_text(
               json.dumps(external_imports, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          unique_external = sorted({imp for vals in external_imports.values() for imp in vals})
+          non_mathlib_external = [
+              imp for imp in unique_external
+              if not (imp == "Mathlib" or imp.startswith("Mathlib."))
+          ]
+          Path("evidence/pr606-unique-external-imports.txt").write_text(
+              "\n".join(unique_external) + "\n", encoding="utf-8")
+          Path("evidence/pr606-non-mathlib-external-imports.txt").write_text(
+              "\n".join(non_mathlib_external) + "\n", encoding="utf-8")
 
           # Full local DAG order across all 131 modules, not a terminal subset.
           temp_all, done_all, full_order = set(), set(), []
@@ -142,6 +151,11 @@ jobs:
           print("PR606_LEAN_INVENTORY_COUNT=" + str(len(files)))
           print("PR606_FULL_LOCAL_DAG_COUNT=" + str(len(full_order)))
           print("PR606_EXTERNAL_IMPORT_MODULE_COUNT=" + str(len(external_imports)))
+          print("PR606_UNIQUE_EXTERNAL_IMPORT_COUNT=" + str(len(unique_external)))
+          print("PR606_NON_MATHLIB_EXTERNAL_IMPORT_COUNT=" + str(len(non_mathlib_external)))
+          print("PR606_NON_MATHLIB_EXTERNAL_IMPORTS_BEGIN")
+          print("\n".join(non_mathlib_external))
+          print("PR606_NON_MATHLIB_EXTERNAL_IMPORTS_END")
           print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT=" + str(len(order)))
           print("PR606_MODULES_OUTSIDE_TERMINAL_CLOSURE=" + str(len(outside)))
           print("PR606_OUTSIDE_MODULES_BEGIN")
