@@ -125,8 +125,7 @@ theorem integral_one_div_mul_one_add_v10 :
           intro x hx
           exact (hpoint x hx).symm
     _ = 0 - (Real.log 1 - Real.log (1 + 1)) := hbase
-    _ = Real.log 2 := by
-      exact congrArg Real.log (by norm_num : (1 : ℝ) + 1 = 2)
+    _ = Real.log 2 := by rw [Real.log_one, show (1 : ℝ) + 1 = 2 by norm_num]; ring
 
 end AEGIS.WeilArchimedeanCorrectionV10
 
