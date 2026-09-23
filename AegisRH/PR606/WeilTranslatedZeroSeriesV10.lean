@@ -194,8 +194,11 @@ theorem translated_mixed_zero_summand_v10
         (((1 - conj rho.1) - 1 / 2) * (d : ℂ)) =
         ((1 / 2 : ℂ) - rho.1) * (d : ℂ) := by
     rw [map_mul]
-    simp only [map_sub, map_one, Complex.conj_ofReal]
+    simp only [map_sub, map_one]
     rw [Complex.conj_conj]
+    have hhalf : conj (1 / 2 : ℂ) = (1 / 2 : ℂ) := by
+      norm_num
+    rw [hhalf]
     ring
   rw [hexp]
   ring
