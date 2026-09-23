@@ -121,7 +121,7 @@ theorem autocorrelation_exp_eq_logCorrelation_v10
   apply integral_congr_ae
   exact Filter.Eventually.of_forall (fun u => by
     simpa [smul_eq_mul] using
-      logCorrelation_integrand_identity_v10 g v u)
+      (logCorrelation_integrand_identity_v10 g v u).symm)
 
 end AEGIS.WeilLogAutocorrelationV10
 
