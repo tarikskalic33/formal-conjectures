@@ -262,6 +262,120 @@ def interval_ldlt(A: list[list[arb]]) -> dict[str, object]:
     return {"positive_definite": True, "undetermined_or_nonpositive": None, "pivots": pivots}
 
 
+
+def rational_preconditioner_from_midpoint_cholesky(
+    A: list[list[arb]],
+) -> list[list[Fraction]] | None:
+    """Heuristic midpoint Cholesky, converted to an exact rational inverse factor.
+
+    The floating computation has NO certificate authority.  It only chooses T.
+    The returned T is exact rational and the subsequent Arb congruence/Gershgorin
+    check is the actual positivity certificate.
+    """
+    n = len(A)
+    M = [[float(A[i][j].mid()) for j in range(n)] for i in range(n)]
+    L = [[0.0 for _ in range(n)] for _ in range(n)]
+    for i in range(n):
+        for j in range(i + 1):
+            v = M[i][j] - sum(L[i][k] * L[j][k] for k in range(j))
+            if i == j:
+                if not math.isfinite(v) or v <= 0.0:
+                    return None
+                L[i][j] = math.sqrt(v)
+            else:
+                if L[j][j] == 0.0:
+                    return None
+                L[i][j] = v / L[j][j]
+
+    invL = [[0.0 for _ in range(n)] for _ in range(n)]
+    for col in range(n):
+        for i in range(n):
+            rhs = 1.0 if i == col else 0.0
+            rhs -= sum(L[i][k] * invL[k][col] for k in range(i))
+            invL[i][col] = rhs / L[i][i]
+
+    T = [
+        [Fraction.from_float(invL[i][j]) if j <= i else Fraction(0) for j in range(n)]
+        for i in range(n)
+    ]
+    if any(T[i][i] == 0 for i in range(n)):
+        return None
+    return T
+
+
+def rational_congruence(
+    A: list[list[arb]], Tq: list[list[Fraction]]
+) -> list[list[arb]]:
+    """Return the rigorous Arb enclosure of T A T^T for exact rational T."""
+    n = len(A)
+    T = [[frac_arb(x) for x in row] for row in Tq]
+    TA = [[arb(0) for _ in range(n)] for _ in range(n)]
+    for i in range(n):
+        for k in range(n):
+            tik = T[i][k]
+            if tik == 0:
+                continue
+            for j in range(n):
+                TA[i][j] += tik * A[k][j]
+
+    B = [[arb(0) for _ in range(n)] for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            acc = arb(0)
+            for k in range(n):
+                tjk = T[j][k]
+                if tjk != 0:
+                    acc += TA[i][k] * tjk
+            B[i][j] = acc
+    return B
+
+
+def preconditioned_gershgorin_certificate(A: list[list[arb]]) -> dict[str, object]:
+    """Rigorous SPD certificate after exact rational congruence.
+
+    If T is invertible and every Gershgorin lower margin of B=TAT^T is
+    strictly positive, then B and hence A are positive definite.
+    """
+    Tq = rational_preconditioner_from_midpoint_cholesky(A)
+    if Tq is None:
+        return {
+            "positive_definite": False,
+            "method": "exact-rational-preconditioned-gershgorin-v1",
+            "reason": "MIDPOINT_CHOLESKY_HEURISTIC_FAILED",
+            "row_margins": [],
+            "preconditioner_rational": None,
+        }
+
+    B = rational_congruence(A, Tq)
+    margins: list[dict[str, object]] = []
+    all_positive = True
+    for i in range(len(B)):
+        off = arb(0)
+        for j in range(len(B)):
+            if i != j:
+                off += abs(B[i][j]).upper()
+        margin = B[i][i].lower() - off
+        positive = bool(margin > 0)
+        all_positive = all_positive and positive
+        margins.append({
+            "index": i,
+            "positive": positive,
+            "diag": ball_repr(B[i][i], 80),
+            "offdiag_abs_upper_sum": ball_repr(off, 80),
+            "margin": ball_repr(margin, 80),
+        })
+
+    return {
+        "positive_definite": all_positive,
+        "method": "exact-rational-preconditioned-gershgorin-v1",
+        "reason": None if all_positive else "NONPOSITIVE_GERSHGORIN_MARGIN",
+        "row_margins": margins,
+        "preconditioner_rational": [
+            [f"{x.numerator}/{x.denominator}" for x in row] for row in Tq
+        ],
+    }
+
+
 def matrix_repr(A: list[list[arb]], digits: int) -> list[list[dict[str, str]]]:
     return [[ball_repr(x, digits) for x in row] for row in A]
 
@@ -281,6 +395,18 @@ def run_one(N: int, ell: int, prec_bits: int, near_zero_bits: int, tol_bits: int
 
     zero_ldlt = interval_ldlt(K)
     eps_ldlt = interval_ldlt(shifted)
+    zero_precond = (
+        {"positive_definite": True, "method": "not-needed-interval-ldlt-passed"}
+        if zero_ldlt["positive_definite"]
+        else preconditioned_gershgorin_certificate(K)
+    )
+    eps_precond = (
+        {"positive_definite": True, "method": "not-needed-interval-ldlt-passed"}
+        if eps_ldlt["positive_definite"]
+        else preconditioned_gershgorin_certificate(shifted)
+    )
+    zero_verified = bool(zero_ldlt["positive_definite"] or zero_precond["positive_definite"])
+    eps_verified = bool(eps_ldlt["positive_definite"] or eps_precond["positive_definite"])
     digits = max(50, int(math.ceil(prec_bits * math.log10(2))) + 8)
     receipt = {
         "receipt_kind": RECEIPT_KIND,
@@ -301,12 +427,15 @@ def run_one(N: int, ell: int, prec_bits: int, near_zero_bits: int, tol_bits: int
         "moment_restriction_exact_rational": True,
         "gram_exact_rational": [[f"{x.numerator}/{x.denominator}" for x in row] for row in Gq],
         "unshifted_interval_ldlt": zero_ldlt,
+        "unshifted_preconditioned_gershgorin": zero_precond,
         "shifted_interval_ldlt": eps_ldlt,
+        "shifted_preconditioned_gershgorin": eps_precond,
         "D": matrix_repr(D, digits),
         "K": matrix_repr(K, digits),
         "claims": {
             "actual_formula_15_evaluated_with_arb": True,
-            "single_N_shifted_positive_definite_verified": bool(eps_ldlt["positive_definite"]),
+            "single_N_shifted_positive_definite_verified": eps_verified,
+            "single_N_unshifted_positive_definite_verified": zero_verified,
             "epsilon_formula_tends_to_zero_as_real_sequence": True,
             "all_N_certified": False,
             "fixed_window_global_nonnegativity_proven": False,
@@ -375,8 +504,10 @@ def main() -> None:
             {
                 "N": r["N"],
                 "epsilon": r["epsilon"],
-                "unshifted_pd": r["unshifted_interval_ldlt"]["positive_definite"],
-                "shifted_pd": r["shifted_interval_ldlt"]["positive_definite"],
+                "unshifted_ldlt_pd": r["unshifted_interval_ldlt"]["positive_definite"],
+                "unshifted_verified": r["claims"]["single_N_unshifted_positive_definite_verified"],
+                "shifted_ldlt_pd": r["shifted_interval_ldlt"]["positive_definite"],
+                "shifted_verified": r["claims"]["single_N_shifted_positive_definite_verified"],
             }
             for r in results
         ],
