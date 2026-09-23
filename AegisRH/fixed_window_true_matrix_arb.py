@@ -169,6 +169,20 @@ def build_D(N: int, ell: int, prec_bits: int, near_zero_bits: int, tol_bits: int
     tail = tail_integral(L)
     primes = prime_power_data_below(L)
 
+    # Formula (14) lets the complete prime-power matrix be assembled from
+    # O(P*N) scalar sine/cosine transforms instead of O(P*N^2) evaluations.
+    prime_sin = [arb(0) for _ in range(N + 1)]
+    prime_weighted_cos = [arb(0) for _ in range(N + 1)]
+    for k in range(1, N + 1):
+        bk = b_k(k, ell)
+        acc_s = arb(0)
+        acc_c = arb(0)
+        for q, p, y, weight in primes:
+            acc_s += weight * (bk * y).sin()
+            acc_c += weight * (L - y) * (bk * y).cos()
+        prime_sin[k] = acc_s
+        prime_weighted_cos[k] = acc_c
+
     D = [[arb(0) for _ in range(N)] for _ in range(N)]
     for a in range(N):
         j = a + 1
@@ -177,9 +191,15 @@ def build_D(N: int, ell: int, prec_bits: int, near_zero_bits: int, tol_bits: int
             val = integral_entry(j, k, ell, R, L, eta, tol)
             if j == k:
                 val += (tail - c_star) * R
-            pterm = arb(0)
-            for q, p, y, weight in primes:
-                pterm += weight * corr_arb(y, j, k, ell, R, L)
+            bj, bk = b_k(j, ell), b_k(k, ell)
+            if j == k:
+                pterm = (prime_weighted_cos[j] + prime_sin[j] / bj) / 2
+            elif (j + k) % 2:
+                pterm = arb(0)
+            else:
+                pterm = (
+                    bj * prime_sin[k] - bk * prime_sin[j]
+                ) / (bj * bj - bk * bk)
             val -= 2 * pterm
             D[a][b] = val
             D[b][a] = val
