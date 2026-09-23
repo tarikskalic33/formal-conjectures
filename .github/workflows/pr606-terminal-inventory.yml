@@ -1,0 +1,117 @@
+name: PR606 Terminal Lean Inventory
+
+on:
+  push:
+    branches:
+      - 'evidence/rh-v13-kernel-replay-589adf'
+    paths:
+      - '.github/workflows/pr606-terminal-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact AEGIS PR606 source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Compute terminal local Lean dependency closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          mkdir -p evidence
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          root = Path(".aegis/sovereign-omega-v2/formal/bridges/lean")
+          files = {p.stem: p for p in root.glob("*.lean")}
+          assert len(files) == 131, len(files)
+
+          targets = [
+              "RHMillenniumGateV10",
+              "RHZeroKernelLaplaceAnalyticV12",
+              "RestrictedWeilCriterionResidueCoefficientV11",
+              "RestrictedWeilCriterionPoleIsolationV10",
+              "RestrictedWeilCriterionResidueWitnessV11",
+              "RestrictedWeilCriterionTargetWitnessV11",
+              "MeromorphicIdentityPreconnectedV11",
+              "WeilRHImpliesFinalSignV11",
+          ]
+
+          pat = re.compile(r"^\s*import\s+(.+?)\s*$")
+          deps = {}
+          for name, path in files.items():
+              local = []
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m = pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf = token.split(".")[-1]
+                      if leaf in files:
+                          local.append(leaf)
+              deps[name] = sorted(set(local))
+
+          temp, done, order = set(), set(), []
+          def visit(name):
+              if name in done:
+                  return
+              if name in temp:
+                  raise RuntimeError(f"cycle:{name}")
+              temp.add(name)
+              for dep in deps[name]:
+                  visit(dep)
+              temp.remove(name)
+              done.add(name)
+              order.append(name)
+
+          for target in targets:
+              assert target in files, target
+              visit(target)
+
+          outside = sorted(set(files) - set(order))
+          payload = {
+              "proof_source_sha": "589adf0480bd4d7c12c9828027ea6228398377f4",
+              "lean_inventory_count": len(files),
+              "terminal_dependency_closure_count": len(order),
+              "targets": targets,
+              "modules": order,
+              "outside_terminal_closure": outside,
+              "authority_effect": "NONE",
+          }
+          Path("evidence/pr606-terminal-inventory.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          Path("evidence/pr606-terminal-modules.txt").write_text(
+              "\n".join(order) + "\n", encoding="utf-8")
+          print("PR606_LEAN_INVENTORY_COUNT=" + str(len(files)))
+          print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT=" + str(len(order)))
+          print("PR606_MODULES_OUTSIDE_TERMINAL_CLOSURE=" + str(len(outside)))
+          PY
+
+      - name: Upload inventory
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr606-terminal-inventory-${{ env.AEGIS_SHA }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
