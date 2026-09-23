@@ -1,0 +1,224 @@
+name: AEGIS RH Fork Replay V1
+
+on:
+  push:
+    branches:
+      - 'proof/riemann-hypothesis-aegis-v1'
+    paths:
+      - '.github/workflows/aegis-rh-fork-replay-v1.yml'
+      - 'AegisRH/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+  pull_request:
+    paths:
+      - '.github/workflows/aegis-rh-fork-replay-v1.yml'
+      - 'AegisRH/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AEGIS_SHA: be882635b4ebb14aff4228656add554b76ebce1e
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LI_FACTORIZATION_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout fork exact head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout AEGIS exact theorem DAG
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout exact Li-criterion provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact heads
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
+          grep -F "$MATHLIB_SHA" lake-manifest.json
+          grep -F 'leanprover/lean4:v4.33.1' lean-toolchain
+
+      - name: Install pinned elan
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Verify source-bound RH compatibility fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          REAL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
+          HALF=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesHalfPlaneV1.lean"
+          LAP=".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionLaplaceV10.lean"
+          grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$REAL"
+          grep -F 'Nat.cast_add_one_ne_zero' "$HALF"
+          grep -F 'Complex.differentiableOn_tsum_of_summable_norm' "$HALF"
+          grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
+          test "$(git -C .aegis status --porcelain)" = ""
+
+      - name: Restore shared Mathlib olean cache
+        uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c # v3
+        with:
+          path: ~/.cache/mathlib
+          key: oleans-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            oleans-${{ hashFiles('lean-toolchain') }}-
+
+      - name: Fetch exact Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache unpack || true
+          if ! test -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib/Analysis/MellinTransform.olean; then
+            lake exe cache get
+          fi
+          test "$(python3 - <<'PY'
+          import json
+          m=json.load(open('lake-manifest.json'))
+          print(next(x['rev'] for x in m['packages'] if x['name']=='mathlib'))
+          PY
+          )" = "$MATHLIB_SHA"
+          lean --version
+
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path('lakefile.lean')
+          text = p.read_text()
+          old = os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new = os.environ['MATHLIB_SHA']
+          assert text.count(old) == 1, text.count(old)
+          p.write_text(text.replace(old, new))
+
+          q = Path('Hadamard/General/Factorization.lean')
+          text = q.read_text()
+          assert text.count('ite_eq_right') == 2, text.count('ite_eq_right')
+          assert text.count('ite_eq_left') == 1, text.count('ite_eq_left')
+          q.write_text(text.replace('ite_eq_right', 'if_neg').replace('ite_eq_left', 'if_pos'))
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          python3 - <<'PY'
+          import json, os
+          m=json.load(open('lake-manifest.json'))
+          p=next(x for x in m['packages'] if x['name']=='mathlib')
+          assert p['rev'] == os.environ['MATHLIB_SHA'], p['rev']
+          PY
+          lake exe cache get
+          lake build Lc.LiCriterion.XiOrderBridge
+
+      - name: Save exact Li provider build
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Restore zero-translation dependency closure
+        id: zero-translation-deps-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-digamma
+          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Preflight zero kernel bound closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-digamma"
+          mkdir -p "$OUT"
+          python3 - "$SRC" "$GITHUB_WORKSPACE/.digamma-order.txt" <<'PY'
+          import pathlib,sys
+          src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          target='RHZeroKernelBoundV11'
+          mods={p.stem:p for p in src.glob('*.lean')}
+          deps={}
+          for m,p in mods.items():
+              ds=[]
+              for line in p.read_text().splitlines():
+                  s=line.strip()
+                  if not s.startswith('import '): continue
+                  for tok in s[7:].split():
+                      root=tok.split('.')[0]
+                      if root in mods: ds.append(root)
+              deps[m]=ds
+          seen=set(); temp=set(); order=[]
+          def visit(m):
+              if m in seen: return
+              if m in temp: raise SystemExit('cycle:'+m)
+              temp.add(m)
+              for d in deps[m]: visit(d)
+              temp.remove(m); seen.add(m); order.append(m)
+          visit(target)
+          out.write_text('\n'.join(order)+'\n')
+          print('ZERO_KERNEL_BOUND_PREFLIGHT_COUNT',len(order))
+          PY
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+          while IFS= read -r MOD; do
+            [ -z "$MOD" ] && continue
+            if [ "$MOD" = "RHZeroKernelBoundV11" ]; then
+              continue
+            fi
+            if [ -f "$OUT/$MOD.olean" ]; then
+              echo "=== PREFLIGHT CACHED $MOD ==="
+              continue
+            fi
+            echo "=== PREFLIGHT DEP $MOD ==="
+            lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
+          done < "$GITHUB_WORKSPACE/.digamma-order.txt"
+          echo "=== PREFLIGHT TARGET RHZeroKernelBoundV11 ==="
+          lean -o "$OUT/RHZeroKernelBoundV11.olean" "$SRC/RHZeroKernelBoundV11.lean" 2>&1 | tee /tmp/RHZeroKernelBoundV11.log
+          ! grep -q 'sorryAx' /tmp/RHZeroKernelBoundV11.log
+
+      - name: Save zero-translation dependency closure
+        if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-digamma
+          key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
