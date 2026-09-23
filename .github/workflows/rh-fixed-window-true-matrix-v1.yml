@@ -51,24 +51,43 @@ jobs:
             --output evidence/fixed_window_R_pi.json \
             | tee evidence/fixed_window_R_pi.log
 
+      - name: Evaluate cofinal window R=2pi
+        shell: bash
+        run: |
+          set -euo pipefail
+          python AegisRH/fixed_window_true_matrix_arb.py \
+            --ell 2 \
+            --Ns 8,16,24,32 \
+            --prec-bits 320 \
+            --near-zero-bits 64 \
+            --tol-bits 160 \
+            --epsilon-power 4 \
+            --output evidence/fixed_window_R_2pi.json \
+            | tee evidence/fixed_window_R_2pi.log
+
       - name: Enforce finite receipt boundary
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           import json
-          p=json.load(open("evidence/fixed_window_R_pi.json"))
-          assert p["formula_id"] == "AEGIS_FIXED_WINDOW_TRUE_DN_FORMULA_15_V1"
-          assert p["all_shifted_certificates_pass"] is True
-          assert p["batch_claim_boundary"]["finite_checked_N_only"] is True
-          assert p["batch_claim_boundary"]["cofinal_infinite_family_not_yet_proven"] is True
-          assert p["batch_claim_boundary"]["rh_proven"] is False
-          for r in p["results"]:
-              assert r["claims"]["actual_formula_15_evaluated_with_arb"] is True
-              assert r["claims"]["moment_restriction_exact_rational"] if "moment_restriction_exact_rational" in r["claims"] else True
-              assert r["claims"]["single_N_shifted_positive_definite_verified"] is True
-              assert r["claims"]["all_N_certified"] is False
-              assert r["claims"]["rh_proven"] is False
+          for path, expected_ell in [
+              ("evidence/fixed_window_R_pi.json", 1),
+              ("evidence/fixed_window_R_2pi.json", 2),
+          ]:
+              p=json.load(open(path))
+              assert p["formula_id"] == "AEGIS_FIXED_WINDOW_TRUE_DN_FORMULA_15_V1"
+              assert p["ell"] == expected_ell
+              assert p["all_shifted_certificates_pass"] is True
+              assert p["batch_claim_boundary"]["finite_checked_N_only"] is True
+              assert p["batch_claim_boundary"]["cofinal_infinite_family_not_yet_proven"] is True
+              assert p["batch_claim_boundary"]["rh_proven"] is False
+              for r in p["results"]:
+                  assert r["claims"]["actual_formula_15_evaluated_with_arb"] is True
+                  assert r["moment_restriction_exact_rational"] is True
+                  assert r["claims"]["single_N_shifted_positive_definite_verified"] is True
+                  assert r["claims"]["all_N_certified"] is False
+                  assert r["claims"]["rh_proven"] is False
           print("TRUE_FIXED_WINDOW_FINITE_CERTIFICATES_PASS")
           PY
 
