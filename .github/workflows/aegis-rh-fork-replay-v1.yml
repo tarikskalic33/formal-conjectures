@@ -86,6 +86,89 @@ jobs:
           grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
           test "$(git -C .aegis status --porcelain)" = ""
 
+      - name: Inventory full PR606 terminal dependency closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path(".aegis/sovereign-omega-v2/formal/bridges/lean")
+          files = {p.stem: p for p in root.glob("*.lean")}
+          assert len(files) == 131, len(files)
+
+          targets = [
+              "RHMillenniumGateV10",
+              "RHZeroKernelLaplaceAnalyticV12",
+              "RestrictedWeilCriterionResidueCoefficientV11",
+              "RestrictedWeilCriterionPoleIsolationV10",
+              "RestrictedWeilCriterionResidueWitnessV11",
+              "RestrictedWeilCriterionTargetWitnessV11",
+              "MeromorphicIdentityPreconnectedV11",
+              "WeilRHImpliesFinalSignV11",
+          ]
+          for target in targets:
+              assert target in files, target
+
+          pat = re.compile(r"^\s*import\s+(.+?)\s*$")
+          deps = {}
+          for name, path in files.items():
+              local = []
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m = pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf = token.split(".")[-1]
+                      if leaf in files:
+                          local.append(leaf)
+              deps[name] = sorted(set(local))
+
+          temp, done, order = set(), set(), []
+          def visit(name):
+              if name in done:
+                  return
+              if name in temp:
+                  raise RuntimeError(f"local import cycle at {name}")
+              temp.add(name)
+              for dep in deps[name]:
+                  visit(dep)
+              temp.remove(name)
+              done.add(name)
+              order.append(name)
+
+          for target in targets:
+              visit(target)
+
+          out = Path("evidence")
+          (out / "pr606-terminal-targets.txt").write_text(
+              "\n".join(targets) + "\n", encoding="utf-8")
+          (out / "pr606-terminal-modules.txt").write_text(
+              "\n".join(order) + "\n", encoding="utf-8")
+          (out / "pr606-terminal-closure-count.txt").write_text(
+              str(len(order)) + "\n", encoding="utf-8")
+          (out / "pr606-lean-inventory-count.txt").write_text(
+              str(len(files)) + "\n", encoding="utf-8")
+          (out / "pr606-modules-outside-terminal-closure.txt").write_text(
+              "\n".join(sorted(set(files) - set(order))) + "\n", encoding="utf-8")
+
+          print("PR606_LEAN_INVENTORY_COUNT", len(files))
+          print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT", len(order))
+          print("PR606_TERMINAL_TARGETS", ",".join(targets))
+          print("PR606_TERMINAL_MODULES_BEGIN")
+          print("\n".join(order))
+          print("PR606_TERMINAL_MODULES_END")
+          PY
+          {
+            echo "## PR #606 exact-head Lean inventory"
+            echo
+            echo "- proof source: `$AEGIS_SHA`"
+            echo "- total local Lean modules: `$(cat evidence/pr606-lean-inventory-count.txt)`"
+            echo "- terminal dependency closure: `$(cat evidence/pr606-terminal-closure-count.txt)`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Restore shared Mathlib olean cache
         uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c # v3
         with:
