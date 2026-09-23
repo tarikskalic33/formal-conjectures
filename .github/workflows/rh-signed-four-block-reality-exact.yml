@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 env:
-  SOURCE_SHA: 3608753ab76b4049c00a2a3ee29abacdd12fb4bd
-  PARENT_SHA: 46807c98e13398fa884a399e3559e7a9e7f9d5c5
+  SOURCE_SHA: 62c7aba1115c5826a87c6acdcbe82786bcc3b42b
+  PARENT_SHA: e61933f4a4eec0f01b41b09d7bf6c0c3f5aed598
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   TARGET_MODULE: RHSignedFourBlockRealityV1
@@ -53,6 +53,25 @@ jobs:
           test "$(git -C .aegis rev-parse HEAD^)" = "$PARENT_SHA"
           test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
           test -f ".aegis/sovereign-omega-v2/formal/bridges/lean/$TARGET_MODULE.lean"
+
+      - name: Replay exact rational signed threshold preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .aegis/research/rh/signed_four_block_preflight_v1.py | tee signed-four-block-preflight.json
+          python3 - <<'PY'
+          from fractions import Fraction as F
+          import importlib.util
+          p=".aegis/research/rh/signed_four_block_preflight_v1.py"
+          spec=importlib.util.spec_from_file_location("preflight",p)
+          m=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(m)
+          r=m.compute_preflight()
+          assert r.all_ones_rayleigh_lower == F(46617,40000)
+          assert r.old_certificate_gap == F(5417,40000)
+          assert r.old_certificate_sufficient is False
+          print("SIGNED_FOUR_BLOCK_103_OVER_100_NO_GO=PASS")
+          PY
 
       - name: Obtain exact Lean and Mathlib cache
         shell: bash
