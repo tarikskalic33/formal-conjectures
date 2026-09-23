@@ -243,8 +243,10 @@ theorem finiteDilationMultiplier_zero_v10 :
 /-- The filter multiplier vanishes at s=1. -/
 theorem finiteDilationMultiplier_one_v10 :
     finiteDilationMultiplierV10 1 = 0 := by
-  rw [finiteDilationMultiplierV10]
-  norm_num [Complex.cpow_neg_one] <;> ring
+  rw [finiteDilationMultiplier_factor_v10]
+  apply mul_eq_zero.mpr
+  right
+  norm_num [Complex.cpow_neg_one]
 
 theorem mellin_finiteDilationFilter_zero_v10
     (g : WeilCompactSmoothGV1) :
