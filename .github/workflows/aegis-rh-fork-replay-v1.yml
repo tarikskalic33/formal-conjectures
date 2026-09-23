@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  AEGIS_SHA: c2235bfc7d1997d6c678f5e47015f67061742e9d
+  AEGIS_SHA: 5e38315d8453f232fe19df9f5edac25786899b5d
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
@@ -165,7 +165,7 @@ jobs:
           path: .lake/aegis-digamma
           key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
-      - name: Preflight zero-translation closure
+      - name: Preflight zero two-point closure
         shell: bash
         run: |
           set -euo pipefail
@@ -175,7 +175,7 @@ jobs:
           python3 - "$SRC" "$GITHUB_WORKSPACE/.digamma-order.txt" <<'PY'
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          target='WeilZeroTranslationV11'
+          target='WeilZeroTwoPointV11'
           mods={p.stem:p for p in src.glob('*.lean')}
           deps={}
           for m,p in mods.items():
@@ -196,13 +196,13 @@ jobs:
               temp.remove(m); seen.add(m); order.append(m)
           visit(target)
           out.write_text('\n'.join(order)+'\n')
-          print('ZERO_TRANSLATION_PREFLIGHT_COUNT',len(order))
+          print('ZERO_TWO_POINT_PREFLIGHT_COUNT',len(order))
           PY
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            if [ "$MOD" = "WeilZeroTranslationV11" ]; then
+            if [ "$MOD" = "WeilZeroTwoPointV11" ]; then
               continue
             fi
             if [ -f "$OUT/$MOD.olean" ]; then
@@ -212,8 +212,8 @@ jobs:
             echo "=== PREFLIGHT DEP $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.digamma-order.txt"
-          echo "=== PREFLIGHT TARGET WeilZeroTranslationV11 ==="
-          lean -o "$OUT/WeilZeroTranslationV11.olean" "$SRC/WeilZeroTranslationV11.lean"
+          echo "=== PREFLIGHT TARGET WeilZeroTwoPointV11 ==="
+          lean -o "$OUT/WeilZeroTwoPointV11.olean" "$SRC/WeilZeroTwoPointV11.lean"
 
       - name: Save zero-translation dependency closure
         if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
