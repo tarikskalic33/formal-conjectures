@@ -36,7 +36,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Filter Topology Complex MeasureTheory
-open scoped BigOperators Topology
+open scoped BigOperators Topology ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -96,10 +96,13 @@ theorem logCrossJoint_support_subset_v10
 
 theorem logCrossJoint_hasCompactSupport_v10
     (a b : WeilCompactSmoothGV1) (z : ℂ) :
-    HasCompactSupport (logCrossJointV10 a b z) :=
-  HasCompactSupport.intro
+    HasCompactSupport (logCrossJointV10 a b z) := by
+  apply HasCompactSupport.intro
     (logCrossJointEnvelope_compact_v10 a b)
-    (logCrossJoint_support_subset_v10 a b z)
+  intro p hp
+  by_contra hne
+  apply hp
+  exact logCrossJoint_support_subset_v10 a b z hne
 
 theorem logCrossJoint_continuous_v10
     (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -115,9 +118,15 @@ theorem logCrossJoint_fubini_v10
       ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
       ∫ u : ℝ,
         ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
-  exact integral_integral_swap_of_hasCompactSupport
-    (logCrossJoint_continuous_v10 a b z)
-    (logCrossJoint_hasCompactSupport_v10 a b z)
+  let F : ℝ → ℝ → ℂ := fun v u => logCrossJointV10 a b z (v, u)
+  have hcont : Continuous F.uncurry := by
+    simpa [F, Function.uncurry] using
+      (logCrossJoint_continuous_v10 a b z)
+  have hcompact : HasCompactSupport F.uncurry := by
+    simpa [F, Function.uncurry] using
+      (logCrossJoint_hasCompactSupport_v10 a b z)
+  simpa [F] using
+    (integral_integral_swap_of_hasCompactSupport hcont hcompact)
 
 theorem logCross_transform_factor_v10
     (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -189,14 +198,14 @@ theorem mellin_mixed_factor_v10
       unfold WeilLogMellinIntegrandV9
       change
         Complex.exp (s * (v : ℂ)) *
-          mixed a b (Real.exp v) = _
+            mixed a b (Real.exp v) =
+          Complex.exp ((s - 1 / 2) * (v : ℂ)) *
+            logCrossV28 a b v
       have hcross := logCross_eq_mixed_v28 a b v
       rw [hcross]
       rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]
       rw [← mul_assoc, ← Complex.exp_add]
-      congr 2
-      push_cast
-      ring)
+      congr 2 <;> push_cast <;> ring)
   rw [hcoord, logCross_transform_factor_v10]
   rw [logLaplace_shift_eq_mellin_v10 a s]
   have hreflect :
