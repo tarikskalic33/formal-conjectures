@@ -157,7 +157,7 @@ theorem mellin_finiteDilationFilter_v10
   have hsum :
       mellin (finiteDilationFilterV10 g).1 s =
         mellin g.1 s + (mellin a.1 s + mellin b.1 s) := by
-    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket]
+    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket, hab.2]
       using htotal.2
   rw [hsum]
   rw [mellin_scalePacket_v10, mellin_scalePacket_v10]
@@ -183,8 +183,11 @@ theorem finiteDilationMultiplier_ne_zero_of_strict_strip_v10
   have hnorm :
       ‖z‖ = (2 : ℝ) ^ (-s.re) := by
     dsimp [z]
-    rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
-    simp
+    simpa using
+      (Complex.norm_cpow_eq_rpow_re_of_pos
+        (x := (2 : ℝ))
+        (by norm_num : (0 : ℝ) < 2)
+        (-s))
   have hlt1 : ‖z‖ < 1 := by
     rw [hnorm]
     have h :=
@@ -242,6 +245,7 @@ theorem finiteDilationMultiplier_one_v10 :
     finiteDilationMultiplierV10 1 = 0 := by
   rw [finiteDilationMultiplierV10]
   norm_num [Complex.cpow_neg_one]
+  ring
 
 theorem mellin_finiteDilationFilter_zero_v10
     (g : WeilCompactSmoothGV1) :
