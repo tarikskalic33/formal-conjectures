@@ -214,7 +214,6 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   intro sigma
   by_cases hsigma : sigma = rho
   · simp [hsigma, u]
-    positivity
   · simp only [hsigma, if_false]
     have hd :=
       other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -315,8 +314,8 @@ theorem zero_resolvent_order_eq_neg_one_v13
       hsplit z (by simpa [y] using hzball)
     rw [hs]
     dsimp [G]
-    rw [zpow_neg_one]
-    field_simp [hzy]
+    rw [zpow_neg_one, div_eq_mul_inv, mul_add]
+    rw [inv_mul_cancel₀ hzy]
     ring
 
   have hmer :
@@ -348,7 +347,7 @@ private theorem zeta_shift_ne_zero_of_not_center_v13
     rintro ⟨n, hn⟩
     rw [hn] at hspos
     have hnonpos :
-        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+        (-(2 : ℂ) * ((n : ℂ) + 1)).re ≤ 0 := by
       simp
       positivity
     exact (not_lt_of_ge hnonpos) hspos
@@ -522,8 +521,8 @@ theorem zero_resolvent_meromorphicAt_center_v13
     have hs := hsplit z (by simpa [y] using hzball)
     rw [hs]
     dsimp [G]
-    rw [zpow_neg_one]
-    field_simp [hzy]
+    rw [zpow_neg_one, div_eq_mul_inv, mul_add]
+    rw [inv_mul_cancel₀ hzy]
     ring
   rw [MeromorphicAt.iff_eventuallyEq_zpow_smul_analyticAt]
   refine ⟨(-1 : ℤ), G, hGanalytic, ?_⟩
@@ -544,10 +543,10 @@ theorem zero_resolvent_meromorphicOn_rightHalfPlane_v13
     obtain ⟨eps, heps, hdiff⟩ :=
       zero_resolvent_differentiable_near_nonpole_v13
         g (by simpa [RightHalfPlaneV13] using hw) hpole
-    have han : AnalyticAt ℂ (WeilZeroResolventV12 g) w := by
-      apply hdiff.analyticAt
+    have hdiffAt : DifferentiableAt ℂ (WeilZeroResolventV12 g) w := by
+      apply hdiff.differentiableAt
       exact Metric.ball_mem_nhds w (by linarith)
-    exact han.meromorphicAt
+    exact hdiffAt.analyticAt.meromorphicAt
 
 
 theorem laplace_resolvent_seed_eventuallyEq_v13
@@ -561,7 +560,7 @@ theorem laplace_resolvent_seed_eventuallyEq_v13
       simp [S]]
     exact Complex.continuous_re.isOpen_preimage (Ioi (1 / 2 : ℝ)) isOpen_Ioi
   have h1S : (1 : ℂ) ∈ S := by
-    simp [S]
+    norm_num [S]
   filter_upwards [hSopen.mem_nhds h1S] with w hw
   exact zero_kernel_laplace_eq_resolvent_v12 g w hw
 
@@ -631,7 +630,7 @@ theorem no_zero_re_gt_half_of_final_sign_v13
       zero_resolvent_order_eq_neg_one_v13 g rho hcoef11
 
   rw [hResOrder] at hResNonneg
-  norm_num at hResNonneg
+  omega
 
 
 def reflectedNontrivialZeroV13
@@ -670,7 +669,7 @@ def reflectedNontrivialZeroV13
     rintro ⟨n, hn⟩
     rw [hn] at hrefpos
     have hnonpos :
-        (-(2 : ℂ) * ((n + 1 : ℕ) : ℂ)).re ≤ 0 := by
+        (-(2 : ℂ) * ((n : ℂ) + 1)).re ≤ 0 := by
       simp
       positivity
     exact (not_lt_of_ge hnonpos) hrefpos
