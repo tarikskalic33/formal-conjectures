@@ -46,6 +46,11 @@ The following transitions have already been observed in hosted fork replay witho
 | moment-zero two-point spectral detector | `propext, Classical.choice, Quot.sound` |
 | multiplicity-weighted zero-pair coefficient witness | `propext, Classical.choice, Quot.sound` |
 | actual zero-summand witness | `propext, Classical.choice, Quot.sound` |
+| translation-gap invariance, including diagonal translation at zero | `propext, Classical.choice, Quot.sound` |
+| final-sign translated component and norm bounds | `propext, Classical.choice, Quot.sound` |
+| finite-dilation V11 Mellin factor and moment annihilation | `propext, Classical.choice, Quot.sound` |
+
+Hosted GitHub runner receipts establishing the newly listed transitions include exact-head runs in the fork replay lane. In particular, the translation-gap/final-sign run printed the three translation invariance theorems and three translated-bound theorems with no `sorryAx`; a subsequent exact-head run printed both V11 finite-dilation load-bearing theorems with the same standard axiom footprint before advancing to the next module. These receipts are historical for their exact commits and are not silently rebound to later heads.
 
 The important point is structural: the formalization does not merely state a Weil criterion. It constructs concrete compact-smooth packets, enforces the repository moment conditions, transports them through exact Mellin identities, and produces nonzero spectral witnesses at actual nontrivial zeta zeros.
 
