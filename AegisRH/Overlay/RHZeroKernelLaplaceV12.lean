@@ -174,9 +174,14 @@ theorem zero_laplace_term_integral_v12
     have hre := congrArg Complex.re hz
     simp at hre
     linarith
+  have hden' :
+      -w + WeilCenteredZeroExponentV12 rho ≠ 0 := by
+    have hn : -(w - WeilCenteredZeroExponentV12 rho) ≠ 0 :=
+      neg_ne_zero.mpr hden
+    simpa [sub_eq_add_neg, add_comm] using hn
   rw [hfun, h]
   simp [hden]
-  field_simp [hden]
+  field_simp [hden, hden']
   ring
 
 /-- Norm integral of one Laplace term. -/
