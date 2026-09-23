@@ -129,11 +129,15 @@ theorem zero_laplace_term_integrable_v12
       (Ioi (0 : ℝ)) :=
     he.const_mul (WeilZeroCoefficientV11 g rho)
   refine IntegrableOn.congr_fun hc ?_ measurableSet_Ioi
-  intro t ht
-  unfold WeilZeroLaplaceTermV12
-  rw [show
-    (-(w - WeilCenteredZeroExponentV12 rho)) * (t : ℂ) =
-      -((w - WeilCenteredZeroExponentV12 rho) * (t : ℂ)) by ring]
+  intro t _
+  change
+    WeilZeroCoefficientV11 g rho *
+        Complex.exp
+          ((-(w - WeilCenteredZeroExponentV12 rho)) * (t : ℂ)) =
+      WeilZeroCoefficientV11 g rho *
+        Complex.exp
+          (-((w - WeilCenteredZeroExponentV12 rho) * (t : ℂ)))
+  rw [neg_mul]
 
 /-- Exact integral of one Laplace term. -/
 theorem zero_laplace_term_integral_v12
