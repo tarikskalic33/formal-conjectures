@@ -165,7 +165,7 @@ theorem targetPhi_exp_integral_zero_v11 (rho : ℂ) :
       ((contDiff_deriv_complex_v11
         (targetPsi_contDiff_v11 rho)).of_le (by simp)).mul
       (Complex.ofRealCLM.contDiff.comp
-        (Real.contDiff_exp.of_le (by simp)))
+        (show ContDiff ℝ 1 Real.exp from Real.contDiff_exp))
   have hFc : HasCompactSupport F := by
     dsimp [F]
     exact (targetPsi_hasCompactSupport_v11 rho).deriv.mul_right
