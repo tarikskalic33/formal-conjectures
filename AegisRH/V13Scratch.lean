@@ -697,4 +697,20 @@ theorem final_sign_implies_rh_v13
     all_nontrivial_zeros_critical_of_final_sign_v13 h rho
 
 
+/-- Exact gate-typed restricted Weil criterion: the universal canonical
+zero-quadratic sign is equivalent to the final sign residual already consumed
+by the V13 pole contradiction. -/
+theorem universal_zero_quadratic_implies_rh_v13
+    (hU : UniversalZeroQuadraticNonnegativeV10) :
+    RiemannHypothesis :=
+  final_sign_implies_rh_v13
+    (universal_zero_quadratic_iff_final_sign_v10.mp hU)
+
+/-- The V13 closure inhabits the exact restricted-criterion field required by
+the repository Millennium gate. -/
+theorem restricted_weil_criterion_kernel_bridge_v13 :
+    RestrictedWeilCriterionKernelBridgeV10 :=
+  universal_zero_quadratic_implies_rh_v13
+
+
 end AEGIS.V13Scratch
