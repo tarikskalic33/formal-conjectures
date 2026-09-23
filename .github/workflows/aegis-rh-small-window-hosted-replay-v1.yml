@@ -1,0 +1,157 @@
+name: AEGIS RH Small Window Hosted Replay V1
+
+on:
+  push:
+    branches:
+      - 'evidence/rh-small-window-hosted-replay-v1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AEGIS_SOURCE_SHA: 46807c98e13398fa884a399e3559e7a9e7f9d5c5
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+
+jobs:
+  verify:
+    name: replay unconditional small-window producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout fork control
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact Mathlib
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: leanprover-community/mathlib4
+          ref: ${{ env.MATHLIB_SHA }}
+          path: .mathlib
+          persist-credentials: false
+
+      - name: Checkout exact AEGIS small-window source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SOURCE_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SOURCE_SHA"
+          test "$(git -C .mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
+          test "$(cat .mathlib/lean-toolchain)" = "$LEAN_TOOLCHAIN"
+
+      - name: Install exact Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd .mathlib
+          lake exe cache get
+          lean --version
+
+      - name: Materialize exact module chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.small-window"
+          mkdir -p "$OUT"
+          modules=(
+            WeilCriterionCompactSmoothV1
+            WeilPrimeSummabilityV1
+            WeilArchimedeanConvergenceV1
+            WeilAutocorrelationRealityV1
+            WeilAutocorrelationClosureV1
+            WeilFiniteSourceCalculusV1
+            WeilArchSineKernelV1
+            WeilArchSineKernelIntegerV1
+            WeilArchFiniteQuadraticV1
+            WeilArchTailIntegralV1
+            WeilThreeBlockRationalV1
+            WeilMixedClosureV2
+            WeilThreeBlockComplexV2
+            WeilMixedAlgebraV2
+            WeilDisjointEnergyV2
+            WeilThreeBlockAnalyticConstantsV21
+            WeilLogCoordinateIsometryV21
+            WeilThreeBlockNormBridgeV21
+            WeilThreeBlockTranslatedPacketsV22
+            WeilWidthPrimeVanishingV23
+            WeilDiagonalKernelReductionV21
+            WeilArchimedeanCothTailV1
+            WeilWidthDiagonalArchFrontierV24
+            WeilWidthArchCorrelationV25
+            WeilWidthArchBudgetV26
+            WeilWidthArchIntegralV27
+            WeilThreeBlockCrossPrimeV28
+            WeilThreeBlockCrossPrimeWindowV29
+            WeilThreeBlockPrimeEvaluationV30
+            WeilThreeBlockCrossAssemblyV30
+            WeilSeparatedArchBridgeV31
+            RHNarrowDiagonalUpgradeV2
+            WeilWindowExhaustionV1
+            RHSmallWindowProducerV1
+          )
+          : > "$OUT/modules.txt"
+          for m in "${modules[@]}"; do
+            test -f "$ROOT/$m.lean"
+            cp "$ROOT/$m.lean" "$OUT/$m.lean"
+            echo "$m" >> "$OUT/modules.txt"
+          done
+
+      - name: Compile exact producer chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          OUT="$GITHUB_WORKSPACE/.small-window"
+          BUILD="$GITHUB_WORKSPACE/.small-window-build"
+          mkdir -p "$BUILD"
+          BASE_LEAN_PATH="$(cd .mathlib && lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$BUILD:$OUT:$BASE_LEAN_PATH"
+          while IFS= read -r m; do
+            echo "=== COMPILE $m ==="
+            lean -o "$BUILD/$m.olean" "$OUT/$m.lean" 2>&1 | tee "$OUT/$m.log"
+          done < "$OUT/modules.txt"
+
+      - name: Audit small-window theorem axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          OUT="$GITHUB_WORKSPACE/.small-window"
+          BUILD="$GITHUB_WORKSPACE/.small-window-build"
+          BASE_LEAN_PATH="$(cd .mathlib && lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$BUILD:$OUT:$BASE_LEAN_PATH"
+          cat > "$OUT/Audit.lean" <<'LEAN'
+          import RHSmallWindowProducerV1
+          #print axioms AEGIS.RHSmallWindowProducerV1.window_one_over_128_implies_narrow_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_128_v1
+          #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_128_v1
+          LEAN
+          lean "$OUT/Audit.lean" 2>&1 | tee "$OUT/axioms.log"
+          ! grep -Fq 'sorryAx' "$OUT/axioms.log"
+
+      - name: Emit disposition
+        if: always()
+        shell: bash
+        run: |
+          printf '%s\n' \
+            "SOURCE_SHA=$AEGIS_SOURCE_SHA" \
+            "TARGET=WindowArithmeticNonpositiveV1(1/128)" \
+            "PRODUCER_SCOPE=ALL_REPOSITORY_PACKETS_IN_RADIUS_1_OVER_128_LOG_WINDOW" \
+            "RH_HYPOTHESIS_USED=NO" \
+            "AUTHORITY_EFFECT=NONE"
