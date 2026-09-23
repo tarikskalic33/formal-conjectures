@@ -241,6 +241,15 @@ jobs:
           path: .li/.lake/build
           key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
+      - name: Restore incremental PR606 full DAG cache
+        id: pr606-full-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/pr606-full-131
+          key: pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+          restore-keys: |
+            pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-
+
       - name: Compile full PR606 131-module Lean DAG
         shell: bash
         run: |
@@ -299,6 +308,7 @@ jobs:
 
           : > "$EVID/status.tsv"
           passed=0
+          dirty=0
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
             FILE="$SRC/$MOD.lean"
@@ -307,11 +317,22 @@ jobs:
               FILE="$OVERLAY/$MOD.lean"
               KIND="OVERLAY"
             fi
+            FILE_SHA="$(sha256sum "$FILE" | awk '{print $1}')"
+            STAMP="$OUT/$MOD.source.sha256"
+            if [ "$dirty" -eq 0 ] && [ -f "$OUT/$MOD.olean" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$FILE_SHA" ]; then
+              echo "=== PR606 FULL 131: $MOD ($KIND, CACHED) ==="
+              printf '%s\tCACHED\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              passed=$((passed+1))
+              continue
+            fi
+            dirty=1
             echo "=== PR606 FULL 131: $MOD ($KIND) ==="
             if lean -o "$OUT/$MOD.olean" "$FILE" >"$EVID/$MOD.log" 2>&1; then
+              printf '%s\n' "$FILE_SHA" > "$STAMP"
               printf '%s\tPASS\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
               passed=$((passed+1))
             else
+              rm -f "$OUT/$MOD.olean" "$STAMP"
               printf '%s\tFAIL\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
               cat "$EVID/$MOD.log"
               printf 'FIRST_FAIL_MODULE=%s\nFIRST_FAIL_KIND=%s\nPASSED_BEFORE_FAIL=%s\n'                 "$MOD" "$KIND" "$passed" > "$EVID/FIRST_FAILURE.txt"
@@ -333,6 +354,13 @@ jobs:
           path: evidence/pr606-full-131/
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Save incremental PR606 full DAG cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/pr606-full-131
+          key: pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Restore fork overlay dependency closure
         id: overlay-deps-cache
