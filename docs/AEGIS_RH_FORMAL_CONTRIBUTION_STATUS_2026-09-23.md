@@ -311,6 +311,26 @@ the AEGIS contribution target is therefore unambiguous: replace the external
 `sorryAx`-bearing theorem authority with a stable, exact-commit external Lean
 proof whose terminal type is the same Mathlib `RiemannHypothesis`.
 
+## Exact native DeepMind RH target baseline
+
+The actual Google DeepMind target has now been executed directly rather than inferred from metadata.
+
+Exact binding:
+- Formal Conjectures commit: `0771383387505c96d1b2f6a3d35088ad00892c5c`
+- target file: `FormalConjectures/Millennium/RiemannHypothesis.lean`
+- target blob: `5b1dcd5c46ab4a5f449d7d4a5c5ddce7c89c3542`
+- theorem: `RiemannHypothesis.riemannHypothesis : RiemannHypothesis`
+- fork evidence PR: #15
+- hosted workflow run: `35930160389`
+
+The exact upstream target file compiles in its native project environment. Its current axiom footprint is:
+
+```text
+[propext, sorryAx, Classical.choice, Quot.sound]
+```
+
+This is a baseline, not an RH proof. It establishes the exact theorem/type/environment that an AEGIS terminal proof must replace. The required promotion event is therefore concrete: the same target type must replay with `sorryAx` absent.
+
 ## DeepMind contribution trigger
 
 The intended external contribution should change from `research open` / no formal proof only after all of the following are simultaneously true on one exact commit:
