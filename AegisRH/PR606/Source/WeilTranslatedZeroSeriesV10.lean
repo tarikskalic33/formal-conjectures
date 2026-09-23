@@ -90,8 +90,9 @@ theorem logLaplace_translatePacket_v10
               logLift g.1 w)) := by
     funext w
     dsimp [F]
-    rw [← Complex.exp_add]
-    congr 2
+    rw [← mul_assoc, ← Complex.exp_add]
+    congr 1
+    push_cast
     ring
   rw [hleft, hright] at hshift
   rw [integral_const_mul] at hshift
@@ -195,7 +196,8 @@ theorem translated_mixed_zero_summand_v10
         (((1 - conj rho.1) - 1 / 2) * (d : ℂ)) =
         ((1 / 2 : ℂ) - rho.1) * (d : ℂ) := by
     rw [map_mul]
-    simp only [map_sub, map_one, Complex.conj_ofReal, map_map]
+    simp only [map_sub, map_one, Complex.conj_ofReal]
+    rw [Complex.conj_conj]
     ring
   rw [hexp]
   ring
