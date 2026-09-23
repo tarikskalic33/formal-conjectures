@@ -36,6 +36,7 @@ open AEGIS.RHFinalClosureV1
 open AEGIS.RHMillenniumGateV10
 open AEGIS.RestrictedWeilCriterionLaplaceV10
 open AEGIS.RestrictedWeilCriterionPoleIsolationV10
+open AEGIS.RestrictedWeilCriterionZeroKernelV10
 open AEGIS.RestrictedWeilCriterionResidueCoefficientV11
 open AEGIS.MeromorphicIdentityPreconnectedV11
 open AEGIS.RHZeroKernelLaplaceV12
