@@ -286,5 +286,7 @@
       "port_path": "AegisRH/PR606/Test/WeilAutocorrelationMellinV11Spec.lean",
       "source_status": "added"
     }
-  ]
+  ],
+  "fork_apache2_header_prepended_to_imported_lean": true,
+  "upstream_lean_body_preserved": true
 }
