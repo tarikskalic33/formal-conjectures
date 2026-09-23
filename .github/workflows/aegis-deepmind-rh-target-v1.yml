@@ -4,33 +4,43 @@ on:
   push:
     branches:
       - 'evidence/deepmind-rh-target-direct-v1'
-  pull_request:
-    paths:
-      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
-      - 'AegisRH/DeepMindRHTargetAuditV1.lean'
-      - '.github/workflows/aegis-deepmind-rh-target-v1.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  DEEPMIND_SHA: 0771383387505c96d1b2f6a3d35088ad00892c5c
+
 jobs:
   direct-target:
-    name: compile exact DeepMind RiemannHypothesis target
+    name: build exact upstream DeepMind RiemannHypothesis target
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - name: Checkout exact candidate
+      - name: Checkout fork control
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
-      - name: Bind exact target blob
+      - name: Checkout exact DeepMind Formal Conjectures
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: google-deepmind/formal-conjectures
+          ref: ${{ env.DEEPMIND_SHA }}
+          path: .deepmind
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact upstream target
         shell: bash
         run: |
           set -euo pipefail
-          test -f FormalConjectures/Millennium/RiemannHypothesis.lean
-          sha256sum FormalConjectures/Millennium/RiemannHypothesis.lean | tee /tmp/rh-target.sha256
+          test "$(git -C .deepmind rev-parse HEAD)" = "$DEEPMIND_SHA"
+          test -f .deepmind/FormalConjectures/Millennium/RiemannHypothesis.lean
+          sha256sum .deepmind/FormalConjectures/Millennium/RiemannHypothesis.lean | tee /tmp/rh-target.sha256
 
-      - name: Install project toolchain and cache
+      - name: Install exact upstream toolchain and cache
         shell: bash
         run: |
           set -euo pipefail
@@ -38,34 +48,43 @@ jobs:
           ./elan-init -y --default-toolchain none
           export PATH="$HOME/.elan/bin:$PATH"
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd .deepmind
           lake exe cache get
           lean --version
 
-      - name: Compile exact DeepMind target source
+      - name: Build exact DeepMind RH target module
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean FormalConjectures/Millennium/RiemannHypothesis.lean
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd .deepmind
+          lake build FormalConjectures.Millennium.RiemannHypothesis
 
-      - name: Audit exact target theorem axioms
+      - name: Audit exact DeepMind target theorem axioms
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean AegisRH/DeepMindRHTargetAuditV1.lean 2>&1 | tee /tmp/deepmind-rh-target-axioms.log
-          grep -F "RiemannHypothesis.riemannHypothesis" /tmp/deepmind-rh-target-axioms.log
-          if grep -Fq "sorryAx" /tmp/deepmind-rh-target-axioms.log; then
+          export PATH="$HOME/.elan/bin:$PATH"
+          cd .deepmind
+          cat > DeepMindRHTargetAudit.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          #check RiemannHypothesis.riemannHypothesis
+          #print axioms RiemannHypothesis.riemannHypothesis
+          LEAN
+          lake env lean DeepMindRHTargetAudit.lean 2>&1 | tee /tmp/deepmind-rh-target-axioms.log
+          if grep -Fq 'sorryAx' /tmp/deepmind-rh-target-axioms.log; then
             echo "DEEPMIND_RH_TARGET_SOURCE=OPEN_WITH_SORRYAX"
           else
             echo "DEEPMIND_RH_TARGET_SOURCE=NO_SORRYAX"
           fi
 
-      - name: Emit target disposition
+      - name: Emit exact target disposition
         if: always()
         shell: bash
         run: |
           printf '%s\n' \
+            "DEEPMIND_SHA=$DEEPMIND_SHA" \
             "TARGET_PATH=FormalConjectures/Millennium/RiemannHypothesis.lean" \
             "TARGET_THEOREM=RiemannHypothesis.riemannHypothesis" \
             "TARGET_TYPE=RiemannHypothesis" \
-            "AEGIS_TARGET_MATCH=V13 final_sign_implies_rh_v13 / universal_zero_quadratic_implies_rh_v13" \
             "AUTHORITY_EFFECT=NONE"
