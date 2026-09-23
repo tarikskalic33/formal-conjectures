@@ -84,7 +84,7 @@ jobs:
           ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
           FROOT="$GITHUB_WORKSPACE/AegisRH/SmallWindow"
           OUT="$GITHUB_WORKSPACE/.build"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.mathlib/.lake/build/lib/lean"
+          BASE_LEAN_PATH="$(cd "$GITHUB_WORKSPACE/.mathlib" && lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$FROOT:$ROOT:$BASE_LEAN_PATH"
 
           modules=(
@@ -142,7 +142,7 @@ jobs:
           ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
           FROOT="$GITHUB_WORKSPACE/AegisRH/SmallWindow"
           OUT="$GITHUB_WORKSPACE/.build"
-          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.mathlib/.lake/build/lib/lean"
+          BASE_LEAN_PATH="$(cd "$GITHUB_WORKSPACE/.mathlib" && lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$FROOT:$ROOT:$BASE_LEAN_PATH"
 
           cat > /tmp/RHSmallWindowProducerAudit.lean <<'EOF'
