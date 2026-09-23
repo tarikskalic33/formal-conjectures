@@ -168,11 +168,16 @@ theorem zero_laplace_term_integral_v12
     funext t
     apply congrArg Complex.exp
     ring
+  have hden :
+      w - WeilCenteredZeroExponentV12 rho ≠ 0 := by
+    intro hz
+    have hre := congrArg Complex.re hz
+    simp at hre
+    linarith
   rw [hfun, h]
-  rw [show
-    WeilCenteredZeroExponentV12 rho - w =
-      -(w - WeilCenteredZeroExponentV12 rho) by ring]
-  simp [div_eq_mul_inv]
+  simp [hden]
+  field_simp [hden]
+  ring
 
 /-- Norm integral of one Laplace term. -/
 theorem zero_laplace_term_norm_integral_v12
