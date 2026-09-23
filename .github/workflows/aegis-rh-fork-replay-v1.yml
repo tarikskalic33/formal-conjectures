@@ -1176,6 +1176,34 @@ jobs:
           print("MIXED_MELLIN_STABILIZE=PASS")
           PY
 
+      - name: Apply translated-kernel V11 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          TK=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTranslatedKernelBoundV11.lean"
+          python3 - "$TK" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old = "open scoped BigOperators\n"
+          new = "open scoped BigOperators ComplexConjugate\n"
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old = """  simp
+          ring"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, "  simp", 1)
+
+          assert "open scoped BigOperators ComplexConjugate" in s
+          assert s != original
+          p.write_text(s, encoding="utf-8")
+          print("TRANSLATED_KERNEL_V11_COMPAT=PASS")
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
