@@ -38,8 +38,10 @@ open AEGIS.RHMillenniumGateV10
 
 /-- Exact kernelized restricted-Weil implication consumed by the gate. -/
 theorem restricted_weil_criterion_v13 :
-    RestrictedWeilCriterionKernelBridgeV10 :=
-  AEGIS.V13Scratch.restricted_weil_criterion_kernel_bridge_v13
+    RestrictedWeilCriterionKernelBridgeV10 := by
+  intro hU
+  exact AEGIS.V13Scratch.final_sign_implies_rh_v13
+    (universal_zero_quadratic_iff_final_sign_v10.mp hU)
 
 /-- Once a universal zero-quadratic producer is supplied, the current V13
 terminal immediately yields Mathlib's exact RiemannHypothesis type. -/
