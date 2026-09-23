@@ -502,83 +502,67 @@ jobs:
           s = p.read_text(encoding="utf-8")
           original = s
 
-          old = """  have he :
-              ContDiff ℝ ∞
-                (fun u : ℝ => Complex.exp (-s * (u : ℂ))) := by
-            fun_prop"""
-          new = """  have hu : ContDiff ℝ ∞ (fun u : ℝ => (u : ℂ)) :=
-            Complex.ofRealCLM.contDiff
-          have hlin : ContDiff ℝ ∞ (fun u : ℝ => -s * (u : ℂ)) :=
-            contDiff_const.mul hu
-          have he :
-              ContDiff ℝ ∞
-                (fun u : ℝ => Complex.exp (-s * (u : ℂ))) :=
-            Complex.contDiff_exp.comp hlin"""
-          if old in s:
+          def replace_once(old: str, new: str, label: str) -> None:
+              global s
+              count = s.count(old)
+              assert count == 1, f"{label}: expected 1 occurrence, found {count}"
               s = s.replace(old, new, 1)
 
-          old = """          let A : ℂ := s * (u : ℂ)
-                    calc
-                      Complex.exp A *
-                          (((seedBumpV10 u : ℝ) : ℂ) * Complex.exp (-A))
-                        =
-                          ((seedBumpV10 u : ℝ) : ℂ) *
-                            (Complex.exp A * Complex.exp (-A)) := by ring
-                      _ = ((seedBumpV10 u : ℝ) : ℂ) := by
-                            rw [← Complex.exp_add]
-                            simp)"""
-          new = """          calc
-                      Complex.exp (s * (u : ℂ)) *
-                          (((seedBumpV10 u : ℝ) : ℂ) *
-                            Complex.exp (-(s * (u : ℂ))))
-                        =
-                          ((seedBumpV10 u : ℝ) : ℂ) *
-                            (Complex.exp (s * (u : ℂ)) *
-                              Complex.exp (-(s * (u : ℂ)))) := by ring
-                      _ = ((seedBumpV10 u : ℝ) : ℂ) := by
-                            rw [← Complex.exp_add]
-                            simp)"""
-          if old in s:
-              s = s.replace(old, new, 1)
-
-          s = s.replace(
-              """    _ = ((∫ u : ℝ, seedBumpV10 u : ℝ) : ℂ) := by
-                    rw [integral_ofReal]""",
-              """    _ = ((∫ u : ℝ, seedBumpV10 u : ℝ) : ℂ) := by
-                    exact integral_ofReal""",
-              1,
+          replace_once(
+              "  have he :\n      ContDiff ℝ ∞\n        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) := by\n    fun_prop",
+              "  have hu : ContDiff ℝ ∞ (fun u : ℝ => (u : ℂ)) :=\n"
+              "    Complex.ofRealCLM.contDiff\n"
+              "  have hlin : ContDiff ℝ ∞ (fun u : ℝ => -s * (u : ℂ)) :=\n"
+              "    contDiff_const.mul hu\n"
+              "  have he :\n"
+              "      ContDiff ℝ ∞\n"
+              "        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) :=\n"
+              "    Complex.contDiff_exp.comp hlin",
+              "seedProfile_contDiff",
           )
 
-          old = """    · let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt
-                have hs :
-                    mellin gsum.1 s = mellin gs.1 s := by
-                  rw [mellin_addPacket_v10]
-                  simp [hts]
-                have ht :
-                    mellin gsum.1 t = mellin gt.1 t := by
-                  rw [mellin_addPacket_v10]
-                  simp [hst]"""
-          new = """    · have hst0 : mellin gs.1 t = 0 := by simpa using hst
-                have hts0 : mellin gt.1 s = 0 := by simpa using hts
-                let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt
-                have hs :
-                    mellin gsum.1 s = mellin gs.1 s := by
-                  rw [mellin_addPacket_v10]
-                  simp [hts0]
-                have ht :
-                    mellin gsum.1 t = mellin gt.1 t := by
-                  rw [mellin_addPacket_v10]
-                  simp [hst0]"""
-          if old in s:
-              s = s.replace(old, new, 1)
+          calc_start = s.index("          let A : ℂ := s * (u : ℂ)")
+          calc_end_marker = "                  simp)"
+          calc_end = s.index(calc_end_marker, calc_start) + len(calc_end_marker)
+          new_calc = (
+              "          calc\n"
+              "            Complex.exp (s * (u : ℂ)) *\n"
+              "                (((seedBumpV10 u : ℝ) : ℂ) *\n"
+              "                  Complex.exp (-(s * (u : ℂ))))\n"
+              "              =\n"
+              "                ((seedBumpV10 u : ℝ) : ℂ) *\n"
+              "                  (Complex.exp (s * (u : ℂ)) *\n"
+              "                    Complex.exp (-(s * (u : ℂ)))) := by ring\n"
+              "            _ = ((seedBumpV10 u : ℝ) : ℂ) := by\n"
+              "                  rw [← Complex.exp_add]\n"
+              "                  simp)"
+          )
+          s = s[:calc_start] + new_calc + s[calc_end:]
+
+          replace_once(
+              "          rw [integral_ofReal]",
+              "          exact integral_ofReal",
+              "integral_ofReal",
+          )
+
+          replace_once(
+              "    · let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt\n",
+              "    · have hst0 : mellin gs.1 t = 0 := by simpa using hst\n"
+              "      have hts0 : mellin gt.1 s = 0 := by simpa using hts\n"
+              "      let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt\n",
+              "pair-zero-conversion",
+          )
+          replace_once("        simp [hts]", "        simp [hts0]", "hts-zero")
+          replace_once("        simp [hst]", "        simp [hst0]", "hst-zero")
 
           assert "Complex.contDiff_exp.comp hlin" in s
           assert "let A : ℂ := s * (u : ℂ)" not in s
           assert "exact integral_ofReal" in s
           assert "have hst0 : mellin gs.1 t = 0" in s
           assert "have hts0 : mellin gt.1 s = 0" in s
+          assert s != original
           p.write_text(s, encoding="utf-8")
-          print("OFFLINE_SEED_COMPAT_CHANGED", s != original)
+          print("OFFLINE_SEED_COMPAT=PASS")
           PY
 
       - name: Fetch exact Mathlib cache
