@@ -307,7 +307,7 @@ theorem mellin_autocorrelation_factor_v10
       congr 1
       push_cast
       ring
-    rw [hexp]
+    rw [← mul_assoc, hexp]
   rw [show mellin (WeilAutocorrelationV1 g) s =
       mellin A.1 s from rfl, hlog, hcoord,
     logCorrelation_transform_factor_v10]
