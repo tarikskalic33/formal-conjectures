@@ -243,6 +243,34 @@ AEGIS also contains a provider-bound Li-criterion terminal that proves the exact
 
 This is a clean alternate terminal, not a shortcut: the unconditional producer for all Li-coefficient nonnegativities remains a separate obligation.
 
+## Direct hosted audit of the exact DeepMind RH target
+
+The exact upstream DeepMind module has now been built directly, rather than
+inferred from a local restatement.
+
+- DeepMind repository SHA:
+  `0771383387505c96d1b2f6a3d35088ad00892c5c`
+- target path:
+  `FormalConjectures/Millennium/RiemannHypothesis.lean`
+- target declaration:
+  `RiemannHypothesis.riemannHypothesis : RiemannHypothesis`
+- hosted run: `35928810281`
+- module build: **SUCCESS**
+- direct `#print axioms` footprint:
+
+```text
+propext
+sorryAx
+Classical.choice
+Quot.sound
+```
+
+Thus the external target itself is now directly replayed and measured. Its
+current upstream theorem remains open because its proof body is `by sorry`;
+the AEGIS contribution target is therefore unambiguous: replace the external
+`sorryAx`-bearing theorem authority with a stable, exact-commit external Lean
+proof whose terminal type is the same Mathlib `RiemannHypothesis`.
+
 ## DeepMind contribution trigger
 
 The intended external contribution should change from `research open` / no formal proof only after all of the following are simultaneously true on one exact commit:
