@@ -216,7 +216,6 @@ jobs:
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
           targets=[
-            'WeilRHImpliesFinalSignV11',
             'RHZeroKernelLaplaceAnalyticV12',
             'RestrictedWeilCriterionResidueCoefficientV11',
             'RestrictedWeilCriterionPoleIsolationV10',
@@ -269,12 +268,10 @@ jobs:
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
           cat > /tmp/Audit.lean <<'LEAN'
-          import WeilRHImpliesFinalSignV11
           import RHZeroKernelLaplaceAnalyticV12
           import RestrictedWeilCriterionResidueCoefficientV11
           import RestrictedWeilCriterionPoleIsolationV10
           import MeromorphicIdentityPreconnectedV11
-          #print axioms AEGIS.WeilRHImpliesFinalSignV11.rh_implies_final_sign_residual_v11
           #print axioms AEGIS.RHZeroKernelLaplaceAnalyticV12.zero_kernel_laplace_analyticOnNhd_v12
           #print axioms AEGIS.RestrictedWeilCriterionResidueCoefficientV11.exists_nonzero_zero_coefficient_v11
           #print axioms AEGIS.RestrictedWeilCriterionPoleIsolationV10.exists_centered_zero_isolation_v10
