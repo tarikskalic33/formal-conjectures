@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  AEGIS_SHA: 3e9f448fb8cfec9ad02a3e546509d996f52e5853
+  AEGIS_SHA: 8b5b5b41d9b6748947876709b98a930b869b38ac
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
