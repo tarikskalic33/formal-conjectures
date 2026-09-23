@@ -19,20 +19,19 @@ import RHNarrowDiagonalUpgradeV2
 import Mathlib.Tactic
 
 /-!
-AEGIS Ω — unconditional small-window sign producer V1.
+AEGIS Ω — unconditional finite-window sign producer V1.
 
-This module binds the existing narrow-support diagonal theorem to the exact
-window-exhaustion API.
+The existing V31 three-block theorem is quantified over an arbitrary
+width-1/32 base packet. Setting its coefficients to (0,1,0) collapses the
+three-block combination to the untranslated base packet itself. Therefore the
+same theorem already yields the exact arithmetic sign for every repository
+packet whose logarithmic support is contained in [-1/64,1/64].
 
-For every repository packet whose logarithmic support is contained in
-[-1/128, 1/128], the actual autocorrelation explicit-formula right side is
-nonpositive.
+The narrower V2 diagonal theorem additionally yields a stronger coercive
+estimate on [-1/128,1/128].
 
-No RH hypothesis, no universal sign hypothesis, no supplied PSD matrix and no
-external certificate is used.
-
-This is a genuine producer for one nontrivial finite window. It does not yet
-prove arbitrary-window nonpositivity or universal Weil negativity.
+No RH hypothesis, universal sign premise, supplied PSD matrix or external
+certificate is used.
 
 AUTHORITY_EFFECT = NONE.
 -/
@@ -48,38 +47,64 @@ open AEGIS.WeilWindowExhaustionV1
 open AEGIS.RHNarrowDiagonalUpgradeV2
 open AEGIS.WeilMixedAlgebraV2
 open AEGIS.WeilDisjointEnergyV2
+open AEGIS.WeilThreeBlockTranslatedPacketsV22
+open AEGIS.WeilSeparatedArchBridgeV31
 
-/-- A radius-1/128 symmetric log window is exactly the width-1/64 support
-condition consumed by the narrow diagonal theorem. -/
+/-- Radius 1/64 is exactly the retained width-1/32 base-packet condition. -/
+theorem window_one_over_64_implies_retained_v1
+    (g : WeilCompactSmoothGV1)
+    (hw : LogWindowContainsV1 g (1 / 64 : ℝ)) :
+    WidthOneThirtyTwoAt g 0 := by
+  simpa [LogWindowContainsV1, WidthOneThirtyTwoAt, LogSupportIn] using hw
+
+/-- The (0,1,0) three-block combination is exactly the base packet. -/
+theorem middle_three_block_eq_base_v1
+    (g : WeilCompactSmoothGV1) :
+    AEGIS.WeilMixedAlgebraV2.combo 0 1 0
+      (gMinus g) (gZero g) (gPlus g) = g := by
+  apply Subtype.ext
+  funext x
+  simp [AEGIS.WeilMixedAlgebraV2.combo,
+    AEGIS.WeilMixedAlgebraV2.addPacket,
+    AEGIS.WeilMixedAlgebraV2.scalePacket,
+    gMinus, gZero, gPlus, translatePacket_apply]
+
+/-- Unconditional sign producer for the full radius-1/64 finite window. -/
+theorem windowArithmeticNonpositive_one_over_64_v1 :
+    WindowArithmeticNonpositiveV1 (1 / 64 : ℝ) := by
+  intro g hm hw
+  have hwidth : WidthOneThirtyTwoAt g 0 :=
+    window_one_over_64_implies_retained_v1 g hw
+  have h :=
+    three_block_bound_of_moments g 0 hwidth hm
+      (0 : ℂ) (1 : ℂ) (0 : ℂ)
+  rw [middle_three_block_eq_base_v1 g] at h
+  have hE : 0 ≤ energy g.1 := energy_nonnegative g.1
+  nlinarith
+
+/-- Every smaller nonnegative window inherits the same sign result. -/
+theorem windowArithmeticNonpositive_of_nonneg_le_one_over_64_v1
+    {L : ℝ} (hL0 : 0 ≤ L) (hL : L ≤ (1 / 64 : ℝ)) :
+    WindowArithmeticNonpositiveV1 L := by
+  exact windowArithmeticNonpositive_mono_v1 hL
+    windowArithmeticNonpositive_one_over_64_v1
+
+/-- Radius 1/128 additionally satisfies the narrower coercive diagonal bound. -/
 theorem window_one_over_128_implies_narrow_v1
     (g : WeilCompactSmoothGV1)
     (hw : LogWindowContainsV1 g (1 / 128 : ℝ)) :
     WidthOneSixtyFourAt g 0 := by
-  intro t ht
-  have h := hw ht
-  simpa [WidthOneSixtyFourAt] using h
+  simpa [LogWindowContainsV1, WidthOneSixtyFourAt, LogSupportIn] using hw
 
-/-- First unconditional producer for the window-exhaustion hierarchy. -/
 theorem windowArithmeticNonpositive_one_over_128_v1 :
-    WindowArithmeticNonpositiveV1 (1 / 128 : ℝ) := by
-  intro g hm hw
-  have hnarrow : WidthOneSixtyFourAt g 0 :=
-    window_one_over_128_implies_narrow_v1 g hw
-  have hdiag :=
-    narrow_diagonal_32_over_25_v2 g 0 hnarrow
-  have hE : 0 ≤ energy g.1 := energy_nonnegative g.1
-  change (B g g).re ≤ 0
-  nlinarith
-
-/-- Every smaller nonnegative symmetric window inherits the same sign result. -/
-theorem windowArithmeticNonpositive_of_nonneg_le_one_over_128_v1
-    {L : ℝ} (hL0 : 0 ≤ L) (hL : L ≤ (1 / 128 : ℝ)) :
-    WindowArithmeticNonpositiveV1 L := by
-  exact windowArithmeticNonpositive_mono_v1 hL
-    windowArithmeticNonpositive_one_over_128_v1
+    WindowArithmeticNonpositiveV1 (1 / 128 : ℝ) :=
+  windowArithmeticNonpositive_of_nonneg_le_one_over_64_v1
+    (by norm_num) (by norm_num)
 
 end AEGIS.RHSmallWindowProducerV1
 
-#print axioms AEGIS.RHSmallWindowProducerV1.window_one_over_128_implies_narrow_v1
+#print axioms AEGIS.RHSmallWindowProducerV1.window_one_over_64_implies_retained_v1
+#print axioms AEGIS.RHSmallWindowProducerV1.middle_three_block_eq_base_v1
+#print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_64_v1
+#print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_64_v1
 #print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_one_over_128_v1
-#print axioms AEGIS.RHSmallWindowProducerV1.windowArithmeticNonpositive_of_nonneg_le_one_over_128_v1
