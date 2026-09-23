@@ -61,7 +61,12 @@ jobs:
           test "$(git -C .aegis-base rev-parse HEAD)" = "$AEGIS_BASE_SHA"
           test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
           test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
-          grep -F ""source_head_sha": "$AEGIS_HEAD_SHA"" AegisRH/PR606/PORT_MANIFEST.json
+          python3 - <<'PY'
+          import json, os
+          m=json.load(open('AegisRH/PR606/PORT_MANIFEST.json'))
+          assert m['source_head_sha'] == os.environ['AEGIS_HEAD_SHA']
+          assert m['source_base_sha'] == os.environ['AEGIS_BASE_SHA']
+          PY
           grep -F "$MATHLIB_SHA" lake-manifest.json
           test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
 
