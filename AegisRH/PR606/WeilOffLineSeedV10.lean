@@ -71,10 +71,14 @@ theorem seedProfile_contDiff_v10 (s : ℂ) :
   have hb :
       ContDiff ℝ ∞ (fun u : ℝ => ((seedBumpV10 u : ℝ) : ℂ)) :=
     Complex.ofRealCLM.contDiff.comp seedBumpV10.contDiff
+  have hu : ContDiff ℝ ∞ (fun u : ℝ => (u : ℂ)) :=
+    Complex.ofRealCLM.contDiff
+  have hlin : ContDiff ℝ ∞ (fun u : ℝ => -s * (u : ℂ)) :=
+    contDiff_const.mul hu
   have he :
       ContDiff ℝ ∞
-        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) := by
-    fun_prop
+        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) :=
+    Complex.contDiff_exp.comp hlin
   exact hb.mul he
 
 private theorem seedBump_zero_below_v10 {u : ℝ} (hu : u ≤ -1) :
@@ -203,18 +207,19 @@ theorem seedPacket_mellin_self_v10 (s : ℂ) :
           unfold WeilLogMellinIntegrandV9
           rw [seedPacket_exp_apply_v10]
           unfold seedProfileV10
-          let A : ℂ := s * (u : ℂ)
           calc
-            Complex.exp A *
-                (((seedBumpV10 u : ℝ) : ℂ) * Complex.exp (-A))
+            Complex.exp (s * (u : ℂ)) *
+                (((seedBumpV10 u : ℝ) : ℂ) *
+                  Complex.exp (-(s * (u : ℂ))))
               =
                 ((seedBumpV10 u : ℝ) : ℂ) *
-                  (Complex.exp A * Complex.exp (-A)) := by ring
+                  (Complex.exp (s * (u : ℂ)) *
+                    Complex.exp (-(s * (u : ℂ)))) := by ring
             _ = ((seedBumpV10 u : ℝ) : ℂ) := by
                   rw [← Complex.exp_add]
                   simp)
     _ = ((∫ u : ℝ, seedBumpV10 u : ℝ) : ℂ) := by
-          rw [integral_ofReal]
+          exact integral_ofReal
 
 /-- The constructed packet sees its target spectral point nontrivially. -/
 theorem seedPacket_mellin_ne_zero_v10 (s : ℂ) :
@@ -252,15 +257,17 @@ theorem exists_packet_mellin_ne_zero_pair_v10
   · exact ⟨gs, hss, hst⟩
   · by_cases hts : mellin gt.1 s ≠ 0
     · exact ⟨gt, hts, htt⟩
-    · let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt
+    · have hst0 : mellin gs.1 t = 0 := by simpa using hst
+      have hts0 : mellin gt.1 s = 0 := by simpa using hts
+      let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt
       have hs :
           mellin gsum.1 s = mellin gs.1 s := by
         rw [mellin_addPacket_v10]
-        simp [hts]
+        simp [hts0]
       have ht :
           mellin gsum.1 t = mellin gt.1 t := by
         rw [mellin_addPacket_v10]
-        simp [hst]
+        simp [hst0]
       refine ⟨gsum, ?_, ?_⟩
       · rw [hs]
         exact hss
