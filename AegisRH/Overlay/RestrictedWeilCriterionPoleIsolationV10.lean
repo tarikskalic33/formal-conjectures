@@ -18,6 +18,8 @@ import RestrictedWeilCriterionLaplaceV10
 import BoundedZeroFinitenessV1
 import Mathlib.NumberTheory.LSeries.ZetaZeros
 import Mathlib.Topology.MetricSpace.Pseudo.Basic
+
+-- Fork compatibility: use the generic neighborhood discreteness API directly.
 import Mathlib.Tactic
 
 /-!
