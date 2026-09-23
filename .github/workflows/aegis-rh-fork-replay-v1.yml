@@ -277,6 +277,8 @@ jobs:
           grep -F 'rw [show Complex.digamma =' "$HALF"
           cp AegisRH/Overlay/WeilFixedLineGammaFubiniV10.lean \
             .aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaFubiniV10.lean
+          cp AegisRH/Overlay/WeilFixedLineGammaAssemblyV10.lean \
+            .aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaAssemblyV10.lean
 
       - name: Fetch exact Mathlib cache
         shell: bash
