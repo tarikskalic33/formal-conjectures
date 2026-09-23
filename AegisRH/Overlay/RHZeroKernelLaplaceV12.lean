@@ -175,7 +175,7 @@ theorem zero_laplace_term_integral_v12
     simp at hre
     linarith
   rw [hfun, h]
-  simpa only [mul_zero, Complex.exp_zero, neg_div, div_neg, neg_neg, div_eq_mul_inv]
+  simp [div_eq_mul_inv, inv_neg]
 
 /-- Norm integral of one Laplace term. -/
 theorem zero_laplace_term_norm_integral_v12
