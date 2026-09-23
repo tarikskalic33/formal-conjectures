@@ -244,7 +244,7 @@ def interval_ldlt(A: list[list[arb]]) -> dict[str, object]:
     pivots: list[dict[str, object]] = []
     for i in range(n):
         lower[i][i] = arb(1)
-        pivot = A[i][i]
+        pivot = arb(A[i][i])
         for k in range(i):
             assert diag[k] is not None
             pivot -= lower[i][k] * lower[i][k] * diag[k]
@@ -254,7 +254,7 @@ def interval_ldlt(A: list[list[arb]]) -> dict[str, object]:
             return {"positive_definite": False, "undetermined_or_nonpositive": i, "pivots": pivots}
         pivots.append({"index": i, "positive": True, "ball": ball_repr(pivot, 80)})
         for row in range(i + 1, n):
-            v = A[row][i]
+            v = arb(A[row][i])
             for k in range(i):
                 assert diag[k] is not None
                 v -= lower[row][k] * lower[i][k] * diag[k]
