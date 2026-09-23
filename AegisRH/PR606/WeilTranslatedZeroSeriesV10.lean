@@ -196,9 +196,13 @@ theorem translated_mixed_zero_summand_v10
     rw [map_mul]
     simp only [map_sub, map_one]
     rw [Complex.conj_conj]
-    have hhalf : conj (1 / 2 : ℂ) = (1 / 2 : ℂ) := by
+    have hd : conj (d : ℂ) = (d : ℂ) := by
+      simpa using (Complex.conj_ofReal d)
+    have htwo : conj (2 : ℂ) = (2 : ℂ) := by
       norm_num
-    rw [hhalf]
+    have hhalf : conj (1 / 2 : ℂ) = (1 / 2 : ℂ) := by
+      rw [map_div₀, map_one, htwo]
+    rw [hd, hhalf]
     ring
   rw [hexp]
   ring
