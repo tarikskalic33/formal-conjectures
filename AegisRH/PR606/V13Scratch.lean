@@ -30,6 +30,8 @@ noncomputable section
 
 namespace AEGIS.V13Scratch
 
+local instance : DecidableEq RiemannNontrivialZeroIndexV2 := Classical.decEq _
+
 open AEGIS.RHFinalClosureV1
 open AEGIS.RHMillenniumGateV10
 open AEGIS.RestrictedWeilCriterionLaplaceV10
@@ -66,7 +68,10 @@ theorem centered_zero_dist_ge_isolation_v12
   refine ⟨eps, heps, ?_⟩
   intro sigma hne
   have h := hsep sigma hne
-  simpa [centered_exponent_v12_eq_neg_v10] using h
+  rw [centered_exponent_v12_eq_neg_v10 sigma,
+    centered_exponent_v12_eq_neg_v10 rho,
+    dist_neg_neg]
+  exact h
 
 def RightHalfPlaneV13 : Set ℂ := {w : ℂ | 0 < w.re}
 
@@ -158,7 +163,6 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
     intro sigma w hw
     by_cases hsigma : sigma = rho
     · simp [hsigma, u]
-      positivity
     · simp only [hsigma, if_false]
       have hd :=
         other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -263,12 +267,15 @@ theorem zero_resolvent_order_eq_neg_one_v13
 
   obtain ⟨epsR, hepsR, hRdiff⟩ :=
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
-  have hRanalytic :
-      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.analyticAt
+  have hRdiffAt :
+      DifferentiableAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    apply hRdiff.differentiableAt
     simpa [y] using
       (Metric.ball_mem_nhds
         (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+  have hRanalytic :
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y :=
+    hRdiffAt.analyticAt
 
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
@@ -293,7 +300,8 @@ theorem zero_resolvent_order_eq_neg_one_v13
 
   have hballNE :
       ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
-    hball.filter_mono nhdsWithin_le_nhds
+    (show ∀ᶠ z in 𝓝 y, z ∈ Metric.ball y (epsS / 2) from hball).filter_mono
+      nhdsWithin_le_nhds
 
   have heq :
       ∀ᶠ z in 𝓝[≠] y,
@@ -476,12 +484,15 @@ theorem zero_resolvent_meromorphicAt_center_v13
   let y : ℂ := WeilCenteredZeroExponentV12 rho
   obtain ⟨epsR, hepsR, hRdiff⟩ :=
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
-  have hRanalytic :
-      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.analyticAt
+  have hRdiffAt :
+      DifferentiableAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    apply hRdiff.differentiableAt
     simpa [y] using
       (Metric.ball_mem_nhds
         (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+  have hRanalytic :
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y :=
+    hRdiffAt.analyticAt
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
       (z - y) * ZeroResolventRemainderV13 g rho z
@@ -498,7 +509,8 @@ theorem zero_resolvent_meromorphicAt_center_v13
         (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsS / 2))
   have hballNE :
       ∀ᶠ z in 𝓝[≠] y, z ∈ Metric.ball y (epsS / 2) :=
-    hball.filter_mono nhdsWithin_le_nhds
+    (show ∀ᶠ z in 𝓝 y, z ∈ Metric.ball y (epsS / 2) from hball).filter_mono
+      nhdsWithin_le_nhds
   have heq :
       ∀ᶠ z in 𝓝[≠] y,
         WeilZeroResolventV12 g z =
