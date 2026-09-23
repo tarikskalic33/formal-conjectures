@@ -131,15 +131,14 @@ jobs:
           if old_hpoint_v2 in s:
               s = s.replace(old_hpoint_v2, new_hpoint_v2, 1)
 
-          final_log = """    _ = Real.log 2 := by
-              exact congrArg Real.log (by norm_num : (1 : ℝ) + 1 = 2)"""
+          final_log = "    _ = Real.log 2 := by rw [Real.log_one, show (1 : ℝ) + 1 = 2 by norm_num]; ring"
           s = s.replace("    _ = Real.log 2 := by norm_num", final_log, 1)
           s = s.replace("    _ = Real.log 2 := by simp", final_log, 1)
 
           assert "convert h using 1 <;> simp [sub_eq_add_neg]" in s
           assert "have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])" in s
           assert "have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])" in s
-          assert "exact congrArg Real.log (by norm_num : (1 : ℝ) + 1 = 2)" in s
+          assert "rw [Real.log_one, show (1 : ℝ) + 1 = 2 by norm_num]; ring" in s
 
           p.write_text(s, encoding="utf-8")
           print("ARCH_COMPAT_CHANGED", s != original)
