@@ -129,9 +129,9 @@ theorem targetPhi_integral_zero_v11 (rho : ℂ) :
   have hF : ContDiff ℝ 1 F := by
     dsimp [F]
     exact
-      ((targetPsi_contDiff_v11 rho).of_le le_top).add
+      ((targetPsi_contDiff_v11 rho).of_le (by simp)).add
         ((contDiff_deriv_complex_v11
-          (targetPsi_contDiff_v11 rho)).of_le le_top)
+          (targetPsi_contDiff_v11 rho)).of_le (by simp))
   have hFc : HasCompactSupport F := by
     dsimp [F]
     have h := targetPsi_hasCompactSupport_v11 rho
@@ -163,9 +163,9 @@ theorem targetPhi_exp_integral_zero_v11 (rho : ℂ) :
     dsimp [F]
     exact
       ((contDiff_deriv_complex_v11
-        (targetPsi_contDiff_v11 rho)).of_le le_top).mul
+        (targetPsi_contDiff_v11 rho)).of_le (by simp)).mul
       (Complex.ofRealCLM.contDiff.comp
-        (Real.contDiff_exp.of_le le_top))
+        (Real.contDiff_exp.of_le (by simp)))
   have hFc : HasCompactSupport F := by
     dsimp [F]
     exact (targetPsi_hasCompactSupport_v11 rho).deriv.mul_right
@@ -183,8 +183,8 @@ theorem targetPhi_exp_integral_zero_v11 (rho : ℂ) :
     have hd := h1.mul h2
     change
       deriv
-          (fun x : ℝ =>
-            deriv (TargetPsiV11 rho) x * (Real.exp x : ℂ)) u =
+          ((deriv (TargetPsiV11 rho)) *
+            (fun x : ℝ => (Real.exp x : ℂ))) u =
         TargetPhiV11 rho u * (Real.exp u : ℂ)
     rw [hd.deriv]
     unfold TargetPhiV11
@@ -215,8 +215,8 @@ theorem targetPsi_deriv_v11 (rho : ℂ) (u : ℝ) :
           (psi0 u : ℂ) * (Complex.exp (-(u • rho)) * (-rho)) := by
       change
         deriv
-            (fun x : ℝ =>
-              (psi0 x : ℂ) * Complex.exp (-(x • rho))) u =
+            ((fun x : ℝ => (psi0 x : ℂ)) *
+              (fun x : ℝ => Complex.exp (-(x • rho)))) u =
           _
       simpa [smul_eq_mul] using hprod.deriv
     _ = ((((deriv psi0 u : ℝ) : ℂ) -
@@ -339,11 +339,11 @@ theorem targetPhi_weighted_integral_v11 (rho : ℂ) :
 
   have hi1 : ∫ u : ℝ, deriv psi0 u = 0 :=
     integral_deriv_eq_zero
-      (psi0_contDiff.of_le le_top)
+      (psi0_contDiff.of_le (by simp))
       psi0_hasCompactSupport
   have hi2 : ∫ u : ℝ, deriv (deriv psi0) u = 0 :=
     integral_deriv_eq_zero
-      ((contDiff_deriv psi0_contDiff).of_le le_top)
+      ((contDiff_deriv psi0_contDiff).of_le (by simp))
       psi0_hasCompactSupport.deriv
 
   calc
