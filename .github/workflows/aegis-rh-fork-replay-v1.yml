@@ -86,6 +86,44 @@ jobs:
           grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
           test "$(git -C .aegis status --porcelain)" = ""
 
+      - name: Apply Archimedean correction Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCH=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilArchimedeanCorrectionV10.lean"
+          python3 - "$ARCH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+            simpa only [neg_sub, neg_zero] using h"""
+          new = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+            convert h using 1 <;> simp [sub_eq_add_neg]"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old = """    have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := by linarith
+              have hx1 : x + 1 ≠ 0 := by linarith"""
+          new = """    have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
+              have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old = "    _ = Real.log 2 := by norm_num"
+          new = "    _ = Real.log 2 := by simp"
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          assert s != original
+          p.write_text(s, encoding="utf-8")
+          PY
+
       - name: Inventory full PR606 terminal dependency closure
         shell: bash
         run: |
