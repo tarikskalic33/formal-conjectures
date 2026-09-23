@@ -53,12 +53,13 @@ def logCorrelationV10 (g : WeilCompactSmoothGV1) (v : ℝ) : ℂ :=
 private theorem integral_comp_exp_compat_v10 (F : ℝ → ℂ) :
     (∫ x : ℝ, Real.exp x • F (Real.exp x)) =
       ∫ y in Ioi (0 : ℝ), F y := by
-  symm
-  rw [← Real.range_exp, ← Set.image_univ]
-  simpa using
-    integral_image_eq_integral_abs_deriv_smul Set.univ
+  have h :=
+    integral_image_eq_integral_abs_deriv_smul
+      (s := Set.univ) (f := Real.exp) (f' := Real.exp)
+      MeasurableSet.univ
       (fun x _ => (Real.hasDerivAt_exp x).hasDerivWithinAt)
       Real.exp_injective.injOn F
+  simpa [Real.range_exp, abs_of_pos (Real.exp_pos _)] using h.symm
 
 private theorem logCorrelation_integrand_identity_v10
     (g : WeilCompactSmoothGV1) (v u : ℝ) :
@@ -79,8 +80,19 @@ private theorem logCorrelation_integrand_identity_v10
     rw [← Real.exp_add, ← Real.exp_add]
     congr 1
     ring
-  push_cast [hscalar]
-  ring
+  have hscalarC :
+      ((Real.exp (-v / 2) : ℝ) : ℂ) *
+          (((Real.exp ((v + u) / 2) : ℝ) : ℂ) *
+            ((Real.exp (u / 2) : ℝ) : ℂ)) =
+        ((Real.exp u : ℝ) : ℂ) := by
+    exact_mod_cast hscalar
+  calc
+    _ = (((Real.exp (-v / 2) : ℝ) : ℂ) *
+          (((Real.exp ((v + u) / 2) : ℝ) : ℂ) *
+            ((Real.exp (u / 2) : ℝ) : ℂ))) *
+          (g.1 (Real.exp v * Real.exp u) *
+            conj (g.1 (Real.exp u))) := by ring
+    _ = _ := by rw [hscalarC]
 
 /-- Exact conversion of the repository autocorrelation to additive
 log-correlation. -/
@@ -89,18 +101,23 @@ theorem autocorrelation_exp_eq_logCorrelation_v10
     WeilAutocorrelationV1 g (Real.exp v) =
       ((Real.exp (-v / 2) : ℝ) : ℂ) *
         logCorrelationV10 g v := by
-  have hsub :=
+  have hsub :
+      (∫ x : ℝ,
+          Real.exp x •
+            (g.1 (Real.exp v * Real.exp x) *
+              conj (g.1 (Real.exp x)))) =
+        ∫ y in Ioi (0 : ℝ),
+          g.1 (Real.exp v * y) * conj (g.1 y) :=
     integral_comp_exp_compat_v10
       (fun y : ℝ =>
         g.1 (Real.exp v * y) * conj (g.1 y))
   change
-    WeilAutocorrelationV1 g (Real.exp v) =
+    (∫ y in Ioi (0 : ℝ),
+      g.1 (Real.exp v * y) * conj (g.1 y)) =
       ((Real.exp (-v / 2) : ℝ) : ℂ) *
         (∫ u : ℝ,
           logLift g.1 (v + u) * conj (logLift g.1 u))
-  unfold WeilAutocorrelationV1
-  rw [← hsub]
-  rw [← integral_const_mul]
+  rw [← hsub, ← integral_const_mul]
   apply integral_congr_ae
   exact Filter.Eventually.of_forall (fun u => by
     simpa [smul_eq_mul] using
