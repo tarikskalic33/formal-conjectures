@@ -154,8 +154,7 @@ theorem zero_laplace_term_integral_v12
     have hre := congrArg Complex.re hz
     simp at hre
     linarith
-  simpa [hden] using congrArg
-    (fun z : ℂ => WeilZeroCoefficientV11 g rho * z) h
+  simp [hden]
 
 /-- Norm integral of one Laplace term. -/
 theorem zero_laplace_term_norm_integral_v12
