@@ -175,7 +175,9 @@ theorem zero_laplace_term_integral_v12
     simp at hre
     linarith
   rw [hfun, h]
-  simp [div_eq_mul_inv, inv_neg]
+  rw [show WeilCenteredZeroExponentV12 rho - w =
+      -(w - WeilCenteredZeroExponentV12 rho) by ring]
+  simp [div_eq_mul_inv]
 
 /-- Norm integral of one Laplace term. -/
 theorem zero_laplace_term_norm_integral_v12
