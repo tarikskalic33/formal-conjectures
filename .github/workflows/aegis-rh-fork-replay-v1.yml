@@ -163,7 +163,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-overlay-deps-v2-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Compile fork-local AEGIS overlays
         shell: bash
@@ -195,8 +195,7 @@ jobs:
               if m in temp: raise SystemExit('cycle:'+m)
               temp.add(m)
               for d in deps[m]:
-                  if d not in overlay:
-                      visit(d)
+                  visit(d)
               temp.remove(m); seen.add(m)
               if m not in overlay:
                   order.append(m)
@@ -226,7 +225,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+          key: aegis-overlay-deps-v2-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
