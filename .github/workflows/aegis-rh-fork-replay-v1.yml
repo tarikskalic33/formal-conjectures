@@ -163,7 +163,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v7-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+          key: aegis-overlay-deps-v8-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Compile fork-local AEGIS overlays
         shell: bash
@@ -179,12 +179,56 @@ jobs:
           overlay_dir=pathlib.Path(sys.argv[2])
           out=pathlib.Path(sys.argv[3])
           targets=[
-              'RHZeroKernelLaplaceAnalyticV12',
-              'RestrictedWeilCriterionResidueCoefficientV11',
-              'RestrictedWeilCriterionPoleIsolationV10',
               'MeromorphicIdentityPreconnectedV11',
               'RHMillenniumGateV10',
+              'RHTranslatedKernelDominanceV1',
+              'RHZeroKernelBoundV11',
+              'RHZeroKernelLaplaceAnalyticV12',
+              'RHZeroKernelLaplaceV12',
+              'RestrictedWeilCriterionKernelBridgeV10',
+              'RestrictedWeilCriterionLaplaceV10',
+              'RestrictedWeilCriterionPoleIsolationV10',
+              'RestrictedWeilCriterionResidueCoefficientV11',
+              'RestrictedWeilCriterionResidueWitnessV11',
+              'RestrictedWeilCriterionTargetWitnessV11',
+              'RestrictedWeilCriterionZeroKernelV10',
+              'WeilActualZeroSummandWitnessV10',
+              'WeilArchimedeanCorrectionV10',
+              'WeilAutocorrelationExplicitFormulaV10',
+              'WeilAutocorrelationMellinFactorV10',
+              'WeilAutocorrelationMellinV11',
+              'WeilDigammaSeriesHalfPlaneV1',
+              'WeilDigammaSeriesRealV1',
+              'WeilExplicitFormulaV10',
+              'WeilFinalSignTranslationBoundV10',
+              'WeilFiniteDilationFilterV10',
+              'WeilFiniteDilationFilterV11',
+              'WeilFixedLineArithmeticV10',
+              'WeilFixedLineCompletedGammaV10',
+              'WeilFixedLineGammaAssemblyV10',
+              'WeilFixedLineGammaCoreV10',
+              'WeilFixedLineGammaFubiniV10',
+              'WeilFixedLineGammaXSpaceV10',
+              'WeilFixedLineZeroSideV10',
+              'WeilLogAutocorrelationV10',
+              'WeilLogLiftCompactSupportV10',
+              'WeilMixedMellinFactorV10',
+              'WeilMomentZeroDetectionV10',
+              'WeilOffLineSeedV10',
+              'WeilPairedHadamardTsumFusionV1',
+              'WeilPairedZeroEvaluationV9',
               'WeilRHImpliesFinalSignV11',
+              'WeilStrictStripSeedV11',
+              'WeilTranslatedKernelBoundV11',
+              'WeilTranslatedZeroSeriesV10',
+              'WeilTranslationGapInvariantV10',
+              'WeilXiLogDerivDecompositionV10',
+              'WeilZeroCarrierBridgeV10',
+              'WeilZeroCarrierRebindV10',
+              'WeilZeroKernelHermitianV11',
+              'WeilZeroSideIdentificationV1',
+              'WeilZeroTranslationV11',
+              'WeilZeroTwoPointV11',
           ]
 
           source_mods={p.stem:p for p in src.glob('*.lean')}
@@ -263,7 +307,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v7-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+          key: aegis-overlay-deps-v8-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
