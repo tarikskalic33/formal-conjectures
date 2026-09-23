@@ -338,6 +338,53 @@ jobs:
           print("ARCH_COMPAT_CHANGED", s != original)
           PY
 
+      - name: Apply finite-dilation Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFiniteDilationFilterV10.lean"
+          python3 - "$DIL" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old = """    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket]
+                using htotal.2"""
+          new = """    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket, hab.2]
+                using htotal.2"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          old = """    dsimp [z]
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              simp"""
+          new = """    dsimp [z]
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (-s))"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          old = """  rw [finiteDilationMultiplierV10]
+            norm_num [Complex.cpow_neg_one]"""
+          new = """  rw [finiteDilationMultiplierV10]
+            norm_num [Complex.cpow_neg_one]
+            ring"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          assert "addPacket, hab.2]" in s
+          assert "(x := (2 : ℝ))" in s
+          assert "norm_num [Complex.cpow_neg_one]\n  ring" in s
+          p.write_text(s, encoding="utf-8")
+          print("FINITE_DILATION_COMPAT_CHANGED", s != original)
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
