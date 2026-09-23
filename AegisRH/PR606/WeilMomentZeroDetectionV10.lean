@@ -41,6 +41,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Complex Set
+open scoped ComplexConjugate
 set_option autoImplicit false
 noncomputable section
 
@@ -73,20 +74,20 @@ theorem exists_moment_zero_packet_detecting_zero_pair_v10
     ∃ g : WeilCompactSmoothGV1,
       WeilMomentConditionsV1 g ∧
       mellin g.1 rho.1 ≠ 0 ∧
-      mellin g.1 (1 - Complex.conj rho.1) ≠ 0 := by
+      mellin g.1 (1 - conj rho.1) ≠ 0 := by
   have hstrip :=
     riemann_zeta_nontrivial_zero_critical_strip_v1
       rho.2.1 rho.2.2
   have hr0 : 0 < rho.1.re := hstrip.1
   have hr1 : rho.1.re < 1 := hstrip.2
-  have ht0 : 0 < (1 - Complex.conj rho.1).re := by
+  have ht0 : 0 < (1 - conj rho.1).re := by
     simp
     linarith
-  have ht1 : (1 - Complex.conj rho.1).re < 1 := by
+  have ht1 : (1 - conj rho.1).re < 1 := by
     simp
     linarith
   exact exists_moment_zero_packet_detecting_pair_v10
-    rho.1 (1 - Complex.conj rho.1) hr0 hr1 ht0 ht1
+    rho.1 (1 - conj rho.1) hr0 hr1 ht0 ht1
 
 /-- The multiplicity-weighted paired Mellin coefficient at every nontrivial
 zero can be made nonzero by a repository-admissible moment-zero packet. -/
@@ -96,7 +97,7 @@ theorem exists_nonzero_zero_pair_coefficient_v10
       WeilMomentConditionsV1 g ∧
       ((analyticOrderNatAt riemannZeta rho.1 : ℂ) *
         (mellin g.1 rho.1 *
-          Complex.conj (mellin g.1 (1 - Complex.conj rho.1)))) ≠ 0 := by
+          conj (mellin g.1 (1 - conj rho.1)))) ≠ 0 := by
   obtain ⟨g, hm, h1, h2⟩ :=
     exists_moment_zero_packet_detecting_zero_pair_v10 rho
   have hmult : analyticOrderNatAt riemannZeta rho.1 ≠ 0 := by
@@ -147,7 +148,7 @@ theorem exists_nonzero_zero_pair_coefficient_v10
   · apply mul_ne_zero h1
     intro hc
     apply h2
-    have hc' := congrArg Complex.conj hc
+    have hc' := congrArg conj hc
     simpa using hc'
 
 end AEGIS.WeilMomentZeroDetectionV10
