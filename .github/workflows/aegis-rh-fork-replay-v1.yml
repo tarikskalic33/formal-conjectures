@@ -163,7 +163,7 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v6-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+          key: aegis-overlay-deps-v7-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Compile fork-local AEGIS overlays
         shell: bash
@@ -178,7 +178,14 @@ jobs:
           src=pathlib.Path(sys.argv[1])
           overlay_dir=pathlib.Path(sys.argv[2])
           out=pathlib.Path(sys.argv[3])
-          target='RHZeroKernelLaplaceV12'
+          targets=[
+              'RHZeroKernelLaplaceAnalyticV12',
+              'RestrictedWeilCriterionResidueCoefficientV11',
+              'RestrictedWeilCriterionPoleIsolationV10',
+              'MeromorphicIdentityPreconnectedV11',
+              'RHMillenniumGateV10',
+              'WeilRHImpliesFinalSignV11',
+          ]
 
           source_mods={p.stem:p for p in src.glob('*.lean')}
           overlay_mods={p.stem:p for p in overlay_dir.glob('*.lean')}
@@ -222,9 +229,11 @@ jobs:
               seen.add(m)
               order.append(m)
 
-          visit(target)
+          for target in targets:
+              visit(target)
           out.write_text('\n'.join(order)+'\n')
-          print('OVERLAY_CLOSURE_COUNT',len(order))
+          print('FULL_RH_CLOSURE_COUNT',len(order))
+          print('FULL_RH_TARGETS',','.join(targets))
           print('\n'.join(
               ('OVERLAY ' if m in overlay_mods else 'SOURCE  ')+m
               for m in order
@@ -254,7 +263,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .lake/aegis-overlay
-          key: aegis-overlay-deps-v6-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+          key: aegis-overlay-deps-v7-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
 
       - name: Restore exact AEGIS closure build
         id: aegis-cache
