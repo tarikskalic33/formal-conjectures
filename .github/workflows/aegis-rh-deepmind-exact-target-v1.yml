@@ -19,6 +19,9 @@ env:
   DEEPMIND_RH_BLOB: 5b1dcd5c46ab4a5f449d7d4a5c5ddce7c89c3542
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LI_FACTORIZATION_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
 
 jobs:
   exact-target:
@@ -40,6 +43,15 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Checkout exact Li provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Checkout exact DeepMind Formal Conjectures
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -54,6 +66,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C .aegis-base rev-parse HEAD)" = "$AEGIS_BASE_SHA"
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
           test "$(git -C .deepmind rev-parse HEAD)" = "$DEEPMIND_SHA"
           test "$(git -C .deepmind hash-object FormalConjectures/Millennium/RiemannHypothesis.lean)" = "$DEEPMIND_RH_BLOB"
           python3 - <<'PY'
@@ -75,6 +89,68 @@ jobs:
           export PATH="$HOME/.elan/bin:$PATH"
           lake exe cache get
           lean --version
+
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          p=Path('lakefile.lean')
+          text=p.read_text(encoding='utf-8')
+          old=os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new=os.environ['MATHLIB_SHA']
+          assert text.count(old) == 1
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          q=Path('Hadamard/General/Factorization.lean')
+          text=q.read_text(encoding='utf-8')
+          replacements=[
+            ('eventually_nhdsWithin_of_forall fun w hw => ite_eq_right hw',
+             'eventually_nhdsWithin_of_forall fun w hw => if_neg hw'),
+            ('have hgz : g z = Q z := ite_eq_left rfl',
+             'have hgz : g z = Q z := by simp [g]'),
+            ('rw [ite_eq_right heq, hQ_eq_div z (hz heq)]',
+             'rw [if_neg heq, hQ_eq_div z (hz heq)]'),
+          ]
+          for old,new in replacements:
+            if old in text:
+              text=text.replace(old,new,1)
+          q.write_text(text,encoding='utf-8')
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          python3 - <<'PY'
+          import json, os
+          m=json.load(open('lake-manifest.json'))
+          p=next(x for x in m['packages'] if x['name']=='mathlib')
+          assert (p.get('rev') or p.get('inputRev')) == os.environ['MATHLIB_SHA']
+          PY
+          lake exe cache get
+          lake build \
+            Hadamard.OrderOne.LogDerivMultiplicity \
+            Lc.LiCriterion.XiGrowth \
+            Lc.LiCriterion.HadamardSummabilityBridge \
+            Lc.LiCriterion.HadamardBridge
+
+      - name: Save exact Li provider build
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
       - name: Compute restricted terminal dependency closure
         shell: bash
@@ -148,7 +224,7 @@ jobs:
           SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
           COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/aegis-deepmind-rh"
-          BASE_LEAN_PATH="$(lake env printenv LEAN_PATH)"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
 
           while IFS= read -r MOD; do
@@ -181,7 +257,7 @@ jobs:
           SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
           COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/aegis-deepmind-rh"
-          BASE_LEAN_PATH="$(lake env printenv LEAN_PATH)"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           TARGET="$GITHUB_WORKSPACE/.deepmind/FormalConjectures/Millennium/RiemannHypothesis.lean"
           PATCHED="$GITHUB_WORKSPACE/.deepmind-rh-target.lean"
 
@@ -221,4 +297,4 @@ jobs:
         if: always()
         shell: bash
         run: |
-          printf '%s\n'             "DEEPMIND_SHA=$DEEPMIND_SHA"             "DEEPMIND_RH_BLOB=$DEEPMIND_RH_BLOB"             "AEGIS_HEAD_SHA=$AEGIS_HEAD_SHA"             "MATHLIB_SHA=$MATHLIB_SHA"             "LEAN_TOOLCHAIN=$LEAN_TOOLCHAIN"             "TARGET=FormalConjectures/Millennium/RiemannHypothesis.lean"             "AUTHORITY_EFFECT=NONE"
+          printf '%s\n'             "DEEPMIND_SHA=$DEEPMIND_SHA"             "DEEPMIND_RH_BLOB=$DEEPMIND_RH_BLOB"             "AEGIS_HEAD_SHA=$AEGIS_HEAD_SHA"             "MATHLIB_SHA=$MATHLIB_SHA"             "LEAN_TOOLCHAIN=$LEAN_TOOLCHAIN"             "LI_PROVIDER_SHA=$LI_PROVIDER_SHA"             "TARGET=FormalConjectures/Millennium/RiemannHypothesis.lean"             "AUTHORITY_EFFECT=NONE"
