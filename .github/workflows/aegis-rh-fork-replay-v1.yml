@@ -516,6 +516,194 @@ jobs:
           print("TRANSLATION_GAP_DIAGONAL_COMPAT=PASS")
           PY
 
+      - name: Apply finite-dilation V11 Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          F11=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFiniteDilationFilterV11.lean"
+          python3 - "$F11" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          def rep(old: str, new: str, label: str) -> None:
+              global s
+              n = s.count(old)
+              assert n == 1, f"{label}: expected 1 occurrence, found {n}"
+              s = s.replace(old, new, 1)
+
+          rep(
+              """    have hpos : 0 < x * a := f.2.2.2 hxa
+            nlinarith""",
+              """    have hpos : 0 < x * a := f.2.2.2 hxa
+            rcases mul_pos_iff.mp hpos with h | h
+            · exact h.1
+            · exfalso
+              linarith [ha, h.2]""",
+              "dilate positivity",
+          )
+
+          rep(
+              """  simp [FiniteDilationFilterV11, AEGIS.WeilMixedAlgebraV2.combo]
+          ring""",
+              """  change
+            (1 : ℂ) * f.1 x +
+                (-3 : ℂ) * f.1 (x * 2) +
+                (2 : ℂ) * f.1 (x * 4) =
+              f.1 x - 3 * f.1 (x * 2) + 2 * f.1 (x * 4)
+          ring""",
+              "pointwise filter",
+          )
+
+          rep(
+              """  have hlin := hall.2
+          rw [mellin_const_smul, mellin_const_smul] at hlin
+
+          change
+            mellin (FiniteDilationFilterV11 f).1 s =
+              FiniteDilationFactorV11 s * mellin f.1 s
+          have hfun :
+              (FiniteDilationFilterV11 f).1 =
+                fun x : ℝ =>
+                  (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by
+            funext x
+            simp [FiniteDilationFilterV11, f2, f4,
+              AEGIS.WeilMixedAlgebraV2.combo]
+            ring
+          rw [hfun, hlin, h2, h4]
+          unfold FiniteDilationFactorV11
+          ring""",
+              """  have hneg3M :
+              mellin (fun x : ℝ => (-3 : ℂ) * f2.1 x) s =
+                (-3 : ℂ) * mellin f2.1 s := by
+            simpa [smul_eq_mul] using
+              (mellin_const_smul f2.1 s (-3 : ℂ))
+          have htwoM :
+              mellin (fun x : ℝ => (2 : ℂ) * f4.1 x) s =
+                (2 : ℂ) * mellin f4.1 s := by
+            simpa [smul_eq_mul] using
+              (mellin_const_smul f4.1 s (2 : ℂ))
+          have hfirstEq := hfirst.2
+          rw [hneg3M] at hfirstEq
+          have hlin := hall.2
+          rw [htwoM] at hlin
+
+          change
+            mellin (FiniteDilationFilterV11 f).1 s =
+              FiniteDilationFactorV11 s * mellin f.1 s
+          have hfun :
+              (FiniteDilationFilterV11 f).1 =
+                fun x : ℝ =>
+                  (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by
+            funext x
+            change
+              (1 : ℂ) * f.1 x +
+                  (-3 : ℂ) * f2.1 x +
+                  (2 : ℂ) * f4.1 x =
+                (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x
+            ring
+          rw [hfun, hlin, hfirstEq, h2, h4]
+          unfold FiniteDilationFactorV11
+          ring""",
+              "Mellin linearity",
+          )
+
+          rep(
+              """@[simp] theorem finiteDilationFactor_zero_v11 :
+              FiniteDilationFactorV11 0 = 0 := by
+            simp [FiniteDilationFactorV11]
+
+          @[simp] theorem finiteDilationFactor_one_v11 :
+              FiniteDilationFactorV11 1 = 0 := by
+            simp [FiniteDilationFactorV11, Complex.cpow_neg_one]
+            norm_num
+
+
+          """,
+              "",
+              "old endpoints",
+          )
+
+          rep(
+              """  rw [FiniteDilationFactorV11, h4, h2]
+            ring
+
+          /-- NEW LOAD-BEARING PRODUCER:""",
+              """  rw [FiniteDilationFactorV11, h4, h2]
+            ring
+
+          @[simp] theorem finiteDilationFactor_zero_v11 :
+              FiniteDilationFactorV11 0 = 0 := by
+            rw [finiteDilationFactor_factor_v11]
+            apply mul_eq_zero.mpr
+            left
+            norm_num
+
+          @[simp] theorem finiteDilationFactor_one_v11 :
+              FiniteDilationFactorV11 1 = 0 := by
+            rw [finiteDilationFactor_factor_v11]
+            apply mul_eq_zero.mpr
+            right
+            norm_num [Complex.cpow_neg_one]
+
+          /-- NEW LOAD-BEARING PRODUCER:""",
+              "factored endpoints",
+          )
+
+          rep(
+              """    have hnorm :
+                ‖(2 : ℂ) ^ (-s)‖ < 1 := by
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              simp only [neg_re]
+              exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)""",
+              """    have hnormEq :
+                ‖(2 : ℂ) ^ (-s)‖ = (2 : ℝ) ^ (-s.re) := by
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (-s))
+            have hnorm :
+                ‖(2 : ℂ) ^ (-s)‖ < 1 := by
+              rw [hnormEq]
+              exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)""",
+              "negative cpow norm",
+          )
+
+          rep(
+              """    have hnorm :
+                1 < ‖(2 : ℂ) ^ (1 - s)‖ := by
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              apply Real.one_lt_rpow (by norm_num)
+              simp only [sub_re, one_re]
+              linarith""",
+              """    have hnormEq :
+                ‖(2 : ℂ) ^ (1 - s)‖ = (2 : ℝ) ^ ((1 - s).re) := by
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (1 - s))
+            have hnorm :
+                1 < ‖(2 : ℂ) ^ (1 - s)‖ := by
+              rw [hnormEq]
+              apply Real.one_lt_rpow (by norm_num)
+              simp only [sub_re, one_re]
+              linarith""",
+              "positive cpow norm",
+          )
+
+          assert s != original
+          assert "have hneg3M :" in s
+          assert "finiteDilationFactor_factor_v11" in s
+          assert s.index("finiteDilationFactor_factor_v11") < s.index("finiteDilationFactor_zero_v11")
+          p.write_text(s, encoding="utf-8")
+          print("FINITE_DILATION_V11_COMPAT=PASS")
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
