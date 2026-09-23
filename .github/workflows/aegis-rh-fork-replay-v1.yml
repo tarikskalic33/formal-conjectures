@@ -398,10 +398,10 @@ jobs:
           )
           assert s.count(old_imports) == 1
           s = s.replace(old_imports, new_imports, 1)
-          s = s.replace("open Complex\n", "open Complex Set\n", 1)
+          s = s.replace("open Complex\n", "open Complex Set\nopen scoped ComplexConjugate\n", 1)
 
           assert s.count("conj rho.1") >= 1
-          s = s.replace("conj rho.1", "Complex.conj rho.1")
+          s = s.replace("conj rho.1", "conj rho.1")
           s = s.replace(
               "conj (mellin g.1 (1 - Complex.conj rho.1))",
               "Complex.conj (mellin g.1 (1 - Complex.conj rho.1))",
@@ -461,14 +461,15 @@ jobs:
           new = """  · apply mul_ne_zero h1
             intro hc
             apply h2
-            have hc' := congrArg Complex.conj hc
+            have hc' := congrArg conj hc
             simpa using hc'"""
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old, new, 1)
 
           assert "analyticOrderNatAt_ne_zero_of_eq_zero" not in s
           assert "map_ne_zero_of_injective" not in s
-          assert "Complex.conj (mellin g.1" in s
+          assert "open scoped ComplexConjugate" in s
+          assert "conj (mellin g.1" in s
           assert "analyticOrderAt_ne_top_of_isPreconnected" in s
           assert s != original
           p.write_text(s, encoding="utf-8")
