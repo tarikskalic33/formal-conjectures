@@ -71,7 +71,7 @@ theorem tendsto_invFourthError (k : ℕ) :
   change Tendsto
     (fun n : ℕ => (1 / ((n + k : ℕ) : ℝ)) ^ 4)
     atTop (𝓝 (0 : ℝ))
-  exact hk.pow 4
+  simpa using hk.pow 4
 
 /-- Concrete finite-to-limit bridge for the exact epsilon_N = N^-4 schedule
 used by the Arb fixed-window receipts. The finite sections are reindexed by
