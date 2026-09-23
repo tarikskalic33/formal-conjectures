@@ -86,10 +86,19 @@ jobs:
           grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
           test "$(git -C .aegis status --porcelain)" = ""
 
+      - name: Restore shared Mathlib olean cache
+        uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c # v3
+        with:
+          path: ~/.cache/mathlib
+          key: oleans-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            oleans-${{ hashFiles('lean-toolchain') }}-
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
           set -euo pipefail
+          lake exe cache unpack || true
           lake exe cache get
           test "$(python3 - <<'PY'
           import json
