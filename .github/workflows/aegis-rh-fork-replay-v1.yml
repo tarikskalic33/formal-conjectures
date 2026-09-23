@@ -165,7 +165,7 @@ jobs:
           path: .lake/aegis-digamma
           key: zero-translation-deps-v1-${{ runner.os }}-${{ runner.arch }}-589adf0480bd4d7c12c9828027ea6228398377f4-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
 
-      - name: Preflight zero Hermitian closure
+      - name: Preflight zero kernel bound closure
         shell: bash
         run: |
           set -euo pipefail
@@ -175,7 +175,7 @@ jobs:
           python3 - "$SRC" "$GITHUB_WORKSPACE/.digamma-order.txt" <<'PY'
           import pathlib,sys
           src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          target='WeilZeroKernelHermitianV11'
+          target='RHZeroKernelBoundV11'
           mods={p.stem:p for p in src.glob('*.lean')}
           deps={}
           for m,p in mods.items():
@@ -196,13 +196,13 @@ jobs:
               temp.remove(m); seen.add(m); order.append(m)
           visit(target)
           out.write_text('\n'.join(order)+'\n')
-          print('ZERO_HERMITIAN_PREFLIGHT_COUNT',len(order))
+          print('ZERO_KERNEL_BOUND_PREFLIGHT_COUNT',len(order))
           PY
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            if [ "$MOD" = "WeilZeroKernelHermitianV11" ]; then
+            if [ "$MOD" = "RHZeroKernelBoundV11" ]; then
               continue
             fi
             if [ -f "$OUT/$MOD.olean" ]; then
@@ -212,8 +212,8 @@ jobs:
             echo "=== PREFLIGHT DEP $MOD ==="
             lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
           done < "$GITHUB_WORKSPACE/.digamma-order.txt"
-          echo "=== PREFLIGHT TARGET WeilZeroKernelHermitianV11 ==="
-          lean -o "$OUT/WeilZeroKernelHermitianV11.olean" "$SRC/WeilZeroKernelHermitianV11.lean"
+          echo "=== PREFLIGHT TARGET RHZeroKernelBoundV11 ==="
+          lean -o "$OUT/RHZeroKernelBoundV11.olean" "$SRC/RHZeroKernelBoundV11.lean"
 
       - name: Save zero-translation dependency closure
         if: always() && steps.zero-translation-deps-cache.outputs.cache-hit != 'true'
