@@ -63,8 +63,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/RHTargetAudit.lean <<'LEAN'
-          import FormalConjectures.Millennium.RiemannHypothesis
+          cp "$TARGET_FILE" /tmp/RHTargetAudit.lean
+          cat >> /tmp/RHTargetAudit.lean <<'LEAN'
+
           #check RiemannHypothesis
           #check RiemannHypothesis.riemannHypothesis
           #print axioms RiemannHypothesis.riemannHypothesis
