@@ -5,17 +5,6 @@ import Mathlib.MeasureTheory.Integral.DominatedConvergence
 import Mathlib.Tactic
 
 /-!
-Fork-local compatibility overlay for RHZeroKernelLaplaceV12.
-
-Authoritative AEGIS source anchor:
-  Aegis-Omega/AEGIS-OMEGA@589adf0480bd4d7c12c9828027ea6228398377f4
-
-Public theorem/definition signatures are preserved; only Lean 4.33.1 /
-Mathlib 0df444a3 elaboration details are repaired in this fork.
--/
-
-
-/-!
 AEGIS Ω — Laplace transform of the canonical zero translation kernel V12.
 
 For lambda_rho = rho - 1/2 and
@@ -47,18 +36,6 @@ namespace AEGIS.RHZeroKernelLaplaceV12
 open AEGIS.WeilZeroTranslationV11
 open AEGIS.WeilZeroTwoPointV11
 
-private instance countable_nontrivialZeroIndex_v12 :
-    Countable RiemannNontrivialZeroIndexV2 := by
-  have hU : (Set.univ : Set RiemannNontrivialZeroIndexV2) =
-      ⋃ n : ℕ, ZeroHeightShellSetV1 n := by
-    ext rho
-    simp [ZeroHeightShellSetV1]
-  have hc : (Set.univ : Set RiemannNontrivialZeroIndexV2).Countable := by
-    rw [hU]
-    exact Set.countable_iUnion
-      (fun n => (zero_height_shell_finite_v1 n).countable)
-  exact Set.countable_univ_iff.mp hc
-
 /-- Centered zero exponent lambda = rho - 1/2. -/
 def WeilCenteredZeroExponentV12
     (rho : RiemannNontrivialZeroIndexV2) : ℂ :=
@@ -74,7 +51,9 @@ theorem centered_zero_re_mem_v12
     riemann_zeta_nontrivial_zero_critical_strip_v1
       rho.2.1 rho.2.2
   unfold WeilCenteredZeroExponentV12
-  simp only [Complex.sub_re, Complex.ofReal_re]
+  change
+    -(1 / 2 : ℝ) < rho.1.re - (1 / 2 : ℝ) ∧
+      rho.1.re - (1 / 2 : ℝ) < (1 / 2 : ℝ)
   constructor <;> linarith
 
 /-- Absolute summability of the zero coefficients, inherited from the
@@ -114,8 +93,13 @@ theorem zero_laplace_term_integrable_v12
     integrableOn_exp_mul_complex_Ioi
       (a := -(w - WeilCenteredZeroExponentV12 rho))
       hneg 0
-  have hc := he.const_mul (WeilZeroCoefficientV11 g rho)
-  simpa [WeilZeroLaplaceTermV12, neg_mul] using hc
+  refine he.const_mul (WeilZeroCoefficientV11 g rho) |>.congr_fun ?_
+    measurableSet_Ioi
+  intro t ht
+  unfold WeilZeroLaplaceTermV12
+  congr 2
+  push_cast
+  ring
 
 /-- Exact integral of one Laplace term. -/
 theorem zero_laplace_term_integral_v12
@@ -155,6 +139,8 @@ theorem zero_laplace_term_integral_v12
     simp at hre
     linarith
   simp [hden]
+  field_simp [hden]
+  ring
 
 /-- Norm integral of one Laplace term. -/
 theorem zero_laplace_term_norm_integral_v12
@@ -186,8 +172,9 @@ theorem zero_laplace_term_norm_integral_v12
     ring
   rw [hfun, integral_const_mul,
     integral_exp_mul_Ioi (a := -delta) (by linarith) 0]
-  dsimp [delta] at hdelta ⊢
+  simp [hdelta.ne']
   field_simp [hdelta.ne']
+  ring
 
 /-- The family of norm integrals is summable uniformly on each half-plane
 Re(w)>1/2. -/
@@ -249,14 +236,9 @@ theorem tsum_zero_laplace_term_eq_kernel_v12
   intro rho
   unfold WeilZeroLaplaceTermV12 WeilZeroTranslationFactorV11
     WeilCenteredZeroExponentV12
-  have hexp :
-      Complex.exp (-((w - (rho.1 - (1 / 2 : ℂ))) * (t : ℂ))) =
-        Complex.exp (-(w * (t : ℂ))) *
-          Complex.exp ((rho.1 - (1 / 2 : ℂ)) * (t : ℂ)) := by
-    rw [← Complex.exp_add]
-    congr 1
-    ring
-  rw [hexp]
+  rw [← Complex.exp_add]
+  ring_nf
+  congr 1
   ring
 
 /-- Resolvent sum on the initial right half-plane. -/
@@ -295,7 +277,6 @@ theorem zero_kernel_laplace_eq_resolvent_v12
   have hswap :=
     integral_tsum_of_summable_integral_norm
       (μ := volume.restrict (Ioi (0 : ℝ)))
-      (F := fun rho t => WeilZeroLaplaceTermV12 g w rho t)
       hint hnorm
 
   unfold WeilZeroKernelLaplaceV12 WeilZeroResolventV12
