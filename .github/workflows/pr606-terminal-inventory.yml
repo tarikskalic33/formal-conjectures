@@ -106,6 +106,9 @@ jobs:
           print("PR606_LEAN_INVENTORY_COUNT=" + str(len(files)))
           print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT=" + str(len(order)))
           print("PR606_MODULES_OUTSIDE_TERMINAL_CLOSURE=" + str(len(outside)))
+          print("PR606_OUTSIDE_MODULES_BEGIN")
+          print("\n".join(outside))
+          print("PR606_OUTSIDE_MODULES_END")
           PY
 
       - name: Upload inventory
