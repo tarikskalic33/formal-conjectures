@@ -88,10 +88,8 @@ theorem exists_centered_zero_isolation_v10
   have hsigmaZ : sigma.1 ∈ riemannZetaZeros := by
     exact mem_riemannZetaZeros.mpr sigma.2.1
   have hdist : dist sigma.1 rho.1 < ε := by
-    simpa [dist_comm] using
-      (show
-        dist (CenteredZeroExponentV10 sigma)
-          (CenteredZeroExponentV10 rho) < ε from hsigma)
+    rw [← dist_centeredZeroExponent_v10 sigma rho]
+    exact hsigma
   have hmem :
       sigma.1 ∈ U ∩ riemannZetaZeros := by
     refine ⟨hballU ?_, hsigmaZ⟩
