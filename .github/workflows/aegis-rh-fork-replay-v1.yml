@@ -1,0 +1,1579 @@
+name: AEGIS RH Fork Replay V1
+
+on:
+  push:
+    branches:
+      - 'proof/riemann-hypothesis-aegis-v1'
+    paths:
+      - '.github/workflows/aegis-rh-fork-replay-v1.yml'
+      - 'AegisRH/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+  pull_request:
+    paths:
+      - '.github/workflows/aegis-rh-fork-replay-v1.yml'
+      - 'AegisRH/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LI_FACTORIZATION_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout fork exact head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout AEGIS exact theorem DAG
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout exact Li-criterion provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact heads
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
+          grep -F "$MATHLIB_SHA" lake-manifest.json
+          grep -F 'leanprover/lean4:v4.33.1' lean-toolchain
+
+      - name: Install pinned elan
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Verify source-bound RH compatibility fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          REAL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean"
+          HALF=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesHalfPlaneV1.lean"
+          LAP=".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionLaplaceV10.lean"
+          grep -F 'MeasureTheory.norm_integral_le_integral_norm' "$REAL"
+          grep -F 'Nat.cast_add_one_ne_zero' "$HALF"
+          grep -F 'Complex.differentiableOn_tsum_of_summable_norm' "$HALF"
+          grep -F 'countable_nontrivialZeroIndex_v10' "$LAP"
+          test "$(git -C .aegis status --porcelain)" = ""
+
+      - name: Apply Archimedean correction Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCH=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilArchimedeanCorrectionV10.lean"
+          python3 - "$ARCH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          robust_tendsto = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+            convert h using 1 <;> simp [sub_eq_add_neg]"""
+
+          old_tendsto_v1 = """  have h := (Real.tendsto_log_comp_add_sub_log 1).neg
+            simpa only [neg_sub, neg_zero] using h"""
+          if old_tendsto_v1 in s:
+              s = s.replace(old_tendsto_v1, robust_tendsto, 1)
+
+          old_tendsto_v2 = """  simpa only [neg_sub] using
+              (Real.tendsto_log_comp_add_sub_log 1).neg"""
+          if old_tendsto_v2 in s:
+              s = s.replace(old_tendsto_v2, robust_tendsto, 1)
+
+          old_hpoint_v1 = """    have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := by linarith
+              have hx1 : x + 1 ≠ 0 := by linarith"""
+          new_hpoint = """    have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
+              have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])"""
+          if old_hpoint_v1 in s:
+              s = s.replace(old_hpoint_v1, new_hpoint, 1)
+
+          old_hpoint_v2 = """    intro x hx
+              have hx0 : x ≠ 0 := by linarith
+              have hx1 : x + 1 ≠ 0 := by linarith"""
+          new_hpoint_v2 = """    intro x hx
+              have hx' : (1 : ℝ) < x := hx
+              have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])
+              have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])"""
+          if old_hpoint_v2 in s:
+              s = s.replace(old_hpoint_v2, new_hpoint_v2, 1)
+
+          final_log = "    _ = Real.log 2 := by rw [Real.log_one, show (1 : ℝ) + 1 = 2 by norm_num]; ring"
+          s = s.replace("    _ = Real.log 2 := by norm_num", final_log, 1)
+          s = s.replace("    _ = Real.log 2 := by simp", final_log, 1)
+
+          assert "convert h using 1 <;> simp [sub_eq_add_neg]" in s
+          assert "have hx0 : x ≠ 0 := ne_of_gt (by linarith [hx'])" in s
+          assert "have hx1 : x + 1 ≠ 0 := ne_of_gt (by linarith [hx'])" in s
+          assert "rw [Real.log_one, show (1 : ℝ) + 1 = 2 by norm_num]; ring" in s
+
+          p.write_text(s, encoding="utf-8")
+          print("ARCH_COMPAT_CHANGED", s != original)
+          PY
+
+      - name: Apply finite-dilation Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          DIL=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFiniteDilationFilterV10.lean"
+          python3 - "$DIL" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old = """    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket]
+                using htotal.2"""
+          new = """    simpa [finiteDilationFilterV10, a, b, d2, d4, addPacket, hab.2]
+                using htotal.2"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          old = """    dsimp [z]
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              simp"""
+          new = """    dsimp [z]
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (-s))"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          old_zero = """theorem finiteDilationMultiplier_zero_v10 :
+              finiteDilationMultiplierV10 0 = 0 := by
+            simp [finiteDilationMultiplierV10]"""
+          new_zero = """theorem finiteDilationMultiplier_zero_v10 :
+              finiteDilationMultiplierV10 0 = 0 := by
+            rw [finiteDilationMultiplier_factor_v10]
+            apply mul_eq_zero.mpr
+            left
+            norm_num"""
+          if old_zero in s:
+              s = s.replace(old_zero, new_zero, 1)
+
+          old = """theorem finiteDilationMultiplier_one_v10 :
+              finiteDilationMultiplierV10 1 = 0 := by
+            rw [finiteDilationMultiplierV10]
+            norm_num [Complex.cpow_neg_one]"""
+          new = """theorem finiteDilationMultiplier_one_v10 :
+              finiteDilationMultiplierV10 1 = 0 := by
+            rw [finiteDilationMultiplier_factor_v10]
+            apply mul_eq_zero.mpr
+            right
+            norm_num [Complex.cpow_neg_one]"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          assert "addPacket, hab.2]" in s
+          assert "(x := (2 : ℝ))" in s
+          assert s.count("rw [finiteDilationMultiplier_factor_v10]") >= 2
+          assert "apply mul_eq_zero.mpr" in s
+          p.write_text(s, encoding="utf-8")
+          print("FINITE_DILATION_COMPAT_CHANGED", s != original)
+          PY
+
+      - name: Inventory full PR606 terminal dependency closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path(".aegis/sovereign-omega-v2/formal/bridges/lean")
+          files = {p.stem: p for p in root.glob("*.lean")}
+          assert len(files) == 131, len(files)
+
+          targets = [
+              "RHMillenniumGateV10",
+              "RHZeroKernelLaplaceAnalyticV12",
+              "RestrictedWeilCriterionResidueCoefficientV11",
+              "RestrictedWeilCriterionPoleIsolationV10",
+              "RestrictedWeilCriterionResidueWitnessV11",
+              "RestrictedWeilCriterionTargetWitnessV11",
+              "MeromorphicIdentityPreconnectedV11",
+              "WeilRHImpliesFinalSignV11",
+          ]
+          for target in targets:
+              assert target in files, target
+
+          pat = re.compile(r"^\s*import\s+(.+?)\s*$")
+          deps = {}
+          for name, path in files.items():
+              local = []
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m = pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf = token.split(".")[-1]
+                      if leaf in files:
+                          local.append(leaf)
+              deps[name] = sorted(set(local))
+
+          temp, done, order = set(), set(), []
+          def visit(name):
+              if name in done:
+                  return
+              if name in temp:
+                  raise RuntimeError(f"local import cycle at {name}")
+              temp.add(name)
+              for dep in deps[name]:
+                  visit(dep)
+              temp.remove(name)
+              done.add(name)
+              order.append(name)
+
+          for target in targets:
+              visit(target)
+
+          out = Path("evidence")
+          (out / "pr606-terminal-targets.txt").write_text(
+              "\n".join(targets) + "\n", encoding="utf-8")
+          (out / "pr606-terminal-modules.txt").write_text(
+              "\n".join(order) + "\n", encoding="utf-8")
+          (out / "pr606-terminal-closure-count.txt").write_text(
+              str(len(order)) + "\n", encoding="utf-8")
+          (out / "pr606-lean-inventory-count.txt").write_text(
+              str(len(files)) + "\n", encoding="utf-8")
+          (out / "pr606-modules-outside-terminal-closure.txt").write_text(
+              "\n".join(sorted(set(files) - set(order))) + "\n", encoding="utf-8")
+
+          print("PR606_LEAN_INVENTORY_COUNT", len(files))
+          print("PR606_TERMINAL_DEPENDENCY_CLOSURE_COUNT", len(order))
+          print("PR606_TERMINAL_TARGETS", ",".join(targets))
+          print("PR606_TERMINAL_MODULES_BEGIN")
+          print("\n".join(order))
+          print("PR606_TERMINAL_MODULES_END")
+          PY
+          {
+            echo "## PR #606 exact-head Lean inventory"
+            echo
+            echo "- proof source: `$AEGIS_SHA`"
+            echo "- total local Lean modules: `$(cat evidence/pr606-lean-inventory-count.txt)`"
+            echo "- terminal dependency closure: `$(cat evidence/pr606-terminal-closure-count.txt)`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Restore shared Mathlib olean cache
+        uses: actions/cache/restore@6f8efc29b200d32929f49075959781ed54ec270c # v3
+        with:
+          path: ~/.cache/mathlib
+          key: oleans-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            oleans-${{ hashFiles('lean-toolchain') }}-
+
+      - name: Apply off-line seed Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          SEED=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilOffLineSeedV10.lean"
+          python3 - "$SEED" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global s
+              count = s.count(old)
+              assert count == 1, f"{label}: expected 1 occurrence, found {count}"
+              s = s.replace(old, new, 1)
+
+          replace_once(
+              "  have he :\n      ContDiff ℝ ∞\n        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) := by\n    fun_prop",
+              "  have hu : ContDiff ℝ ∞ (fun u : ℝ => (u : ℂ)) :=\n"
+              "    Complex.ofRealCLM.contDiff\n"
+              "  have hlin : ContDiff ℝ ∞ (fun u : ℝ => -s * (u : ℂ)) :=\n"
+              "    contDiff_const.mul hu\n"
+              "  have he :\n"
+              "      ContDiff ℝ ∞\n"
+              "        (fun u : ℝ => Complex.exp (-s * (u : ℂ))) :=\n"
+              "    Complex.contDiff_exp.comp hlin",
+              "seedProfile_contDiff",
+          )
+
+          calc_start = s.index("          let A : ℂ := s * (u : ℂ)")
+          calc_end_marker = "                  simp)"
+          calc_end = s.index(calc_end_marker, calc_start) + len(calc_end_marker)
+          new_calc = (
+              "          calc\n"
+              "            Complex.exp (s * (u : ℂ)) *\n"
+              "                (((seedBumpV10 u : ℝ) : ℂ) *\n"
+              "                  Complex.exp (-s * (u : ℂ)))\n"
+              "              =\n"
+              "                ((seedBumpV10 u : ℝ) : ℂ) *\n"
+              "                  (Complex.exp (s * (u : ℂ)) *\n"
+              "                    Complex.exp (-s * (u : ℂ))) := by ring\n"
+              "            _ = ((seedBumpV10 u : ℝ) : ℂ) := by\n"
+              "                  rw [← Complex.exp_add]\n"
+              "                  simp)"
+          )
+          s = s[:calc_start] + new_calc + s[calc_end:]
+
+          replace_once(
+              "          rw [integral_ofReal]",
+              "          exact integral_ofReal",
+              "integral_ofReal",
+          )
+
+          replace_once(
+              "    · let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt\n",
+              "    · have hst0 : mellin gs.1 t = 0 := by simpa using hst\n"
+              "      have hts0 : mellin gt.1 s = 0 := by simpa using hts\n"
+              "      let gsum := AEGIS.WeilMixedAlgebraV2.addPacket gs gt\n",
+              "pair-zero-conversion",
+          )
+          replace_once("        simp [hts]", "        simp [hts0]", "hts-zero")
+          replace_once("        simp [hst]", "        simp [hst0]", "hst-zero")
+
+          assert "Complex.contDiff_exp.comp hlin" in s
+          assert "let A : ℂ := s * (u : ℂ)" not in s
+          assert "exact integral_ofReal" in s
+          assert "have hst0 : mellin gs.1 t = 0" in s
+          assert "have hts0 : mellin gt.1 s = 0" in s
+          assert s != original
+          p.write_text(s, encoding="utf-8")
+          print("OFFLINE_SEED_COMPAT=PASS")
+          PY
+
+      - name: Apply moment-zero detection Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          MOM=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMomentZeroDetectionV10.lean"
+          python3 - "$MOM" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old_imports = "import ZeroCriticalStripV1\nimport Mathlib.Tactic"
+          new_imports = (
+              "import ZeroCriticalStripV1\n"
+              "import Mathlib.Analysis.Analytic.Order\n"
+              "import Mathlib.Analysis.Normed.Module.Connected\n"
+              "import Mathlib.Tactic"
+          )
+          assert s.count(old_imports) == 1
+          s = s.replace(old_imports, new_imports, 1)
+          s = s.replace("open Complex\n", "open Complex Set\nopen scoped ComplexConjugate\n", 1)
+
+          assert s.count("conj rho.1") >= 1
+          old = (
+              "  have hmult : analyticOrderNatAt riemannZeta rho.1 ≠ 0 := by\n"
+              "    exact analyticOrderNatAt_ne_zero_of_eq_zero rho.2.1"
+          )
+          new = """  have hmult : analyticOrderNatAt riemannZeta rho.1 ≠ 0 := by
+            have hstrip :=
+              riemann_zeta_nontrivial_zero_critical_strip_v1
+                rho.2.1 rho.2.2
+            have hr1 : rho.1 ≠ 1 := by
+              intro h
+              have hre := congrArg Complex.re h
+              simp at hre
+              linarith [hstrip.2]
+            have hAnal : AnalyticAt ℂ riemannZeta rho.1 :=
+              analyticOn_riemannZeta rho.1 (by simpa using hr1)
+            have hOrderNeZero :
+                analyticOrderAt riemannZeta rho.1 ≠ 0 :=
+              (hAnal.analyticOrderAt_ne_zero).2 rho.2.1
+            have hPre :
+                IsPreconnected ({(1 : ℂ)}ᶜ : Set ℂ) :=
+              (isConnected_compl_singleton_of_one_lt_rank
+                (rank_real_complex ▸ Nat.one_lt_ofNat) (1 : ℂ)).isPreconnected
+            have h2mem : (2 : ℂ) ∈ ({(1 : ℂ)}ᶜ : Set ℂ) := by simp
+            have hrmem : rho.1 ∈ ({(1 : ℂ)}ᶜ : Set ℂ) := by
+              simpa using hr1
+            have h2Anal : AnalyticAt ℂ riemannZeta (2 : ℂ) :=
+              analyticOn_riemannZeta 2 (by simp)
+            have hz2 : riemannZeta (2 : ℂ) ≠ 0 :=
+              riemannZeta_ne_zero_of_one_le_re (by norm_num)
+            have h2ord0 :
+                analyticOrderAt riemannZeta (2 : ℂ) = 0 :=
+              (h2Anal.analyticOrderAt_eq_zero).2 hz2
+            have h2finite :
+                analyticOrderAt riemannZeta (2 : ℂ) ≠ ⊤ := by
+              rw [h2ord0]
+              simp
+            have hfinite :
+                analyticOrderAt riemannZeta rho.1 ≠ ⊤ :=
+              analyticOn_riemannZeta.analyticOrderAt_ne_top_of_isPreconnected
+                hPre h2mem hrmem h2finite
+            intro hnat
+            have hcast :
+                analyticOrderAt riemannZeta rho.1 = 0 := by
+              rw [← Nat.cast_analyticOrderNatAt hfinite]
+              simp [hnat]
+            exact hOrderNeZero hcast"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old = "  · exact mul_ne_zero h1 (map_ne_zero_of_injective Complex.conj_injective h2)"
+          new = """  · apply mul_ne_zero h1
+            intro hc
+            apply h2
+            have hc' := congrArg conj hc
+            simpa using hc'"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          assert "analyticOrderNatAt_ne_zero_of_eq_zero" not in s
+          assert "map_ne_zero_of_injective" not in s
+          assert "open scoped ComplexConjugate" in s
+          assert "conj (mellin g.1" in s
+          assert "analyticOrderAt_ne_top_of_isPreconnected" in s
+          assert s != original
+          p.write_text(s, encoding="utf-8")
+          print("MOMENT_ZERO_COMPAT=PASS")
+          PY
+
+      - name: Apply actual-zero witness conjugation compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          WIT=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilActualZeroSummandWitnessV10.lean"
+          python3 - "$WIT" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          old = "open Complex\n"
+          new = "open Complex\nopen scoped ComplexConjugate\n"
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+          assert "open scoped ComplexConjugate" in s
+          p.write_text(s, encoding="utf-8")
+          print("ACTUAL_ZERO_WITNESS_CONJ_SCOPE=PASS")
+          PY
+
+      - name: Apply translation-gap diagonal compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          GAP=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTranslationGapInvariantV10.lean"
+          python3 - "$GAP" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          old = """  have h :=
+            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
+          simpa using h"""
+          new = """  have h :=
+            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
+          have h0 : translatePacket g 0 = g := by
+            apply Subtype.ext
+            funext x
+            simp [translatePacket_apply]
+          rw [h0] at h
+          exact h"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+          assert "have h0 : translatePacket g 0 = g := by" in s
+          p.write_text(s, encoding="utf-8")
+          print("TRANSLATION_GAP_DIAGONAL_COMPAT=PASS")
+          PY
+
+      - name: Apply finite-dilation V11 Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          F11=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFiniteDilationFilterV11.lean"
+          python3 - "$F11" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          def rep(old: str, new: str, label: str) -> None:
+              global s
+              n = s.count(old)
+              assert n == 1, f"{label}: expected 1 occurrence, found {n}"
+              s = s.replace(old, new, 1)
+
+          rep(
+              """    have hpos : 0 < x * a := f.2.2.2 hxa
+            nlinarith""",
+              """    have hpos : 0 < x * a := f.2.2.2 hxa
+            rcases mul_pos_iff.mp hpos with h | h
+            · exact h.1
+            · exfalso
+              linarith [ha, h.2]""",
+              "dilate positivity",
+          )
+
+          rep(
+              """  simp [FiniteDilationFilterV11, AEGIS.WeilMixedAlgebraV2.combo]
+          ring""",
+              """  change
+            (1 : ℂ) * f.1 x +
+                (-3 : ℂ) * f.1 (x * 2) +
+                (2 : ℂ) * f.1 (x * 4) =
+              f.1 x - 3 * f.1 (x * 2) + 2 * f.1 (x * 4)
+          ring""",
+              "pointwise filter",
+          )
+
+          rep(
+              """  have hlin := hall.2
+          rw [mellin_const_smul, mellin_const_smul] at hlin
+
+          change
+            mellin (FiniteDilationFilterV11 f).1 s =
+              FiniteDilationFactorV11 s * mellin f.1 s
+          have hfun :
+              (FiniteDilationFilterV11 f).1 =
+                fun x : ℝ =>
+                  (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by
+            funext x
+            simp [FiniteDilationFilterV11, f2, f4,
+              AEGIS.WeilMixedAlgebraV2.combo]
+            ring
+          rw [hfun, hlin, h2, h4]
+          unfold FiniteDilationFactorV11
+          ring""",
+              """  have hneg3M :
+              mellin (fun x : ℝ => (-3 : ℂ) * f2.1 x) s =
+                (-3 : ℂ) * mellin f2.1 s := by
+            simpa [smul_eq_mul] using
+              (mellin_const_smul f2.1 s (-3 : ℂ))
+          have htwoM :
+              mellin (fun x : ℝ => (2 : ℂ) * f4.1 x) s =
+                (2 : ℂ) * mellin f4.1 s := by
+            simpa [smul_eq_mul] using
+              (mellin_const_smul f4.1 s (2 : ℂ))
+          have hfirstEq := hfirst.2
+          rw [hneg3M] at hfirstEq
+          have hlin := hall.2
+          rw [htwoM] at hlin
+
+          change
+            mellin (FiniteDilationFilterV11 f).1 s =
+              FiniteDilationFactorV11 s * mellin f.1 s
+          have hfun :
+              (FiniteDilationFilterV11 f).1 =
+                fun x : ℝ =>
+                  (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by
+            funext x
+            change
+              (1 : ℂ) * f.1 x +
+                  (-3 : ℂ) * f2.1 x +
+                  (2 : ℂ) * f4.1 x =
+                (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x
+            ring
+          rw [hfun, hlin, hfirstEq, h2, h4]
+          unfold FiniteDilationFactorV11
+          ring""",
+              "Mellin linearity",
+          )
+
+          rep(
+              """@[simp] theorem finiteDilationFactor_zero_v11 :
+              FiniteDilationFactorV11 0 = 0 := by
+            simp [FiniteDilationFactorV11]
+
+          @[simp] theorem finiteDilationFactor_one_v11 :
+              FiniteDilationFactorV11 1 = 0 := by
+            simp [FiniteDilationFactorV11, Complex.cpow_neg_one]
+            norm_num
+
+
+          """,
+              "",
+              "old endpoints",
+          )
+
+          rep(
+              """  rw [FiniteDilationFactorV11, h4, h2]
+            ring
+
+          /-- NEW LOAD-BEARING PRODUCER:""",
+              """  rw [FiniteDilationFactorV11, h4, h2]
+            ring
+
+          @[simp] theorem finiteDilationFactor_zero_v11 :
+              FiniteDilationFactorV11 0 = 0 := by
+            rw [finiteDilationFactor_factor_v11]
+            apply mul_eq_zero.mpr
+            left
+            norm_num
+
+          @[simp] theorem finiteDilationFactor_one_v11 :
+              FiniteDilationFactorV11 1 = 0 := by
+            rw [finiteDilationFactor_factor_v11]
+            apply mul_eq_zero.mpr
+            right
+            norm_num [Complex.cpow_neg_one]
+
+          /-- NEW LOAD-BEARING PRODUCER:""",
+              "factored endpoints",
+          )
+
+          rep(
+              """    have hnorm :
+                ‖(2 : ℂ) ^ (-s)‖ < 1 := by
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              simp only [neg_re]
+              exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)""",
+              """    have hnormEq :
+                ‖(2 : ℂ) ^ (-s)‖ = (2 : ℝ) ^ (-s.re) := by
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (-s))
+            have hnorm :
+                ‖(2 : ℂ) ^ (-s)‖ < 1 := by
+              rw [hnormEq]
+              exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)""",
+              "negative cpow norm",
+          )
+
+          rep(
+              """    have hnorm :
+                1 < ‖(2 : ℂ) ^ (1 - s)‖ := by
+              rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]
+              apply Real.one_lt_rpow (by norm_num)
+              simp only [sub_re, one_re]
+              linarith""",
+              """    have hnormEq :
+                ‖(2 : ℂ) ^ (1 - s)‖ = (2 : ℝ) ^ ((1 - s).re) := by
+              simpa using
+                (Complex.norm_cpow_eq_rpow_re_of_pos
+                  (x := (2 : ℝ))
+                  (by norm_num : (0 : ℝ) < 2)
+                  (1 - s))
+            have hnorm :
+                1 < ‖(2 : ℂ) ^ (1 - s)‖ := by
+              rw [hnormEq]
+              apply Real.one_lt_rpow (by norm_num)
+              simp only [sub_re, one_re]
+              linarith""",
+              "positive cpow norm",
+          )
+
+          assert s != original
+          assert "have hneg3M :" in s
+          assert "finiteDilationFactor_factor_v11" in s
+          assert s.index("finiteDilationFactor_factor_v11") < s.index("finiteDilationFactor_zero_v11")
+          p.write_text(s, encoding="utf-8")
+          print("FINITE_DILATION_V11_COMPAT=PASS")
+          PY
+
+      - name: Apply mixed-Mellin Lean 4.33 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIX=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMixedMellinFactorV10.lean"
+          python3 - "$MIX" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          def rep(old: str, new: str, label: str) -> None:
+              global s
+              n = s.count(old)
+              assert n == 1, f"{label}: expected 1 occurrence, found {n}"
+              s = s.replace(old, new, 1)
+
+          rep(
+              "open scoped BigOperators Topology",
+              "open scoped BigOperators Topology ComplexConjugate",
+              "conjugation scope",
+          )
+
+          rep(
+              """theorem logCrossJoint_hasCompactSupport_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              HasCompactSupport (logCrossJointV10 a b z) :=
+            HasCompactSupport.intro
+              (logCrossJointEnvelope_compact_v10 a b)
+              (logCrossJoint_support_subset_v10 a b z)""",
+              """theorem logCrossJoint_hasCompactSupport_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              HasCompactSupport (logCrossJointV10 a b z) := by
+            apply HasCompactSupport.intro
+              (logCrossJointEnvelope_compact_v10 a b)
+            intro p hp
+            by_contra hne
+            apply hp
+            exact logCrossJoint_support_subset_v10 a b z hne""",
+              "compact support adapter",
+          )
+
+          rep(
+              """theorem logCrossJoint_fubini_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              (∫ v : ℝ,
+                ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
+                ∫ u : ℝ,
+                  ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
+            exact integral_integral_swap_of_hasCompactSupport
+              (logCrossJoint_continuous_v10 a b z)
+              (logCrossJoint_hasCompactSupport_v10 a b z)""",
+              """theorem logCrossJoint_fubini_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              (∫ v : ℝ,
+                ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
+                ∫ u : ℝ,
+                  ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
+            let F : ℝ → ℝ → ℂ := fun v u => logCrossJointV10 a b z (v, u)
+            have hcont : Continuous F.uncurry := by
+              simpa [F, Function.uncurry] using
+                (logCrossJoint_continuous_v10 a b z)
+            have hcompact : HasCompactSupport F.uncurry := by
+              simpa [F, Function.uncurry] using
+                (logCrossJoint_hasCompactSupport_v10 a b z)
+            simpa [F] using
+              (integral_integral_swap_of_hasCompactSupport hcont hcompact)""",
+              "Fubini adapter",
+          )
+
+          rep(
+              """      change
+                    Complex.exp (s * (v : ℂ)) *
+                      mixed a b (Real.exp v) = _
+                  have hcross := logCross_eq_mixed_v28 a b v
+                  rw [hcross]
+                  rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]
+                  rw [← mul_assoc, ← Complex.exp_add]
+                  congr 2
+                  push_cast
+                  ring)""",
+              """      change
+                    Complex.exp (s * (v : ℂ)) *
+                        mixed a b (Real.exp v) =
+                      Complex.exp ((s - 1 / 2) * (v : ℂ)) *
+                        logCrossV28 a b v
+                  have hcross := logCross_eq_mixed_v28 a b v
+                  rw [hcross]
+                  rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]
+                  rw [← mul_assoc, ← Complex.exp_add]
+                  congr 2 <;> push_cast <;> ring)""",
+              "log-cross coordinate identity",
+          )
+
+          assert s != original
+          assert "open scoped BigOperators Topology ComplexConjugate" in s
+          assert "let F : ℝ → ℝ → ℂ" in s
+          assert "HasCompactSupport.intro" in s
+          p.write_text(s, encoding="utf-8")
+          print("MIXED_MELLIN_COMPAT=PASS")
+          PY
+
+      - name: Stabilize mixed-Mellin Fubini proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIX=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMixedMellinFactorV10.lean"
+          python3 - "$MIX" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          def rep(old: str, new: str, label: str) -> None:
+              global s
+              n = s.count(old)
+              assert n == 1, f"{label}: expected 1 occurrence, found {n}"
+              s = s.replace(old, new, 1)
+
+          rep(
+              """theorem logCrossJoint_support_subset_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              Function.support (logCrossJointV10 a b z) ⊆
+                logCrossJointEnvelopeV10 a b := by
+            intro p hp
+            have hprod :
+                logLift a.1 (p.1 + p.2) *
+                  conj (logLift b.1 p.2) ≠ 0 := by
+              intro h
+              apply hp
+              unfold logCrossJointV10
+              rw [h, mul_zero]
+            have ha : logLift a.1 (p.1 + p.2) ≠ 0 := by
+              exact fun h => hprod (by simp [h])
+            have hb : logLift b.1 p.2 ≠ 0 := by
+              exact fun h => hprod (by simp [h])
+            refine
+              ⟨(p.1 + p.2, p.2),
+                ⟨subset_tsupport _ ha, subset_tsupport _ hb⟩, ?_⟩
+            apply Prod.ext
+            · simp
+            · rfl""",
+              """theorem logCrossJoint_support_subset_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              Function.support (logCrossJointV10 a b z) ⊆
+                logCrossJointEnvelopeV10 a b := by
+            intro p hp
+            have ha : logLift a.1 (p.1 + p.2) ≠ 0 := by
+              intro hz
+              apply hp
+              simp [logCrossJointV10, hz]
+            have hb : logLift b.1 p.2 ≠ 0 := by
+              intro hz
+              apply hp
+              simp [logCrossJointV10, hz]
+            refine
+              ⟨(p.1 + p.2, p.2),
+                ⟨subset_tsupport _ ha, subset_tsupport _ hb⟩, ?_⟩
+            apply Prod.ext <;> simp <;> ring""",
+              "support proof",
+          )
+
+          rep(
+              """theorem logCrossJoint_fubini_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              (∫ v : ℝ,
+                ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
+                ∫ u : ℝ,
+                  ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
+            let F : ℝ → ℝ → ℂ := fun v u => logCrossJointV10 a b z (v, u)
+            have hcont : Continuous F.uncurry := by
+              simpa [F, Function.uncurry] using
+                (logCrossJoint_continuous_v10 a b z)
+            have hcompact : HasCompactSupport F.uncurry := by
+              simpa [F, Function.uncurry] using
+                (logCrossJoint_hasCompactSupport_v10 a b z)
+            simpa [F] using
+              (integral_integral_swap_of_hasCompactSupport hcont hcompact)""",
+              """theorem logCrossJoint_fubini_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              (∫ v : ℝ,
+                ∫ u : ℝ, logCrossJointV10 a b z (v,u)) =
+                ∫ u : ℝ,
+                  ∫ v : ℝ, logCrossJointV10 a b z (v,u) := by
+            have hprod :
+                Integrable (logCrossJointV10 a b z)
+                  (volume.prod volume) := by
+              exact
+                (logCrossJoint_continuous_v10 a b z).integrable_of_hasCompactSupport
+                  (logCrossJoint_hasCompactSupport_v10 a b z)
+            exact integral_integral_swap
+              (f := fun v u => logCrossJointV10 a b z (v, u))
+              (by simpa [Function.uncurry_def] using hprod)""",
+              "Fubini proof",
+          )
+
+          start = s.index("theorem logCross_transform_factor_v10")
+          end = s.index("\n/-- Exact mixed Mellin factorization. -/", start)
+          replacement = """theorem logCross_transform_factor_v10
+              (a b : WeilCompactSmoothGV1) (z : ℂ) :
+              (∫ v : ℝ,
+                Complex.exp (z * (v : ℂ)) *
+                  logCrossV28 a b v) =
+                logLaplaceV10 a z *
+                  conj (logLaplaceV10 b (-conj z)) := by
+            have hprod :
+                Integrable (logCrossJointV10 a b z)
+                  (volume.prod volume) := by
+              exact
+                (logCrossJoint_continuous_v10 a b z).integrable_of_hasCompactSupport
+                  (logCrossJoint_hasCompactSupport_v10 a b z)
+            calc
+              (∫ v : ℝ,
+                Complex.exp (z * (v : ℂ)) *
+                  logCrossV28 a b v)
+                =
+              ∫ v : ℝ,
+                ∫ u : ℝ,
+                  logCrossJointV10 a b z (v, u) := by
+                    apply integral_congr_ae
+                    filter_upwards [] with v
+                    unfold logCrossJointV10 logCrossV28
+                    rw [← integral_const_mul]
+                    congr 1
+                    funext u
+                    simp only [Prod.fst, Prod.snd]
+                    ring
+              _ =
+              ∫ u : ℝ,
+                ∫ v : ℝ,
+                  logCrossJointV10 a b z (v, u) := by
+                    exact integral_integral_swap
+                      (f := fun v u => logCrossJointV10 a b z (v, u))
+                      (by simpa [Function.uncurry_def] using hprod)
+              _ =
+              ∫ u : ℝ,
+                (Complex.exp (-z * (u : ℂ)) *
+                  logLaplaceV10 a z) *
+                  conj (logLift b.1 u) := by
+                    apply integral_congr_ae
+                    filter_upwards [] with u
+                    unfold logCrossJointV10
+                    simp only [Prod.fst, Prod.snd]
+                    rw [integral_mul_const]
+                    rw [logLaplace_shift_v10 a z u]
+              _ =
+                logLaplaceV10 a z *
+                  (∫ u : ℝ,
+                    Complex.exp (-z * (u : ℂ)) *
+                      conj (logLift b.1 u)) := by
+                        rw [← integral_const_mul]
+                        apply integral_congr_ae
+                        filter_upwards [] with u
+                        ring
+              _ =
+                logLaplaceV10 a z *
+                  conj (logLaplaceV10 b (-conj z)) := by
+                        rw [reflected_logLaplace_integral_v10]
+          """
+          s = s[:start] + replacement + s[end:]
+
+          rep(
+              """      rw [hcross]
+                  rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]
+                  rw [← mul_assoc, ← Complex.exp_add]
+                  congr 2 <;> push_cast <;> ring)""",
+              """      rw [hcross, Complex.ofReal_exp]
+                  rw [← mul_assoc, ← Complex.exp_add]
+                  congr 2 <;> push_cast <;> ring)""",
+              "coordinate exponential",
+          )
+
+          assert s != original
+          assert "Integrable (logCrossJointV10 a b z)" in s
+          assert "integral_integral_swap" in s
+          p.write_text(s, encoding="utf-8")
+          print("MIXED_MELLIN_STABILIZE=PASS")
+          PY
+
+      - name: Apply translated-kernel V11 compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          TK=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTranslatedKernelBoundV11.lean"
+          python3 - "$TK" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old = "open scoped BigOperators\n"
+          new = "open scoped BigOperators ComplexConjugate\n"
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old = """  simp
+          ring"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, "  simp", 1)
+
+          assert "open scoped BigOperators ComplexConjugate" in s
+          assert s != original
+          p.write_text(s, encoding="utf-8")
+          print("TRANSLATED_KERNEL_V11_COMPAT=PASS")
+          PY
+
+      - name: Stabilize translated-kernel scalar proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          TK=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTranslatedKernelBoundV11.lean"
+          python3 - "$TK" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+
+          old = """    rw [map_mul, Complex.conj_ofReal]
+            push_cast
+            rw [← mul_assoc]
+            have hcC :
+                (Real.exp (-d / 2) : ℂ) *
+                  (Real.exp (-d / 2) : ℂ) =
+                  (Real.exp (-d) : ℂ) := by
+              exact_mod_cast hc
+            rw [hcC]
+            congr 2
+            · congr 1
+              ring
+            · rfl"""
+          new = """    rw [map_mul, Complex.conj_ofReal]
+            push_cast
+            rw [Complex.ofReal_exp, Complex.ofReal_exp, Complex.ofReal_exp]
+            have hcC :
+                Complex.exp ((-d / 2 : ℝ) : ℂ) *
+                  Complex.exp ((-d / 2 : ℝ) : ℂ) =
+                  Complex.exp ((-d : ℝ) : ℂ) := by
+              rw [← Complex.exp_add]
+              congr 1
+              push_cast
+              ring
+            calc
+              Complex.exp ((-d / 2 : ℝ) : ℂ) *
+                    g.1 (Real.exp (-d) * (x * y)) *
+                    Complex.exp ((-d / 2 : ℝ) : ℂ) *
+                    conj (g.1 (Real.exp (-d) * y))
+                  =
+                  (Complex.exp ((-d / 2 : ℝ) : ℂ) *
+                    Complex.exp ((-d / 2 : ℝ) : ℂ)) *
+                    (g.1 (Real.exp (-d) * (x * y)) *
+                      conj (g.1 (Real.exp (-d) * y))) := by ring
+              _ =
+                  Complex.exp ((-d : ℝ) : ℂ) *
+                    (g.1 (Real.exp (-d) * (x * y)) *
+                      conj (g.1 (Real.exp (-d) * y))) := by rw [hcC]
+              _ =
+                  Complex.exp ((-d : ℝ) : ℂ) *
+                    (g.1 (x * (Real.exp (-d) * y)) *
+                      conj (g.1 (Real.exp (-d) * y))) := by
+                    congr 2
+                    congr 1
+                    ring"""
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+
+          old2 = """  have hsmul :
+              (∫ y in Ioi (0 : ℝ), (b : ℂ) * F (b * y)) =
+                b • (∫ y in Ioi (0 : ℝ), F (b * y)) := by
+            rw [← integral_const_mul]
+            simp [Complex.real_smul]"""
+          new2 = """  have hsmul :
+              (∫ y in Ioi (0 : ℝ), (b : ℂ) * F (b * y)) =
+                b • (∫ y in Ioi (0 : ℝ), F (b * y)) := by
+            rw [integral_const_mul]
+            simp [Complex.real_smul]"""
+          assert s.count(old2) == 1, s.count(old2)
+          s = s.replace(old2, new2, 1)
+
+          p.write_text(s, encoding="utf-8")
+          print("TRANSLATED_KERNEL_SCALAR_COMPAT=PASS")
+          PY
+
+      - name: Fetch exact Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache unpack || true
+          if ! test -f .lake/packages/mathlib/.lake/build/lib/lean/Mathlib/Analysis/MellinTransform.olean; then
+            lake exe cache get
+          fi
+          test "$(python3 - <<'PY'
+          import json
+          m=json.load(open('lake-manifest.json'))
+          print(next(x['rev'] for x in m['packages'] if x['name']=='mathlib'))
+          PY
+          )" = "$MATHLIB_SHA"
+          lean --version
+
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Rebind and build exact Li provider
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path('lakefile.lean')
+          text = p.read_text()
+          old = os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new = os.environ['MATHLIB_SHA']
+          assert text.count(old) == 1, text.count(old)
+          p.write_text(text.replace(old, new))
+
+          q = Path('Hadamard/General/Factorization.lean')
+          text = q.read_text()
+          assert text.count('ite_eq_right') == 2, text.count('ite_eq_right')
+          assert text.count('ite_eq_left') == 1, text.count('ite_eq_left')
+          q.write_text(text.replace('ite_eq_right', 'if_neg').replace('ite_eq_left', 'if_pos'))
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          python3 - <<'PY'
+          import json, os
+          m=json.load(open('lake-manifest.json'))
+          p=next(x for x in m['packages'] if x['name']=='mathlib')
+          assert p['rev'] == os.environ['MATHLIB_SHA'], p['rev']
+          PY
+          lake exe cache get
+          lake build Lc.LiCriterion.XiOrderBridge
+
+      - name: Save exact Li provider build
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Restore incremental PR606 full DAG cache
+        id: pr606-full-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/pr606-full-131
+          key: pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+          restore-keys: |
+            pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-
+
+      - name: Compile full PR606 131-module Lean DAG
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OVERLAY="$GITHUB_WORKSPACE/AegisRH/Overlay"
+          OUT="$GITHUB_WORKSPACE/.lake/pr606-full-131"
+          EVID="$GITHUB_WORKSPACE/evidence/pr606-full-131"
+          mkdir -p "$OUT" "$EVID"
+
+          python3 - "$SRC" "$EVID/order.txt" <<'PY'
+          from pathlib import Path
+          import re, sys
+
+          root=Path(sys.argv[1])
+          out=Path(sys.argv[2])
+          files={p.stem:p for p in root.glob("*.lean")}
+          assert len(files)==131, len(files)
+
+          pat=re.compile(r"^\s*import\s+(.+?)\s*$")
+          deps={}
+          for name,path in files.items():
+              local=[]
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  m=pat.match(line)
+                  if not m:
+                      continue
+                  for token in m.group(1).split():
+                      leaf=token.split(".")[-1]
+                      if leaf in files:
+                          local.append(leaf)
+              deps[name]=sorted(set(local))
+
+          temp,done,order=set(),set(),[]
+          def visit(name):
+              if name in done:
+                  return
+              if name in temp:
+                  raise RuntimeError("cycle:"+name)
+              temp.add(name)
+              for dep in deps[name]:
+                  visit(dep)
+              temp.remove(name)
+              done.add(name)
+              order.append(name)
+
+          for name in sorted(files):
+              visit(name)
+          assert len(order)==131, len(order)
+          out.write_text("\n".join(order)+"\n",encoding="utf-8")
+          print("PR606_FULL_DAG_COUNT",len(order))
+          PY
+
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+
+          : > "$EVID/status.tsv"
+          passed=0
+          dirty=0
+          while IFS= read -r MOD; do
+            [ -z "$MOD" ] && continue
+            FILE="$SRC/$MOD.lean"
+            KIND="SOURCE"
+            if [ -f "$OVERLAY/$MOD.lean" ]; then
+              FILE="$OVERLAY/$MOD.lean"
+              KIND="OVERLAY"
+            fi
+            FILE_SHA="$(sha256sum "$FILE" | awk '{print $1}')"
+            STAMP="$OUT/$MOD.source.sha256"
+            if [ "$dirty" -eq 0 ] && [ -f "$OUT/$MOD.olean" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$FILE_SHA" ]; then
+              echo "=== PR606 FULL 131: $MOD ($KIND, CACHED) ==="
+              printf '%s\tCACHED\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              passed=$((passed+1))
+              continue
+            fi
+            dirty=1
+            echo "=== PR606 FULL 131: $MOD ($KIND) ==="
+            if lean -o "$OUT/$MOD.olean" "$FILE" >"$EVID/$MOD.log" 2>&1; then
+              printf '%s\n' "$FILE_SHA" > "$STAMP"
+              printf '%s\tPASS\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              passed=$((passed+1))
+            else
+              rm -f "$OUT/$MOD.olean" "$STAMP"
+              printf '%s\tFAIL\t%s\n' "$MOD" "$KIND" >> "$EVID/status.tsv"
+              cat "$EVID/$MOD.log"
+              printf 'FIRST_FAIL_MODULE=%s\nFIRST_FAIL_KIND=%s\nPASSED_BEFORE_FAIL=%s\n'                 "$MOD" "$KIND" "$passed" > "$EVID/FIRST_FAILURE.txt"
+              echo "PR606_FULL_131_FIRST_FAIL=$MOD"
+              echo "PR606_FULL_131_PASSED_BEFORE_FAIL=$passed"
+              exit 1
+            fi
+          done < "$EVID/order.txt"
+
+          printf 'FULL_131_REPLAY=PASS\nMODULE_COUNT=131\n' > "$EVID/DISPOSITION.txt"
+          echo "PR606_FULL_131_REPLAY=PASS"
+          echo "PR606_FULL_131_MODULE_COUNT=$passed"
+
+      - name: Upload full PR606 replay receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr606-full-131-${{ env.AEGIS_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: evidence/pr606-full-131/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Save incremental PR606 full DAG cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/pr606-full-131
+          key: pr606-full-131-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Restore fork overlay dependency closure
+        id: overlay-deps-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-overlay
+          key: aegis-overlay-deps-v8-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+
+      - name: Compile fork-local AEGIS overlays
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OVERLAY="$GITHUB_WORKSPACE/AegisRH/Overlay"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-overlay"
+          mkdir -p "$OUT"
+          python3 - "$SRC" "$OVERLAY" "$GITHUB_WORKSPACE/.overlay-order.txt" <<'PY'
+          import pathlib,sys
+          src=pathlib.Path(sys.argv[1])
+          overlay_dir=pathlib.Path(sys.argv[2])
+          out=pathlib.Path(sys.argv[3])
+          targets=[
+              'MeromorphicIdentityPreconnectedV11',
+              'RHMillenniumGateV10',
+              'RHTranslatedKernelDominanceV1',
+              'RHZeroKernelBoundV11',
+              'RHZeroKernelLaplaceAnalyticV12',
+              'RHZeroKernelLaplaceV12',
+              'RestrictedWeilCriterionKernelBridgeV10',
+              'RestrictedWeilCriterionLaplaceV10',
+              'RestrictedWeilCriterionPoleIsolationV10',
+              'RestrictedWeilCriterionResidueCoefficientV11',
+              'RestrictedWeilCriterionResidueWitnessV11',
+              'RestrictedWeilCriterionTargetWitnessV11',
+              'RestrictedWeilCriterionZeroKernelV10',
+              'WeilActualZeroSummandWitnessV10',
+              'WeilArchimedeanCorrectionV10',
+              'WeilAutocorrelationExplicitFormulaV10',
+              'WeilAutocorrelationMellinFactorV10',
+              'WeilAutocorrelationMellinV11',
+              'WeilDigammaSeriesHalfPlaneV1',
+              'WeilDigammaSeriesRealV1',
+              'WeilExplicitFormulaV10',
+              'WeilFinalSignTranslationBoundV10',
+              'WeilFiniteDilationFilterV10',
+              'WeilFiniteDilationFilterV11',
+              'WeilFixedLineArithmeticV10',
+              'WeilFixedLineCompletedGammaV10',
+              'WeilFixedLineGammaAssemblyV10',
+              'WeilFixedLineGammaCoreV10',
+              'WeilFixedLineGammaFubiniV10',
+              'WeilFixedLineGammaXSpaceV10',
+              'WeilFixedLineZeroSideV10',
+              'WeilLogAutocorrelationV10',
+              'WeilLogLiftCompactSupportV10',
+              'WeilMixedMellinFactorV10',
+              'WeilMomentZeroDetectionV10',
+              'WeilOffLineSeedV10',
+              'WeilPairedHadamardTsumFusionV1',
+              'WeilPairedZeroEvaluationV9',
+              'WeilRHImpliesFinalSignV11',
+              'WeilStrictStripSeedV11',
+              'WeilTranslatedKernelBoundV11',
+              'WeilTranslatedZeroSeriesV10',
+              'WeilTranslationGapInvariantV10',
+              'WeilXiLogDerivDecompositionV10',
+              'WeilZeroCarrierBridgeV10',
+              'WeilZeroCarrierRebindV10',
+              'WeilZeroKernelHermitianV11',
+              'WeilZeroSideIdentificationV1',
+              'WeilZeroTranslationV11',
+              'WeilZeroTwoPointV11',
+          ]
+
+          source_mods={p.stem:p for p in src.glob('*.lean')}
+          overlay_mods={p.stem:p for p in overlay_dir.glob('*.lean')}
+          mods=set(source_mods) | set(overlay_mods)
+
+          def selected_path(m):
+              if m in overlay_mods:
+                  return overlay_mods[m]
+              if m in source_mods:
+                  return source_mods[m]
+              raise SystemExit('missing:'+m)
+
+          deps={}
+          for m in mods:
+              p=selected_path(m)
+              ds=[]
+              for line in p.read_text(encoding='utf-8').splitlines():
+                  line=line.split('--',1)[0].strip()
+                  if not line.startswith('import '):
+                      continue
+                  for tok in line[7:].split():
+                      root=tok.split('.')[0]
+                      if root in mods:
+                          ds.append(root)
+              deps[m]=ds
+
+          seen=set()
+          temp=set()
+          order=[]
+          def visit(m):
+              if m in seen:
+                  return
+              if m in temp:
+                  raise SystemExit('cycle:'+m)
+              if m not in mods:
+                  raise SystemExit('missing:'+m)
+              temp.add(m)
+              for d in deps[m]:
+                  visit(d)
+              temp.remove(m)
+              seen.add(m)
+              order.append(m)
+
+          for target in targets:
+              visit(target)
+          out.write_text('\n'.join(order)+'\n')
+          print('FULL_RH_CLOSURE_COUNT',len(order))
+          print('FULL_RH_TARGETS',','.join(targets))
+          print('\n'.join(
+              ('OVERLAY ' if m in overlay_mods else 'SOURCE  ')+m
+              for m in order
+          ))
+          PY
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$OUT:$SRC:$BASE_LEAN_PATH"
+          while IFS= read -r MOD; do
+            [ -z "$MOD" ] && continue
+            if [ -f "$OUT/$MOD.olean" ]; then
+              echo "=== CACHED $MOD ==="
+              continue
+            fi
+            FILE="$SRC/$MOD.lean"
+            KIND="SOURCE DEP"
+            if [ -f "$OVERLAY/$MOD.lean" ]; then
+              FILE="$OVERLAY/$MOD.lean"
+              KIND="FORK OVERLAY"
+            fi
+            echo "=== $KIND $MOD ==="
+            lean -o "$OUT/$MOD.olean" "$FILE"
+          done < "$GITHUB_WORKSPACE/.overlay-order.txt"
+          ! grep -R -n -E '\bsorry\b|\badmit\b' "$OVERLAY"
+
+      - name: Save fork overlay dependency closure
+        if: always() && steps.overlay-deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-overlay
+          key: aegis-overlay-deps-v8-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+
+      - name: Restore exact AEGIS closure build
+        id: aegis-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-rh
+          key: aegis-rh-closure-v3-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+
+      - name: Compile exact AEGIS RH closure
+        if: steps.aegis-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
+          mkdir -p "$OUT"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          python3 - "$SRC" "$GITHUB_WORKSPACE/.aegis-order.txt" <<'PY'
+          import pathlib,sys
+          src=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          targets=[
+            'RHZeroKernelLaplaceAnalyticV12',
+            'RestrictedWeilCriterionResidueCoefficientV11',
+            'RestrictedWeilCriterionPoleIsolationV10',
+            'MeromorphicIdentityPreconnectedV11',
+          ]
+          mods={p.stem:p for p in src.glob('*.lean')}
+          deps={}
+          for m,p in mods.items():
+            ds=[]
+            for line in p.read_text(encoding='utf-8').splitlines():
+              s=line.strip()
+              if not s.startswith('import '): continue
+              for tok in s[7:].split():
+                root=tok.split('.')[0]
+                if root in mods: ds.append(root)
+            deps[m]=ds
+          seen=set(); temp=set(); order=[]
+          def visit(m):
+            if m in seen: return
+            if m in temp: raise SystemExit('cycle:'+m)
+            if m not in mods: raise SystemExit('missing:'+m)
+            temp.add(m)
+            for d in deps[m]: visit(d)
+            temp.remove(m); seen.add(m); order.append(m)
+          for t in targets: visit(t)
+          out.write_text('\n'.join(order)+'\n')
+          print('LOCAL_CLOSURE_COUNT',len(order))
+          print('\n'.join(order))
+          PY
+          OVERLAY_OUT="$GITHUB_WORKSPACE/.lake/aegis-overlay"
+          export LEAN_PATH="$OVERLAY_OUT:$OUT:$SRC:$BASE_LEAN_PATH"
+          while IFS= read -r MOD; do
+            [ -z "$MOD" ] && continue
+            if [ "$MOD" = "WeilZeroTranslationV11" ] || [ "$MOD" = "WeilZeroTwoPointV11" ] || [ "$MOD" = "WeilZeroKernelHermitianV11" ] || [ "$MOD" = "RHZeroKernelLaplaceV12" ]; then
+              echo "=== USE FORK OVERLAY $MOD ==="
+              test -f "$OVERLAY_OUT/$MOD.olean"
+              continue
+            fi
+            echo "=== COMPILE $MOD ==="
+            lean -o "$OUT/$MOD.olean" "$SRC/$MOD.lean"
+          done < "$GITHUB_WORKSPACE/.aegis-order.txt"
+
+      - name: Save exact AEGIS closure build
+        if: steps.aegis-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lake/aegis-rh
+          key: aegis-rh-closure-v3-${{ runner.os }}-${{ runner.arch }}-${{ env.AEGIS_SHA }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}-${{ hashFiles('AegisRH/Overlay/*.lean') }}
+
+      - name: Audit load-bearing axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.lake/aegis-overlay:$OUT:$SRC:$BASE_LEAN_PATH"
+          cat > /tmp/Audit.lean <<'LEAN'
+          import RHZeroKernelLaplaceAnalyticV12
+          import RestrictedWeilCriterionResidueCoefficientV11
+          import RestrictedWeilCriterionPoleIsolationV10
+          import MeromorphicIdentityPreconnectedV11
+          #print axioms AEGIS.RHZeroKernelLaplaceAnalyticV12.zero_kernel_laplace_analyticOnNhd_v12
+          #print axioms AEGIS.RestrictedWeilCriterionResidueCoefficientV11.exists_nonzero_zero_coefficient_v11
+          #print axioms AEGIS.RestrictedWeilCriterionPoleIsolationV10.exists_centered_zero_isolation_v10
+          #print axioms AEGIS.MeromorphicIdentityPreconnectedV11.eventuallyEq_nhdsNE_of_meromorphicOn_of_seed
+          LEAN
+          lean /tmp/Audit.lean 2>&1 | tee /tmp/aegis-rh-axioms.log
+          ! grep -q 'sorryAx' /tmp/aegis-rh-axioms.log
+
+      - name: Compile and audit fork-side V13 scratch if present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AegisRH/V13Scratch.lean || exit 0
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
+          lean -o "$OUT/V13Scratch.olean" AegisRH/V13Scratch.lean
+          cat > /tmp/V13ScratchAudit.lean <<'LEAN'
+          import V13Scratch
+          #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.final_sign_iff_rh_v13
+          LEAN
+          lean /tmp/V13ScratchAudit.lean 2>&1 | tee /tmp/v13-scratch-axioms.log
+          ! grep -q 'sorryAx' /tmp/v13-scratch-axioms.log
+          cat > /tmp/V13ScratchAudit.lean <<'LEAN'
+          import V13Scratch
+          #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.universal_zero_quadratic_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.restricted_weil_criterion_kernel_bridge_v13
+          LEAN
+          lean /tmp/V13ScratchAudit.lean 2>&1 | tee /tmp/v13-scratch-axioms.log
+          ! grep -q 'sorryAx' /tmp/v13-scratch-axioms.log
+          if grep -n -E '\bsorry\b|\badmit\b' AegisRH/V13Scratch.lean; then
+            echo "V13 scratch contains forbidden placeholder proof" >&2
+            exit 1
+          fi
+          cat > /tmp/V13Audit.lean <<'LEAN'
+          import V13Scratch
+          #check AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #check AEGIS.V13Scratch.all_nontrivial_zeros_critical_of_final_sign_v13
+          #check AEGIS.V13Scratch.universal_zero_quadratic_implies_rh_v13
+          #check AEGIS.V13Scratch.restricted_weil_criterion_kernel_bridge_v13
+          #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.all_nontrivial_zeros_critical_of_final_sign_v13
+          #print axioms AEGIS.V13Scratch.universal_zero_quadratic_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.restricted_weil_criterion_kernel_bridge_v13
+          LEAN
+          lean /tmp/V13Audit.lean 2>&1 | tee /tmp/v13-scratch-axioms.log
+          ! grep -q 'sorryAx' /tmp/v13-scratch-axioms.log
+
+      - name: Compile fork-side V13 if present
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f AegisRH/RestrictedWeilCriterionFinalV13.lean || exit 0
+          SRC="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          OUT="$GITHUB_WORKSPACE/.lake/aegis-rh"
+          BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
+          lean -o "$OUT/RestrictedWeilCriterionFinalV13.olean" AegisRH/RestrictedWeilCriterionFinalV13.lean
+          cat > /tmp/FinalAudit.lean <<'LEAN'
+          import RestrictedWeilCriterionFinalV13
+          #print axioms AEGIS.RestrictedWeilCriterionFinalV13.final_sign_implies_rh_v13
+          LEAN
+          lean /tmp/FinalAudit.lean 2>&1 | tee /tmp/final-v13-axioms.log
+          ! grep -q 'sorryAx' /tmp/final-v13-axioms.log
+
