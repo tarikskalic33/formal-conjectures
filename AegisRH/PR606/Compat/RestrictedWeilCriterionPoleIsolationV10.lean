@@ -79,9 +79,10 @@ theorem exists_centered_zero_isolation_v10
           sigma = rho := by
   have hrhoZ : rho.1 ∈ riemannZetaZeros := by
     exact mem_riemannZetaZeros.mpr rho.2.1
-  obtain ⟨ε, hε, hball⟩ :=
-    exists_ball_inter_eq_singleton_of_mem_discrete
+  obtain ⟨U, hU, hUint⟩ :=
+    nhds_inter_eq_singleton_of_mem_discrete
       isDiscrete_riemannZetaZeros hrhoZ
+  obtain ⟨ε, hε, hballU⟩ := Metric.mem_nhds_iff.mp hU
   refine ⟨ε, hε, ?_⟩
   intro sigma hsigma
   have hsigmaZ : sigma.1 ∈ riemannZetaZeros := by
@@ -92,10 +93,11 @@ theorem exists_centered_zero_isolation_v10
         dist (CenteredZeroExponentV10 sigma)
           (CenteredZeroExponentV10 rho) < ε from hsigma)
   have hmem :
-      sigma.1 ∈ Metric.ball rho.1 ε ∩ riemannZetaZeros := by
-    exact ⟨by simpa [Metric.mem_ball] using hdist, hsigmaZ⟩
+      sigma.1 ∈ U ∩ riemannZetaZeros := by
+    refine ⟨hballU ?_, hsigmaZ⟩
+    simpa [Metric.mem_ball] using hdist
   have hsingle : sigma.1 ∈ ({rho.1} : Set ℂ) := by
-    rw [← hball]
+    rw [← hUint]
     exact hmem
   have hval : sigma.1 = rho.1 := by
     simpa using hsingle
