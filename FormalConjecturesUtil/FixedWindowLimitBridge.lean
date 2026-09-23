@@ -85,6 +85,27 @@ theorem nonneg_of_invFourth_fixed_window_lower_bound
   nonneg_of_vanishing_error_norm
     hq (tendsto_invFourthError 3) hnorm hlower
 
+/-- A cofinal subsequence of matrix dimensions preserves the N^-4
+vanishing-error schedule. This is the form needed by the fixed-window theorem:
+the matrix certificates need only exist along N_j → ∞. -/
+theorem tendsto_invFourthError_along_cofinal
+    {N : ℕ → ℕ} (hN : Tendsto N atTop atTop) :
+    Tendsto (fun j => invFourthError 0 (N j)) atTop (𝓝 0) :=
+  (tendsto_invFourthError 0).comp hN
+
+/-- Cofinal-subsequence form of the fixed-window limit step. The approximation
+sequence q_j and its norm sequence may be indexed independently from the actual
+matrix dimension N_j; only cofinality and the exact N_j^-4 lower bound matter. -/
+theorem nonneg_of_cofinal_invFourth_fixed_window_lower_bound
+    {N : ℕ → ℕ} {q normSq : ℕ → ℝ} {Q normSqLimit : ℝ}
+    (hN : Tendsto N atTop atTop)
+    (hq : Tendsto q atTop (𝓝 Q))
+    (hnorm : Tendsto normSq atTop (𝓝 normSqLimit))
+    (hlower : ∀ j, -(invFourthError 0 (N j)) * normSq j ≤ q j) :
+    0 ≤ Q :=
+  nonneg_of_vanishing_error_norm
+    hq (tendsto_invFourthError_along_cofinal hN) hnorm hlower
+
 theorem all_positive_windows_of_pi_nat_windows
     (P : ℝ → Prop)
     (hmono : ∀ {R₁ R₂ : ℝ}, R₁ ≤ R₂ → P R₂ → P R₁)
