@@ -658,6 +658,25 @@ jobs:
           print("MOMENT_ZERO_COMPAT=PASS")
           PY
 
+      - name: Apply actual-zero witness conjugation compatibility patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          WIT=".aegis/sovereign-omega-v2/formal/bridges/lean/WeilActualZeroSummandWitnessV10.lean"
+          python3 - "$WIT" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          old = "open Complex\n"
+          new = "open Complex\nopen scoped ComplexConjugate\n"
+          assert s.count(old) == 1, s.count(old)
+          s = s.replace(old, new, 1)
+          assert "open scoped ComplexConjugate" in s
+          p.write_text(s, encoding="utf-8")
+          print("ACTUAL_ZERO_WITNESS_CONJ_SCOPE=PASS")
+          PY
+
       - name: Fetch exact Mathlib cache
         shell: bash
         run: |
