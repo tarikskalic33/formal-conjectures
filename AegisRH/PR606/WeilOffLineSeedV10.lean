@@ -210,11 +210,11 @@ theorem seedPacket_mellin_self_v10 (s : ℂ) :
           calc
             Complex.exp (s * (u : ℂ)) *
                 (((seedBumpV10 u : ℝ) : ℂ) *
-                  Complex.exp (-(s * (u : ℂ))))
+                  Complex.exp (-s * (u : ℂ)))
               =
                 ((seedBumpV10 u : ℝ) : ℂ) *
                   (Complex.exp (s * (u : ℂ)) *
-                    Complex.exp (-(s * (u : ℂ)))) := by ring
+                    Complex.exp (-s * (u : ℂ))) := by ring
             _ = ((seedBumpV10 u : ℝ) : ℂ) := by
                   rw [← Complex.exp_add]
                   simp)
