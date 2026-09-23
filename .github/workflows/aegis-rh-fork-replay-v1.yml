@@ -687,6 +687,13 @@ jobs:
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH:$OUT:$SRC:$BASE_LEAN_PATH"
           lean -o "$OUT/V13Scratch.olean" AegisRH/V13Scratch.lean
+          cat > /tmp/V13ScratchAudit.lean <<'LEAN'
+          import V13Scratch
+          #print axioms AEGIS.V13Scratch.final_sign_implies_rh_v13
+          #print axioms AEGIS.V13Scratch.final_sign_iff_rh_v13
+          LEAN
+          lean /tmp/V13ScratchAudit.lean 2>&1 | tee /tmp/v13-scratch-axioms.log
+          ! grep -q 'sorryAx' /tmp/v13-scratch-axioms.log
 
       - name: Compile fork-side V13 if present
         shell: bash
