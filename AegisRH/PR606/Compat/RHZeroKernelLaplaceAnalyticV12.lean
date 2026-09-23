@@ -243,7 +243,7 @@ private theorem first_moment_exp_tail_integrable_v12
       .of_integral_ne_zero (by
         rw [key]
         positivity)
-    simpa only [show (2 : ℝ) - 1 = 1 by norm_num, rpow_one] using hint
+    simpa only [show (2 : ℝ) - 1 = 1 by norm_num, Real.rpow_one] using hint
   exact hbase.const_mul B
 
 /-- Differentiability of the bounded-kernel Laplace transform at every point
