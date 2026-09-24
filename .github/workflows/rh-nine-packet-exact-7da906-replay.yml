@@ -3,7 +3,7 @@ name: AEGIS RH Nine Packet Exact 7da906 Replay
 on:
   push:
     branches:
-      - 'evidence/rh-nine-packet-7da906-replay-v1'
+      - 'evidence/rh-nine-window-4ea03d-compile-replay'
     paths:
       - '.github/workflows/rh-nine-packet-exact-7da906-replay.yml'
   pull_request:
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_SHA: 6aff1f00f1baece5a8bc052fedbaadfb8fed8ad8
+  SOURCE_SHA: 4ea03d16d96ff5ebb35d829cc452db865cec8ae0
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
 
