@@ -41,19 +41,47 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Bind exact source
+      - name: Bind exact source and compute local closure
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$MATHLIB_SHA"
           test "$(git -C .aegis rev-parse HEAD)" = "$SOURCE_SHA"
           test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
-          mkdir -p evidence .lake/build/lib/lean
           ROOT=.aegis/sovereign-omega-v2/formal/bridges/lean
-          for m in RHTenBlockComparisonV1 RHTenBlockActualBridgeV1 RHTenBlockActualExpansionV1; do
+          mkdir -p evidence .lake/build/lib/lean
+          python3 - "$ROOT" RHTenBlockActualExpansionV1 evidence/modules.txt <<'PY'
+          import pathlib,sys
+          root=pathlib.Path(sys.argv[1]); target=sys.argv[2]; out=pathlib.Path(sys.argv[3])
+          mods={p.stem:p for p in root.glob("*.lean")}
+          deps={}
+          for m,p in mods.items():
+              ds=[]
+              for line in p.read_text(encoding="utf-8").splitlines():
+                  s=line.strip()
+                  if not s.startswith("import "): continue
+                  for token in s[len("import "):].split():
+                      local=token.split(".")[0]
+                      if local in mods: ds.append(local)
+              deps[m]=ds
+          seen=set(); active=set(); order=[]
+          def visit(m):
+              if m in seen: return
+              if m in active: raise SystemExit("cycle:"+m)
+              if m not in mods: raise SystemExit("missing:"+m)
+              active.add(m)
+              for d in deps[m]: visit(d)
+              active.remove(m); seen.add(m); order.append(m)
+          visit(target)
+          out.write_text("\n".join(order)+"\n")
+          print("LOCAL_CLOSURE_COUNT",len(order))
+          print("\n".join(order))
+          PY
+          : > evidence/source-sha256.log
+          while IFS= read -r m; do
             cp "$ROOT/$m.lean" "$m.lean"
             sha256sum "$m.lean" >> evidence/source-sha256.log
-          done
+          done < evidence/modules.txt
 
       - name: Obtain exact Lean and Mathlib cache
         shell: bash
@@ -66,14 +94,15 @@ jobs:
           lake exe cache get
           lean --version | tee evidence/lean-version.log
 
-      - name: Compile exact expansion chain
+      - name: Compile exact expansion closure
         shell: bash
         run: |
           set -euo pipefail
-          for m in RHTenBlockComparisonV1 RHTenBlockActualBridgeV1 RHTenBlockActualExpansionV1; do
+          while IFS= read -r m; do
             echo "=== COMPILE $m ==="
-            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence/$m.log"
-          done
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 |
+              tee "evidence/$m.log"
+          done < evidence/modules.txt
 
       - name: Audit axioms
         shell: bash
