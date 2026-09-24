@@ -103,6 +103,25 @@ jobs:
           lake env lean FormalConjecturesRHTargetSignature.lean             2>&1 | tee evidence/formalconjectures-rh-target-signature.log
           ! grep -F 'sorryAx' evidence/formalconjectures-rh-target-signature.log
 
+      - name: Build exact FormalConjectures RH module
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake build FormalConjecturesUtil 2>&1 | tee evidence/formalconjectures-util-build.log
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lake env lean \
+            -o ".lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean" \
+            FormalConjectures/Millennium/RiemannHypothesis.lean \
+            2>&1 | tee evidence/formalconjectures-rh-module-build.log
+          cat > FormalConjecturesRHModuleAudit.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          #check RiemannHypothesis.riemannHypothesis
+          #print axioms RiemannHypothesis.riemannHypothesis
+          LEAN
+          lake env lean FormalConjecturesRHModuleAudit.lean \
+            2>&1 | tee evidence/formalconjectures-rh-module-axioms.log
+          grep -F 'sorryAx' evidence/formalconjectures-rh-module-axioms.log
+
       - name: Checkout exact AEGIS RH source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
