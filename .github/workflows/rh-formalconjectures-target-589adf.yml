@@ -195,9 +195,13 @@ jobs:
           # Make the exact provider source and oleans visible to the FormalConjectures project.
           cp -R .li-provider/Lc .
           cp -R .li-provider/Hadamard .
-          mkdir -p .lake/build/lib/lean/Lc .lake/build/lib/lean/Hadamard
+          cp -R .li-provider/FunctionsOfOneComplexVariable .
+          mkdir -p .lake/build/lib/lean/Lc .lake/build/lib/lean/Hadamard \
+            .lake/build/lib/lean/FunctionsOfOneComplexVariable
           cp -R .li-provider/.lake/build/lib/lean/Lc/. .lake/build/lib/lean/Lc/
           cp -R .li-provider/.lake/build/lib/lean/Hadamard/. .lake/build/lib/lean/Hadamard/
+          cp -R .li-provider/.lake/build/lib/lean/FunctionsOfOneComplexVariable/. \
+            .lake/build/lib/lean/FunctionsOfOneComplexVariable/
 
           {
             printf 'LI_CRITERION_SHA=%s\n' "$LI_CRITERION_SHA"
