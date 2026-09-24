@@ -189,7 +189,14 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
       hu hterm Metric.isOpen_ball hbound
 
   refine ⟨eps, heps, ?_⟩
-  simpa [ZeroResolventRemainderV13] using hd
+  change DifferentiableOn ℂ
+    (fun w : ℂ =>
+      ∑' sigma : RiemannNontrivialZeroIndexV2,
+        if sigma = rho then 0 else
+          WeilZeroCoefficientV11 g sigma /
+            (w - WeilCenteredZeroExponentV12 sigma))
+    (Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2))
+  exact hd
 
 private theorem zero_resolvent_remainder_summable_near_pole_v13
     (g : WeilCompactSmoothGV1)
@@ -474,7 +481,13 @@ private theorem zero_resolvent_differentiable_near_nonpole_v13
       hu hterm Metric.isOpen_ball hbound
 
   refine ⟨eps, heps, ?_⟩
-  simpa [WeilZeroResolventV12] using hd
+  change DifferentiableOn ℂ
+    (fun w : ℂ =>
+      ∑' sigma : RiemannNontrivialZeroIndexV2,
+        WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma))
+    (Metric.ball w0 (eps / 2))
+  exact hd
 
 theorem zero_resolvent_meromorphicAt_center_v13
     (g : WeilCompactSmoothGV1)
