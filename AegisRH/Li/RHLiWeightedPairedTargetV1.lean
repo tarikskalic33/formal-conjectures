@@ -67,11 +67,9 @@ theorem li_nonnegativity_iff_weighted_paired_v1 :
     LiNonnegativityV1 ↔ WeightedPairedNonnegativityV1 := by
   constructor
   · intro h n
-    unfold WeightedPairedNonnegativityV1 WeightedPairedLiSumV1
     rw [← taylorCoeff_eq_weighted_paired_sum_v1]
     exact h n
   · intro h n
-    unfold WeightedPairedNonnegativityV1 at h
     rw [taylorCoeff_eq_weighted_paired_sum_v1]
     exact h n
 
