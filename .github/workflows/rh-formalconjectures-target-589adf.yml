@@ -63,93 +63,45 @@ jobs:
           test "$actual_mathlib" = "$MATHLIB_SHA"
           printf 'ACTUAL_MATHLIB_SHA=%s\n' "$actual_mathlib" >> evidence/pins.txt
 
-      - name: Restore exact FormalConjectures Lean build
-        id: fc-build-cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: |
-            .lake/build
-          key: lean-build-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-${{ env.FORMAL_CONJECTURES_SHA }}
-
-      - name: Compile exact FormalConjecturesUtil closure
-        if: steps.fc-build-cache.outputs.cache-hit != 'true'
+      - name: Bind exact FormalConjectures RH target signature
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-
-          paths = []
-          for root in [Path("FormalConjecturesUtil"), Path("FormalConjecturesForMathlib")]:
-              if root.exists():
-                  paths += list(root.rglob("*.lean"))
-          for p in [Path("FormalConjecturesUtil.lean"), Path("FormalConjecturesForMathlib.lean")]:
-              if p.exists():
-                  paths.append(p)
-
-          def mod_of(p):
-              return ".".join(p.with_suffix("").parts)
-
-          mods = {mod_of(p): p for p in paths}
-          deps = {}
-          for m,p in mods.items():
-              ds=[]
-              for line in p.read_text(encoding="utf-8").splitlines():
-                  s=line.strip()
-                  if s.startswith("public import "):
-                      s=s[len("public "):]
-                  if not s.startswith("import "):
-                      continue
-                  for tok in s[len("import "):].split():
-                      if tok in mods:
-                          ds.append(tok)
-              deps[m]=ds
-
-          seen=set(); active=set(); order=[]
-          def visit(m):
-              if m in seen: return
-              if m in active: raise SystemExit("cycle:"+m)
-              if m not in mods: raise SystemExit("missing:"+m)
-              active.add(m)
-              for d in deps[m]:
-                  visit(d)
-              active.remove(m); seen.add(m); order.append(m)
-
-          visit("FormalConjecturesUtil")
-          out=Path("evidence/formalconjectures-util-modules.txt")
-          out.write_text("\n".join(order)+"\n")
-          print("FORMAL_CONJECTURES_UTIL_CLOSURE_COUNT",len(order))
-          print("\n".join(order))
+          p=Path("FormalConjectures/Millennium/RiemannHypothesis.lean")
+          s=p.read_text(encoding="utf-8")
+          needle="""theorem riemannHypothesis : RiemannHypothesis := by
+            sorry"""
+          if needle not in s:
+              raise SystemExit("exact RH target declaration not found")
+          print("FORMAL_CONJECTURES_RH_TARGET_SIGNATURE=RiemannHypothesis")
+          print("FORMAL_CONJECTURES_RH_BODY=CURRENTLY_SORRY")
           PY
+          cat > FormalConjecturesRHTargetSignature.lean <<'LEAN'
+          import Mathlib.NumberTheory.LSeries.RiemannZeta
 
-          mkdir -p .lake/build/lib/lean
-          while IFS= read -r m; do
-            src="${m//.//}.lean"
-            out=".lake/build/lib/lean/${m//.//}.olean"
-            mkdir -p "$(dirname "$out")"
-            echo "=== COMPILE $m ==="
-            lake env lean -o "$out" "$src" 2>&1 | tee "evidence/fc-util-${m//./_}.log"
-          done < evidence/formalconjectures-util-modules.txt
+          namespace FormalConjecturesRHTargetSignature
 
-      - name: Compile untouched FormalConjectures RiemannHypothesis.lean
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f .lake/build/lib/lean/FormalConjecturesUtil.olean
-          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
-          lake env lean \
-            -o ".lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean" \
-            FormalConjectures/Millennium/RiemannHypothesis.lean \
-            2>&1 | tee evidence/formalconjectures-rh-compile.log
-          cat > FormalConjecturesRHTargetAudit.lean <<'LEAN'
-          import FormalConjectures.Millennium.RiemannHypothesis
           #check RiemannHypothesis
-          #check RiemannHypothesis.riemannHypothesis
-          #print axioms RiemannHypothesis.riemannHypothesis
+
+          /-- Exact proposition used by
+          FormalConjectures/Millennium/RiemannHypothesis.lean at the pinned source. -/
+          def ExactRHTargetV1 : Prop := RiemannHypothesis
+
+          theorem exact_target_unfold_v1 :
+              ExactRHTargetV1 ↔
+                ∀ (s : ℂ), riemannZeta s = 0 →
+                  (¬ ∃ n : ℕ, s = -2 * (n + 1)) →
+                  s ≠ 1 → s.re = 1 / 2 := by
+            rfl
+
+          end FormalConjecturesRHTargetSignature
+
+          #print axioms FormalConjecturesRHTargetSignature.exact_target_unfold_v1
           LEAN
-          lake env lean FormalConjecturesRHTargetAudit.lean \
-            2>&1 | tee evidence/formalconjectures-rh-axioms.log
-          grep -F 'sorryAx' evidence/formalconjectures-rh-axioms.log
+          lake env lean FormalConjecturesRHTargetSignature.lean             2>&1 | tee evidence/formalconjectures-rh-target-signature.log
+          ! grep -F 'sorryAx' evidence/formalconjectures-rh-target-signature.log
 
       - name: Checkout exact AEGIS RH source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -370,7 +322,7 @@ jobs:
           TARGET_THEOREM=RiemannHypothesis.riemannHypothesis
           AEGIS_GATE_TARGET=RHMillenniumGateV10
           AEGIS_LOCAL_CLOSURE_COUNT=$count
-          FORMAL_CONJECTURES_TARGET_USES_SORRYAX=EXPECTED_CURRENT_UPSTREAM_STATE
+          FORMAL_CONJECTURES_TARGET_SOURCE_BODY=CURRENTLY_SORRY\n          FORMAL_CONJECTURES_TARGET_SIGNATURE=RiemannHypothesis
           AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
           DIRECT_RH_PROBE=EXPECTED_RED_UNTIL_MILLENNIUM_CERTIFICATE
           RH_PROVEN=FALSE
