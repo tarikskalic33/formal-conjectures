@@ -63,7 +63,16 @@ jobs:
           test "$actual_mathlib" = "$MATHLIB_SHA"
           printf 'ACTUAL_MATHLIB_SHA=%s\n' "$actual_mathlib" >> evidence/pins.txt
 
+      - name: Restore exact FormalConjectures Lean build
+        id: fc-build-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            .lake/build
+          key: lean-build-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.toml') }}-${{ env.FORMAL_CONJECTURES_SHA }}
+
       - name: Compile exact FormalConjecturesUtil closure
+        if: steps.fc-build-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -126,6 +135,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f .lake/build/lib/lean/FormalConjecturesUtil.olean
           mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
           lake env lean \
             -o ".lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean" \
