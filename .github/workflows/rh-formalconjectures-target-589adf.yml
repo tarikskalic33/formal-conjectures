@@ -1,0 +1,233 @@
+name: AEGIS RH FormalConjectures Target 589adf Replay
+
+on:
+  push:
+    branches:
+      - 'evidence/rh-formalconjectures-target-589adf-v1'
+    paths:
+      - '.github/workflows/rh-formalconjectures-target-589adf.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/rh-formalconjectures-target-589adf.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
+  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  AEGIS_TARGET: RHMillenniumGateV10
+
+jobs:
+  verify:
+    name: run AEGIS through FormalConjectures RH target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+
+    steps:
+      - name: Checkout exact FormalConjectures fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.FORMAL_CONJECTURES_SHA }}
+          persist-credentials: false
+
+      - name: Bind FormalConjectures / Mathlib pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FORMAL_CONJECTURES_SHA"
+          test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
+          grep -Fq "$MATHLIB_SHA" lake-manifest.json
+          mkdir -p evidence
+          sha256sum FormalConjectures/Millennium/RiemannHypothesis.lean             | tee evidence/formalconjectures-target-sha256.log
+          printf 'FORMAL_CONJECTURES_SHA=%s\nAEGIS_SHA=%s\nMATHLIB_SHA=%s\nLEAN_TOOLCHAIN=%s\n'             "$FORMAL_CONJECTURES_SHA" "$AEGIS_SHA" "$MATHLIB_SHA" "$LEAN_TOOLCHAIN"             | tee evidence/pins.txt
+
+      - name: Obtain exact Lean and project cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake update
+          lake exe cache get
+          lean --version | tee evidence/lean-version.log
+          actual_mathlib="$(git -C .lake/packages/mathlib rev-parse HEAD)"
+          test "$actual_mathlib" = "$MATHLIB_SHA"
+          printf 'ACTUAL_MATHLIB_SHA=%s\n' "$actual_mathlib" >> evidence/pins.txt
+
+      - name: Compile untouched FormalConjectures RiemannHypothesis.lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean FormalConjectures/Millennium/RiemannHypothesis.lean             2>&1 | tee evidence/formalconjectures-rh-compile.log
+          cat > FormalConjecturesRHTargetAudit.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          #check RiemannHypothesis
+          #check RiemannHypothesis.riemannHypothesis
+          #print axioms RiemannHypothesis.riemannHypothesis
+          LEAN
+          lake env lean FormalConjecturesRHTargetAudit.lean             2>&1 | tee evidence/formalconjectures-rh-axioms.log
+          grep -F 'sorryAx' evidence/formalconjectures-rh-axioms.log
+
+      - name: Checkout exact AEGIS RH source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Compute AEGIS target closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          ROOT=.aegis/sovereign-omega-v2/formal/bridges/lean
+          python3 - "$ROOT" "$AEGIS_TARGET" evidence/aegis-modules.txt <<'PY'
+          import pathlib,sys
+          root=pathlib.Path(sys.argv[1]); target=sys.argv[2]; out=pathlib.Path(sys.argv[3])
+          mods={p.stem:p for p in root.glob("*.lean")}
+          if target not in mods:
+              raise SystemExit(f"missing target: {target}")
+          deps={}
+          for m,p in mods.items():
+              ds=[]
+              for line in p.read_text(encoding="utf-8").splitlines():
+                  s=line.strip()
+                  if not s.startswith("import "):
+                      continue
+                  for token in s[len("import "):].split():
+                      local=token.split(".")[0]
+                      if local in mods:
+                          ds.append(local)
+              deps[m]=ds
+          seen=set(); active=set(); order=[]
+          def visit(m):
+              if m in seen: return
+              if m in active: raise SystemExit("cycle:"+m)
+              active.add(m)
+              for d in deps[m]: visit(d)
+              active.remove(m); seen.add(m); order.append(m)
+          visit(target)
+          out.write_text("\n".join(order)+"\n")
+          print("AEGIS_LOCAL_CLOSURE_COUNT",len(order))
+          print("\n".join(order))
+          PY
+          mkdir -p .lake/build/lib/lean
+          : > evidence/aegis-source-sha256.log
+          while IFS= read -r m; do
+            cp "$ROOT/$m.lean" "$m.lean"
+            sha256sum "$m.lean" >> evidence/aegis-source-sha256.log
+          done < evidence/aegis-modules.txt
+
+      - name: Compile exact AEGIS RH gate closure in FormalConjectures environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r m; do
+            echo "=== COMPILE $m ==="
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean"               2>&1 | tee "evidence/aegis-$m.log"
+          done < evidence/aegis-modules.txt
+          cat > AEGISGateAudit.lean <<'LEAN'
+          import RHMillenniumGateV10
+          #check AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10
+          #check AEGIS.RHMillenniumGateV10.RestrictedWeilCriterionKernelBridgeV10
+          #check AEGIS.RHMillenniumGateV10.MillenniumMomentReachedV10
+          #check AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
+          #print axioms AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
+          LEAN
+          lake env lean AEGISGateAudit.lean 2>&1 | tee evidence/aegis-gate-axioms.log
+          ! grep -F 'sorryAx' evidence/aegis-gate-axioms.log
+
+      - name: Run exact FormalConjectures RH proof attempt through AEGIS gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > AEGISFormalConjecturesRHTargetProbe.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          import RHMillenniumGateV10
+
+          namespace AEGISFormalConjecturesRHTargetProbe
+
+          /-- Exact target type used by FormalConjectures/Millennium/RiemannHypothesis.lean. -/
+          theorem riemannHypothesis_target_v1 : RiemannHypothesis := by
+            apply AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
+
+          end AEGISFormalConjecturesRHTargetProbe
+          LEAN
+
+          set +e
+          lake env lean AEGISFormalConjecturesRHTargetProbe.lean             > evidence/aegis-formalconjectures-rh-target-probe.log 2>&1
+          rc=$?
+          set -e
+
+          cat evidence/aegis-formalconjectures-rh-target-probe.log
+          test "$rc" -ne 0
+          grep -F 'unsolved goals' evidence/aegis-formalconjectures-rh-target-probe.log
+          grep -F 'MillenniumMomentReachedV10' evidence/aegis-formalconjectures-rh-target-probe.log
+          ! grep -F 'unknown module' evidence/aegis-formalconjectures-rh-target-probe.log
+          ! grep -F 'unknown identifier' evidence/aegis-formalconjectures-rh-target-probe.log
+
+      - name: Run direct Mathlib zero-side target probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > AEGISMathlibZeroSideTargetProbe.lean <<'LEAN'
+          import FormalConjectures.Millennium.RiemannHypothesis
+          import WeilZeroSideIdentificationV1
+
+          namespace AEGISMathlibZeroSideTargetProbe
+
+          theorem riemannHypothesis_zero_side_target_v1 : RiemannHypothesis := by
+            apply AEGIS.WeilZeroSideIdentificationV1.all_zeros_critical_implies_rh
+
+          end AEGISMathlibZeroSideTargetProbe
+          LEAN
+
+          set +e
+          lake env lean AEGISMathlibZeroSideTargetProbe.lean             > evidence/aegis-mathlib-zero-side-probe.log 2>&1
+          rc=$?
+          set -e
+
+          cat evidence/aegis-mathlib-zero-side-probe.log
+          test "$rc" -ne 0
+          grep -F 'unsolved goals' evidence/aegis-mathlib-zero-side-probe.log
+          grep -F 'WeilNontrivialZeroV1' evidence/aegis-mathlib-zero-side-probe.log
+          ! grep -F 'unknown module' evidence/aegis-mathlib-zero-side-probe.log
+          ! grep -F 'unknown identifier' evidence/aegis-mathlib-zero-side-probe.log
+
+      - name: Emit exact diagnostic disposition
+        if: always()
+        shell: bash
+        run: |
+          count="$(wc -l < evidence/aegis-modules.txt 2>/dev/null || echo 0)"
+          cat > evidence/DISPOSITION.txt <<EOF
+          FORMAL_CONJECTURES_SHA=$FORMAL_CONJECTURES_SHA
+          AEGIS_SHA=$AEGIS_SHA
+          MATHLIB_SHA=$MATHLIB_SHA
+          LEAN_TOOLCHAIN=$LEAN_TOOLCHAIN
+          TARGET_FILE=FormalConjectures/Millennium/RiemannHypothesis.lean
+          TARGET_THEOREM=RiemannHypothesis.riemannHypothesis
+          AEGIS_GATE_TARGET=RHMillenniumGateV10
+          AEGIS_LOCAL_CLOSURE_COUNT=$count
+          FORMAL_CONJECTURES_TARGET_USES_SORRYAX=EXPECTED_CURRENT_UPSTREAM_STATE
+          AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
+          DIRECT_RH_PROBE=EXPECTED_RED_UNTIL_MILLENNIUM_CERTIFICATE
+          RH_PROVEN=FALSE
+          AUTHORITY_EFFECT=NONE
+          EOF
+
+      - name: Upload exact target evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-formalconjectures-target-589adf
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
