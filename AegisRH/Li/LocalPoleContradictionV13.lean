@@ -15,7 +15,7 @@ theorem continuous_cannot_equal_nonzero_simple_pole_v13
     (hc : c ≠ 0)
     (heq : F =ᶠ[𝓝[≠] z] fun w => c / (w - z) + H w) :
     False := by
-  letI : NeBot (𝓝[≠] z) := nhdsNE_neBot z
+  letI : NeBot (𝓝[≠] z) := by infer_instance
 
   have hsub :
       Tendsto (fun w : ℂ => w - z) (𝓝[≠] z) (𝓝 0) := by
