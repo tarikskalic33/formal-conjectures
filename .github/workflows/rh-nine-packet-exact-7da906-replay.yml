@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_SHA: 6aff1f00f1baece5a8bc052fedbaadfb8fed8ad8
+  SOURCE_SHA: 83236dd9fb67f9faec55ab2d4423cc09e6f12916
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
 
@@ -92,6 +92,10 @@ jobs:
             WeilLogTransportCanonicalV1
             RHFineMomentPacketV3
             RHRationalNinePacketPrimeWindowV1
+            RHNineBlockComparisonV1
+            RHNineBlockActualBridgeV1
+            RHNineBlockActualExpansionV1
+            RHRationalNinePacketConcreteV1
           )
           : > evidence/modules.txt
           : > evidence/exact-source.log
@@ -140,6 +144,16 @@ jobs:
           #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_six_vonMangoldt_zero_v1
           #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_seven_vonMangoldt_zero_v1
           #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_eight_vonMangoldt_zero_v1
+          #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_one_prime_sum_zero_v1
+          #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_eight_prime_sum_zero_v1
+          #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_one_B_norm_v1
+          #print axioms AEGIS.RHRationalNinePacketPrimeWindowV1.gap_eight_B_norm_v1
+          #print axioms AEGIS.RHNineBlockComparisonV1.diagonal_32_over_25_margin_nine_v1
+          #print axioms AEGIS.RHNineBlockActualBridgeV1.nine_value_bound_v1
+          #print axioms AEGIS.RHNineBlockActualExpansionV1.actual_nine_block_bound_v1
+          #print axioms AEGIS.RHRationalNinePacketConcreteV1.nine_packet_coercive_v1
+          #print axioms AEGIS.RHRationalNinePacketConcreteV1.canonical_nine_packet_coercive_v1
+          #print axioms AEGIS.RHRationalNinePacketConcreteV1.canonical_nine_packet_sign_v1
           LEAN
           lake env lean RHRationalNinePacketPrimeWindowAudit.lean 2>&1 | tee evidence/nine-packet-axioms.log
           ! grep -F 'sorryAx' evidence/nine-packet-axioms.log
@@ -150,14 +164,14 @@ jobs:
         run: |
           cat > evidence/DISPOSITION.txt <<EOF
           SOURCE_SHA=$SOURCE_SHA
-          MODULE_COUNT=36
+          MODULE_COUNT=40
           PRODUCER=RHRationalNinePacketPrimeWindowV1
           SUPPORT_RADIUS=1/256
           CORRELATION_RADIUS=1/128
           SPACING_BASE=33/16
           TARGET_GAPS=1..8
-          PRIME_SUM_ZERO=NOT_CLAIMED
-          NINE_PACKET_COERCIVITY=NOT_CLAIMED
+          PRIME_SUM_ZERO=TARGETED
+          NINE_PACKET_COERCIVITY=TARGETED
           UNIVERSAL_FINAL_SIGN=NOT_CLAIMED
           RH=NOT_PROVEN
           AUTHORITY_EFFECT=NONE
