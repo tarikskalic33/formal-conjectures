@@ -146,7 +146,7 @@ jobs:
           lake env lean -o "$GITHUB_WORKSPACE/.lake/li-target/RHLiPairedLaurentV1.olean"             AegisRH/Li/RHLiPairedLaurentV1.lean             2>&1 | tee evidence/aegis-li-paired-laurent.log
 
           cat > LiTerminalAudit.lean <<'LEAN'
-          import RHDeepMindTerminalV1
+          import RHLiPairedLaurentV1
           #check AEGIS.RHDeepMindTerminalV1.LiNonnegativityV1
           #check AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1
           #print axioms AegisRhLiBridge.aegis_li_criterion_rh_iff_v1
