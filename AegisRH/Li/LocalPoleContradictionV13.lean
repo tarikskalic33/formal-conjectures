@@ -1,6 +1,7 @@
 import Mathlib
 
 open Set Filter Complex
+open scoped Topology
 
 set_option autoImplicit false
 noncomputable section
