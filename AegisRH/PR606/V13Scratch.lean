@@ -163,7 +163,11 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
             (w - WeilCenteredZeroExponentV12 sigma))‖ ≤ u sigma := by
     intro sigma w hw
     by_cases hsigma : sigma = rho
-    · simp [hsigma, u]
+    · subst sigma
+      simp only [if_pos rfl, norm_zero]
+      dsimp [u]
+      exact mul_nonneg (norm_nonneg _)
+        (le_of_lt (one_div_pos.mpr hr))
     · simp only [hsigma, if_false]
       have hd :=
         other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -221,7 +225,11 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   apply Summable.of_norm_bounded hu
   intro sigma
   by_cases hsigma : sigma = rho
-  · simp [hsigma, u]
+  · subst sigma
+    simp only [if_pos rfl, norm_zero]
+    dsimp [u]
+    exact mul_nonneg (norm_nonneg _)
+      (le_of_lt (one_div_pos.mpr hr))
   · simp only [hsigma, if_false]
     have hd :=
       other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -274,15 +282,13 @@ theorem zero_resolvent_order_eq_neg_one_v13
 
   obtain ⟨epsR, hepsR, hRdiff⟩ :=
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
-  have hRdiffAt :
-      DifferentiableAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.differentiableAt
-    simpa [y] using
-      (Metric.ball_mem_nhds
-        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
   have hRanalytic :
-      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y :=
-    hRdiffAt.analyticAt
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    exact hRdiff.analyticAt (by
+      simpa [y] using
+        (Metric.ball_mem_nhds
+          (WeilCenteredZeroExponentV12 rho)
+          (by linarith : 0 < epsR / 2)))
 
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
@@ -497,15 +503,13 @@ theorem zero_resolvent_meromorphicAt_center_v13
   let y : ℂ := WeilCenteredZeroExponentV12 rho
   obtain ⟨epsR, hepsR, hRdiff⟩ :=
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
-  have hRdiffAt :
-      DifferentiableAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.differentiableAt
-    simpa [y] using
-      (Metric.ball_mem_nhds
-        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
   have hRanalytic :
-      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y :=
-    hRdiffAt.analyticAt
+      AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
+    exact hRdiff.analyticAt (by
+      simpa [y] using
+        (Metric.ball_mem_nhds
+          (WeilCenteredZeroExponentV12 rho)
+          (by linarith : 0 < epsR / 2)))
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
       (z - y) * ZeroResolventRemainderV13 g rho z
@@ -557,10 +561,9 @@ theorem zero_resolvent_meromorphicOn_rightHalfPlane_v13
     obtain ⟨eps, heps, hdiff⟩ :=
       zero_resolvent_differentiable_near_nonpole_v13
         g (by simpa [RightHalfPlaneV13] using hw) hpole
-    have hdiffAt : DifferentiableAt ℂ (WeilZeroResolventV12 g) w := by
-      apply hdiff.differentiableAt
-      exact Metric.ball_mem_nhds w (by linarith)
-    exact hdiffAt.analyticAt.meromorphicAt
+    have han : AnalyticAt ℂ (WeilZeroResolventV12 g) w := by
+      exact hdiff.analyticAt (Metric.ball_mem_nhds w (by linarith))
+    exact han.meromorphicAt
 
 
 theorem laplace_resolvent_seed_eventuallyEq_v13
@@ -644,7 +647,7 @@ theorem no_zero_re_gt_half_of_final_sign_v13
       zero_resolvent_order_eq_neg_one_v13 g rho hcoef11
 
   rw [hResOrder] at hResNonneg
-  omega
+  norm_num at hResNonneg
 
 
 def reflectedNontrivialZeroV13
