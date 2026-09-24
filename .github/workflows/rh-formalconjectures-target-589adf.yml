@@ -58,6 +58,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           lake update
           lake exe cache get
+          lake build FormalConjecturesUtil
           lean --version | tee evidence/lean-version.log
           actual_mathlib="$(git -C .lake/packages/mathlib rev-parse HEAD)"
           test "$actual_mathlib" = "$MATHLIB_SHA"
