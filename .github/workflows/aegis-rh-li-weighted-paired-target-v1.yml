@@ -1,0 +1,205 @@
+name: AEGIS RH Weighted Paired Li Target V1
+
+on:
+  push:
+    branches:
+      - 'proof/rh-li-weighted-paired-target-v1'
+    paths:
+      - 'AegisRH/Li/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+      - '.github/workflows/aegis-rh-li-weighted-paired-target-v1.yml'
+  pull_request:
+    paths:
+      - 'AegisRH/Li/**'
+      - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+      - '.github/workflows/aegis-rh-li-weighted-paired-target-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LI_FACTORIZATION_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
+  AEGIS_LI_SOURCE_SHA: d4ef1e015f98c93ec6c631b02e20307b6a55fd62
+
+jobs:
+  direct-li-target:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact fork head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout exact Li provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify pins and target source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
+          grep -F "$MATHLIB_SHA" lake-manifest.json
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("FormalConjectures/Millennium/RiemannHypothesis.lean")
+          s=p.read_text(encoding="utf-8")
+          s=s.replace("import RHDeepMindTerminalV1",
+                      "import RHLiWeightedPairedTargetV1",1)
+          s=s.replace("apply AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1",
+                      "apply AEGIS.RHLiWeightedPairedTargetV1.weighted_paired_nonnegativity_closes_rh_v1",1)
+          p.write_text(s,encoding="utf-8")
+          PY
+          grep -F 'import RHLiWeightedPairedTargetV1' FormalConjectures/Millennium/RiemannHypothesis.lean
+          grep -F 'apply AEGIS.RHLiWeightedPairedTargetV1.weighted_paired_nonnegativity_closes_rh_v1'             FormalConjectures/Millennium/RiemannHypothesis.lean
+          ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis'             FormalConjectures/Millennium/RiemannHypothesis.lean | grep -F 'sorry'
+          mkdir -p evidence
+          sha256sum             AegisRH/Li/AegisLiCriterionRebindV1.lean             AegisRH/Li/RHDeepMindTerminalV1.lean             FormalConjectures/Millennium/RiemannHypothesis.lean             | tee evidence/source-sha256.log
+
+      - name: Install pinned Lean and root project cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake exe cache get
+          lean --version | tee evidence/lean-version.log
+          lake build FormalConjecturesUtil
+
+      - name: Compile local pole contradiction helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean AegisRH/Li/LocalPoleContradictionV13.lean 2>&1 | tee evidence/local-pole-v13.log
+          ! grep -F 'sorryAx' evidence/local-pole-v13.log
+
+      - name: Restore exact Li provider build
+        id: li-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li/.lake/build
+          key: li-provider-xiorder-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+
+      - name: Rebind and build exact Li provider terminal
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path('lakefile.lean')
+          text=p.read_text(encoding='utf-8')
+          old=os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new=os.environ['MATHLIB_SHA']
+          assert text.count(old) == 1
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+          q=Path('Hadamard/General/Factorization.lean')
+          text=q.read_text(encoding='utf-8')
+          replacements=[
+            ('eventually_nhdsWithin_of_forall fun w hw => ite_eq_right hw',
+             'eventually_nhdsWithin_of_forall fun w hw => if_neg hw'),
+            ('have hgz : g z = Q z := ite_eq_left rfl',
+             'have hgz : g z = Q z := by simp [g]'),
+            ('rw [ite_eq_right heq, hQ_eq_div z (hz heq)]',
+             'rw [if_neg heq, hQ_eq_div z (hz heq)]'),
+          ]
+          for old,new in replacements:
+            if old in text:
+              text=text.replace(old,new,1)
+          q.write_text(text,encoding='utf-8')
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          lake exe cache get
+          lake build Lc.LiCriterion.XiOrderBridge
+
+      - name: Compile and audit exact AEGIS Li terminal
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/li-target
+          ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.lake/li-target:$GITHUB_WORKSPACE/AegisRH/Li:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
+
+          lake env lean -o "$GITHUB_WORKSPACE/.lake/li-target/AegisLiCriterionRebindV1.olean"             AegisRH/Li/AegisLiCriterionRebindV1.lean             2>&1 | tee evidence/aegis-li-rebind.log
+          lake env lean -o "$GITHUB_WORKSPACE/.lake/li-target/RHDeepMindTerminalV1.olean"             AegisRH/Li/RHDeepMindTerminalV1.lean             2>&1 | tee evidence/aegis-li-terminal.log
+          lake env lean -o "$GITHUB_WORKSPACE/.lake/li-target/RHLiWeightedPairedTargetV1.olean"             AegisRH/Li/RHLiWeightedPairedTargetV1.lean             2>&1 | tee evidence/aegis-li-weighted-paired.log
+
+          cat > LiTerminalAudit.lean <<'LEAN'
+          import RHDeepMindTerminalV1
+          #check AEGIS.RHDeepMindTerminalV1.LiNonnegativityV1
+          #check AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1
+          #print axioms AegisRhLiBridge.aegis_li_criterion_rh_iff_v1
+          #print axioms AEGIS.RHDeepMindTerminalV1.li_nonnegativity_iff_rh_v1
+          #print axioms AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1
+          #check AEGIS.RHLiWeightedPairedTargetV1.WeightedPairedNonnegativityV1
+          #print axioms AEGIS.RHLiWeightedPairedTargetV1.taylorCoeff_eq_weighted_paired_sum_v1
+          #print axioms AEGIS.RHLiWeightedPairedTargetV1.li_nonnegativity_iff_weighted_paired_v1
+          #print axioms AEGIS.RHLiWeightedPairedTargetV1.weighted_paired_nonnegativity_closes_rh_v1
+          LEAN
+          lake env lean LiTerminalAudit.lean 2>&1 | tee evidence/aegis-li-axioms.log
+          ! grep -F 'sorryAx' evidence/aegis-li-axioms.log
+
+      - name: Compile actual DeepMind RH target and require exact Li goal
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.lake/li-target:$GITHUB_WORKSPACE/AegisRH/Li:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
+
+          set +e
+          lake env lean FormalConjectures/Millennium/RiemannHypothesis.lean             > evidence/deepmind-li-target.log 2>&1
+          rc=$?
+          set -e
+          cat evidence/deepmind-li-target.log
+
+          test "$rc" -ne 0
+          grep -F 'unsolved goals' evidence/deepmind-li-target.log
+          grep -E 'WeightedPairedNonnegativityV1|WeightedPairedLiSumV1|liPairedSummand' evidence/deepmind-li-target.log
+          ! grep -F 'unknown module' evidence/deepmind-li-target.log
+          ! grep -F 'unknown identifier' evidence/deepmind-li-target.log
+
+      - name: Emit direct target disposition
+        if: always()
+        shell: bash
+        run: |
+          cat > evidence/DISPOSITION.txt <<EOF
+          TARGET_FILE=FormalConjectures/Millennium/RiemannHypothesis.lean
+          TARGET_TYPE=RiemannHypothesis
+          AEGIS_LI_SOURCE_SHA=$AEGIS_LI_SOURCE_SHA
+          LI_PROVIDER_SHA=$LI_PROVIDER_SHA
+          MATHLIB_SHA=$MATHLIB_SHA
+          LEAN_TOOLCHAIN=$LEAN_TOOLCHAIN
+          LI_CRITERION_BRIDGE=REQUIRED_GREEN
+          EXACT_REMAINING_TARGET=WeightedPairedNonnegativityV1
+          RH_PROVEN=FALSE
+          AUTHORITY_EFFECT=NONE
+          EOF
+
+      - name: Upload direct Li target evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-li-weighted-paired-target
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
