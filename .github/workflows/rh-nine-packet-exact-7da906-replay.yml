@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_SHA: 83236dd9fb67f9faec55ab2d4423cc09e6f12916
+  SOURCE_SHA: a1da1723ed0a8134f714affc944552cc0521a606
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
 
