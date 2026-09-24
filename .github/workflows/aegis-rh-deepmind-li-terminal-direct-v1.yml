@@ -72,6 +72,13 @@ jobs:
           lean --version | tee evidence/lean-version.log
           lake build FormalConjecturesUtil
 
+      - name: Compile local pole contradiction helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean AegisRH/Li/LocalPoleContradictionV13.lean 2>&1 | tee evidence/local-pole-v13.log
+          ! grep -F 'sorryAx' evidence/local-pole-v13.log
+
       - name: Restore exact Li provider build
         id: li-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
