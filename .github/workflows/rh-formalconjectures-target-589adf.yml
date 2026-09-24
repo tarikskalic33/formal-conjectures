@@ -1,4 +1,4 @@
-name: AEGIS RH FormalConjectures Target 589adf Replay
+name: AEGIS RH FormalConjectures Target V13 Replay
 
 on:
   push:
@@ -16,10 +16,10 @@ permissions:
 
 env:
   FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
-  AEGIS_SHA: 589adf0480bd4d7c12c9828027ea6228398377f4
+  AEGIS_SHA: b998c98a356c69abe10e9101ede8841512a1a106
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
-  AEGIS_TARGET: RHMillenniumGateV10
+  AEGIS_TARGET: WeilRHImpliesFinalSignV13
   LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
   LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
   FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
@@ -256,44 +256,86 @@ jobs:
             lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean"               2>&1 | tee "evidence/aegis-$m.log"
           done < evidence/aegis-modules.txt
           cat > AEGISGateAudit.lean <<'LEAN'
-          import RHMillenniumGateV10
+          import WeilRHImpliesFinalSignV13
           #check AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10
-          #check AEGIS.RHMillenniumGateV10.RestrictedWeilCriterionKernelBridgeV10
-          #check AEGIS.RHMillenniumGateV10.MillenniumMomentReachedV10
-          #check AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
-          #print axioms AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
+          #check AEGIS.RHRestrictedWeilBridgeV13.final_sign_implies_rh_v13
+          #check AEGIS.RHRestrictedWeilBridgeV13.restricted_weil_criterion_kernel_bridge_v13
+          #check AEGIS.WeilRHImpliesFinalSignV13.rh_iff_final_sign_v13
+          #check AEGIS.WeilRHImpliesFinalSignV13.rh_iff_universal_v13
+          #check AEGIS.WeilRHImpliesFinalSignV13.millennium_moment_iff_rh_v13
+          #print axioms AEGIS.RHRestrictedWeilBridgeV13.final_sign_implies_rh_v13
+          #print axioms AEGIS.RHRestrictedWeilBridgeV13.restricted_weil_criterion_kernel_bridge_v13
+          #print axioms AEGIS.WeilRHImpliesFinalSignV13.rh_iff_universal_v13
+          #print axioms AEGIS.WeilRHImpliesFinalSignV13.millennium_moment_iff_rh_v13
           LEAN
           lake env lean AEGISGateAudit.lean 2>&1 | tee evidence/aegis-gate-axioms.log
           ! grep -F 'sorryAx' evidence/aegis-gate-axioms.log
 
-      - name: Run exact FormalConjectures RH proof attempt through AEGIS gate
+      - name: Run exact FormalConjectures RH target through V13 bridge
         shell: bash
         run: |
           set -euo pipefail
-          cat > AEGISFormalConjecturesRHTargetProbe.lean <<'LEAN'
+
+          cat > AEGISFormalConjecturesConditionalTarget.lean <<'LEAN'
           import FormalConjectures.Millennium.RiemannHypothesis
-          import RHMillenniumGateV10
+          import WeilRHImpliesFinalSignV13
 
-          namespace AEGISFormalConjecturesRHTargetProbe
+          namespace AEGISFormalConjecturesConditionalTarget
 
-          /-- Exact target type used by FormalConjectures/Millennium/RiemannHypothesis.lean. -/
-          theorem riemannHypothesis_target_v1 : RiemannHypothesis := by
-            apply AEGIS.RHMillenniumGateV10.millennium_moment_reached_implies_rh_v10
+          theorem rh_from_universal_v13
+              (hU : AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10) :
+              RiemannHypothesis :=
+            (AEGIS.WeilRHImpliesFinalSignV13.rh_iff_universal_v13).2 hU
 
-          end AEGISFormalConjecturesRHTargetProbe
+          theorem rh_from_final_sign_v13
+              (h : AEGIS.RHFinalClosureV1.FinalSignResidualV1) :
+              RiemannHypothesis :=
+            AEGIS.RHRestrictedWeilBridgeV13.final_sign_implies_rh_v13 h
+
+          end AEGISFormalConjecturesConditionalTarget
+
+          #print axioms AEGISFormalConjecturesConditionalTarget.rh_from_universal_v13
+          #print axioms AEGISFormalConjecturesConditionalTarget.rh_from_final_sign_v13
           LEAN
 
+          lake env lean AEGISFormalConjecturesConditionalTarget.lean \
+            2>&1 | tee evidence/aegis-formalconjectures-conditional-target.log
+          ! grep -F 'sorryAx' evidence/aegis-formalconjectures-conditional-target.log
+
+          cp FormalConjectures/Millennium/RiemannHypothesis.lean \
+            evidence/RiemannHypothesis.original.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("FormalConjectures/Millennium/RiemannHypothesis.lean")
+          s=p.read_text(encoding="utf-8")
+          s=s.replace(
+              "import FormalConjecturesUtil",
+              "import FormalConjecturesUtil\nimport WeilRHImpliesFinalSignV13",
+              1,
+          )
+          old="""theorem riemannHypothesis : RiemannHypothesis := by
+            sorry"""
+          new="""theorem riemannHypothesis : RiemannHypothesis := by
+            apply AEGIS.RHRestrictedWeilBridgeV13.restricted_weil_criterion_kernel_bridge_v13"""
+          if old not in s:
+              raise SystemExit("pinned RH theorem body not found")
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding="utf-8")
+          PY
+
           set +e
-          lake env lean AEGISFormalConjecturesRHTargetProbe.lean             > evidence/aegis-formalconjectures-rh-target-probe.log 2>&1
+          lake env lean FormalConjectures/Millennium/RiemannHypothesis.lean \
+            > evidence/formalconjectures-rh-v13-direct.log 2>&1
           rc=$?
           set -e
 
-          cat evidence/aegis-formalconjectures-rh-target-probe.log
+          cat evidence/formalconjectures-rh-v13-direct.log
           test "$rc" -ne 0
-          grep -F 'unsolved goals' evidence/aegis-formalconjectures-rh-target-probe.log
-          grep -F 'MillenniumMomentReachedV10' evidence/aegis-formalconjectures-rh-target-probe.log
-          ! grep -F 'unknown module' evidence/aegis-formalconjectures-rh-target-probe.log
-          ! grep -F 'unknown identifier' evidence/aegis-formalconjectures-rh-target-probe.log
+          grep -F 'unsolved goals' evidence/formalconjectures-rh-v13-direct.log
+          grep -F 'UniversalZeroQuadraticNonnegativeV10' \
+            evidence/formalconjectures-rh-v13-direct.log
+          ! grep -F 'unknown module' evidence/formalconjectures-rh-v13-direct.log
+          ! grep -F 'unknown identifier' evidence/formalconjectures-rh-v13-direct.log
 
       - name: Run direct Mathlib zero-side target probe
         shell: bash
@@ -339,11 +381,11 @@ jobs:
           LEAN_TOOLCHAIN=$LEAN_TOOLCHAIN
           TARGET_FILE=FormalConjectures/Millennium/RiemannHypothesis.lean
           TARGET_THEOREM=RiemannHypothesis.riemannHypothesis
-          AEGIS_GATE_TARGET=RHMillenniumGateV10
+          AEGIS_GATE_TARGET=WeilRHImpliesFinalSignV13
           AEGIS_LOCAL_CLOSURE_COUNT=$count
           FORMAL_CONJECTURES_TARGET_SOURCE_BODY=CURRENTLY_SORRY\n          FORMAL_CONJECTURES_TARGET_SIGNATURE=RiemannHypothesis
           AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
-          DIRECT_RH_PROBE=EXPECTED_RED_UNTIL_MILLENNIUM_CERTIFICATE
+          DIRECT_RH_PROBE=EXPECTED_SINGLE_GOAL_UNIVERSAL_ZERO_QUADRATIC_NONNEGATIVITY
           RH_PROVEN=FALSE
           AUTHORITY_EFFECT=NONE
           EOF
@@ -352,7 +394,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: rh-formalconjectures-target-589adf
+          name: rh-formalconjectures-target-v13
           path: evidence/
           if-no-files-found: error
           retention-days: 30
