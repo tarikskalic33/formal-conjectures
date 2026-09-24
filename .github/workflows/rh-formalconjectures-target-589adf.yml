@@ -58,17 +58,74 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           lake update
           lake exe cache get
-          lake build FormalConjecturesUtil
           lean --version | tee evidence/lean-version.log
           actual_mathlib="$(git -C .lake/packages/mathlib rev-parse HEAD)"
           test "$actual_mathlib" = "$MATHLIB_SHA"
           printf 'ACTUAL_MATHLIB_SHA=%s\n' "$actual_mathlib" >> evidence/pins.txt
 
+      - name: Compile exact FormalConjecturesUtil closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          paths = []
+          for root in [Path("FormalConjecturesUtil"), Path("FormalConjecturesForMathlib")]:
+              if root.exists():
+                  paths += list(root.rglob("*.lean"))
+          for p in [Path("FormalConjecturesUtil.lean"), Path("FormalConjecturesForMathlib.lean")]:
+              if p.exists():
+                  paths.append(p)
+
+          def mod_of(p):
+              return ".".join(p.with_suffix("").parts)
+
+          mods = {mod_of(p): p for p in paths}
+          deps = {}
+          for m,p in mods.items():
+              ds=[]
+              for line in p.read_text(encoding="utf-8").splitlines():
+                  s=line.strip()
+                  if s.startswith("public import "):
+                      s=s[len("public "):]
+                  if not s.startswith("import "):
+                      continue
+                  for tok in s[len("import "):].split():
+                      if tok in mods:
+                          ds.append(tok)
+              deps[m]=ds
+
+          seen=set(); active=set(); order=[]
+          def visit(m):
+              if m in seen: return
+              if m in active: raise SystemExit("cycle:"+m)
+              if m not in mods: raise SystemExit("missing:"+m)
+              active.add(m)
+              for d in deps[m]:
+                  visit(d)
+              active.remove(m); seen.add(m); order.append(m)
+
+          visit("FormalConjecturesUtil")
+          out=Path("evidence/formalconjectures-util-modules.txt")
+          out.write_text("\n".join(order)+"\n")
+          print("FORMAL_CONJECTURES_UTIL_CLOSURE_COUNT",len(order))
+          print("\n".join(order))
+          PY
+
+          mkdir -p .lake/build/lib/lean
+          while IFS= read -r m; do
+            src="${m//.//}.lean"
+            out=".lake/build/lib/lean/${m//.//}.olean"
+            mkdir -p "$(dirname "$out")"
+            echo "=== COMPILE $m ==="
+            lake env lean -o "$out" "$src" 2>&1 | tee "evidence/fc-util-${m//./_}.log"
+          done < evidence/formalconjectures-util-modules.txt
+
       - name: Compile untouched FormalConjectures RiemannHypothesis.lean
         shell: bash
         run: |
           set -euo pipefail
-          lake build FormalConjecturesUtil 2>&1 | tee evidence/formalconjectures-util-build.log
           mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
           lake env lean \
             -o ".lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean" \
