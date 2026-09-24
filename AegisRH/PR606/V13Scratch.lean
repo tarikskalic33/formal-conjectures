@@ -166,7 +166,8 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
     · subst sigma
       simp only [if_pos rfl, norm_zero]
       dsimp [u]
-      exact mul_nonneg (norm_nonneg _)
+      exact mul_nonneg
+        (norm_nonneg (WeilZeroCoefficientV11 g rho))
         (le_of_lt (one_div_pos.mpr hr))
     · simp only [hsigma, if_false]
       have hd :=
@@ -228,7 +229,8 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   · subst sigma
     simp only [if_pos rfl, norm_zero]
     dsimp [u]
-    exact mul_nonneg (norm_nonneg _)
+    exact mul_nonneg
+      (norm_nonneg (WeilZeroCoefficientV11 g rho))
       (le_of_lt (one_div_pos.mpr hr))
   · simp only [hsigma, if_false]
     have hd :=
@@ -326,11 +328,15 @@ theorem zero_resolvent_order_eq_neg_one_v13
       simpa using hzNE
     have hs :=
       hsplit z (by simpa [y] using hzball)
-    rw [hs]
+    have hs' :
+        WeilZeroResolventV12 g z =
+          WeilZeroCoefficientV11 g rho / (z - y) +
+            ZeroResolventRemainderV13 g rho z := by
+      simpa [y] using hs
+    rw [hs']
     dsimp [G]
-    rw [zpow_neg_one, div_eq_mul_inv, mul_add]
-    rw [inv_mul_cancel₀ hzy]
-    ring
+    rw [zpow_neg_one]
+    field_simp [hzy] <;> ring
 
   have hmer :
       MeromorphicAt (WeilZeroResolventV12 g) y := by
@@ -537,11 +543,15 @@ theorem zero_resolvent_meromorphicAt_center_v13
       apply sub_ne_zero.mpr
       simpa using hzNE
     have hs := hsplit z (by simpa [y] using hzball)
-    rw [hs]
+    have hs' :
+        WeilZeroResolventV12 g z =
+          WeilZeroCoefficientV11 g rho / (z - y) +
+            ZeroResolventRemainderV13 g rho z := by
+      simpa [y] using hs
+    rw [hs']
     dsimp [G]
-    rw [zpow_neg_one, div_eq_mul_inv, mul_add]
-    rw [inv_mul_cancel₀ hzy]
-    ring
+    rw [zpow_neg_one]
+    field_simp [hzy] <;> ring
   rw [MeromorphicAt.iff_eventuallyEq_zpow_smul_analyticAt]
   refine ⟨(-1 : ℤ), G, hGanalytic, ?_⟩
   filter_upwards [heq] with z hz
