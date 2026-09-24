@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  SOURCE_SHA: 38ab77a334cfb766211ffeb9150c261b34e8ee5d
+  SOURCE_SHA: 39c2851ae698542b4002d1f1ca5f5d24ddf1e240
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   TARGET: RHRationalTenPacketConcreteV1
