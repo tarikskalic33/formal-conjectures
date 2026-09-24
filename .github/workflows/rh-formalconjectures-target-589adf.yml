@@ -64,14 +64,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean FormalConjectures/Millennium/RiemannHypothesis.lean             2>&1 | tee evidence/formalconjectures-rh-compile.log
+          lake build FormalConjecturesUtil 2>&1 | tee evidence/formalconjectures-util-build.log
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lake env lean \
+            -o ".lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean" \
+            FormalConjectures/Millennium/RiemannHypothesis.lean \
+            2>&1 | tee evidence/formalconjectures-rh-compile.log
           cat > FormalConjecturesRHTargetAudit.lean <<'LEAN'
           import FormalConjectures.Millennium.RiemannHypothesis
           #check RiemannHypothesis
           #check RiemannHypothesis.riemannHypothesis
           #print axioms RiemannHypothesis.riemannHypothesis
           LEAN
-          lake env lean FormalConjecturesRHTargetAudit.lean             2>&1 | tee evidence/formalconjectures-rh-axioms.log
+          lake env lean FormalConjecturesRHTargetAudit.lean \
+            2>&1 | tee evidence/formalconjectures-rh-axioms.log
           grep -F 'sorryAx' evidence/formalconjectures-rh-axioms.log
 
       - name: Checkout exact AEGIS RH source
@@ -206,7 +212,11 @@ jobs:
         if: always()
         shell: bash
         run: |
-          count="$(wc -l < evidence/aegis-modules.txt 2>/dev/null || echo 0)"
+          if test -f evidence/aegis-modules.txt; then
+            count="$(wc -l < evidence/aegis-modules.txt)"
+          else
+            count=0
+          fi
           cat > evidence/DISPOSITION.txt <<EOF
           FORMAL_CONJECTURES_SHA=$FORMAL_CONJECTURES_SHA
           AEGIS_SHA=$AEGIS_SHA
