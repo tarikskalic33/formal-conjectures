@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  SOURCE_SHA: 8dd2e568eba9c6a3975529bd5fa55e32b8b1df14
+  SOURCE_SHA: 51bc2d2bdd8f824dab4e75d4aff7e8a8faf690e6
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
 
