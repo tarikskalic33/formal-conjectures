@@ -157,8 +157,11 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
             (w - WeilCenteredZeroExponentV12 sigma))‖ ≤ u sigma := by
     intro sigma w hw
     by_cases hsigma : sigma = rho
-    · simp [hsigma, u]
-      positivity
+    · subst sigma
+      simp only [if_pos rfl, norm_zero]
+      dsimp [u]
+      exact mul_nonneg (norm_nonneg _)
+        (le_of_lt (one_div_pos.mpr hr))
     · simp only [hsigma, if_false]
       have hd :=
         other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -184,7 +187,14 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
       hu hterm Metric.isOpen_ball hbound
 
   refine ⟨eps, heps, ?_⟩
-  simpa [ZeroResolventRemainderV13] using hd
+  change DifferentiableOn ℂ
+    (fun w : ℂ =>
+      ∑' sigma : RiemannNontrivialZeroIndexV2,
+        if sigma = rho then 0 else
+          WeilZeroCoefficientV11 g sigma /
+            (w - WeilCenteredZeroExponentV12 sigma))
+    (Metric.ball (WeilCenteredZeroExponentV12 rho) (eps / 2))
+  exact hd
 
 private theorem zero_resolvent_remainder_summable_near_pole_v13
     (g : WeilCompactSmoothGV1)
@@ -209,8 +219,11 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   apply Summable.of_norm_bounded hu
   intro sigma
   by_cases hsigma : sigma = rho
-  · simp [hsigma, u]
-    positivity
+  · subst sigma
+    simp only [if_pos rfl, norm_zero]
+    dsimp [u]
+    exact mul_nonneg (norm_nonneg _)
+      (le_of_lt (one_div_pos.mpr hr))
   · simp only [hsigma, if_false]
     have hd :=
       other_center_denominator_lower_v12 rho sigma eps hsep hsigma hw
@@ -265,10 +278,11 @@ theorem zero_resolvent_order_eq_neg_one_v13
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
   have hRanalytic :
       AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.analyticAt
-    simpa [y] using
-      (Metric.ball_mem_nhds
-        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+    exact hRdiff.analyticAt (by
+      simpa [y] using
+        (Metric.ball_mem_nhds
+          (WeilCenteredZeroExponentV12 rho)
+          (by linarith : 0 < epsR / 2)))
 
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
@@ -305,11 +319,15 @@ theorem zero_resolvent_order_eq_neg_one_v13
       simpa using hzNE
     have hs :=
       hsplit z (by simpa [y] using hzball)
-    rw [hs]
+    have hs' :
+        WeilZeroResolventV12 g z =
+          WeilZeroCoefficientV11 g rho / (z - y) +
+            ZeroResolventRemainderV13 g rho z := by
+      simpa [y] using hs
+    rw [hs']
     dsimp [G]
     rw [zpow_neg_one]
-    field_simp [hzy]
-    ring
+    field_simp [hzy] <;> ring
 
   have hmer :
       MeromorphicAt (WeilZeroResolventV12 g) y := by
@@ -466,7 +484,13 @@ private theorem zero_resolvent_differentiable_near_nonpole_v13
       hu hterm Metric.isOpen_ball hbound
 
   refine ⟨eps, heps, ?_⟩
-  simpa [WeilZeroResolventV12] using hd
+  change DifferentiableOn ℂ
+    (fun w : ℂ =>
+      ∑' sigma : RiemannNontrivialZeroIndexV2,
+        WeilZeroCoefficientV11 g sigma /
+          (w - WeilCenteredZeroExponentV12 sigma))
+    (Metric.ball w0 (eps / 2))
+  exact hd
 
 theorem zero_resolvent_meromorphicAt_center_v13
     (g : WeilCompactSmoothGV1)
@@ -478,10 +502,11 @@ theorem zero_resolvent_meromorphicAt_center_v13
     zero_resolvent_remainder_differentiable_near_pole_v13 g rho
   have hRanalytic :
       AnalyticAt ℂ (ZeroResolventRemainderV13 g rho) y := by
-    apply hRdiff.analyticAt
-    simpa [y] using
-      (Metric.ball_mem_nhds
-        (WeilCenteredZeroExponentV12 rho) (by linarith : 0 < epsR / 2))
+    exact hRdiff.analyticAt (by
+      simpa [y] using
+        (Metric.ball_mem_nhds
+          (WeilCenteredZeroExponentV12 rho)
+          (by linarith : 0 < epsR / 2)))
   let G : ℂ → ℂ := fun z =>
     WeilZeroCoefficientV11 g rho +
       (z - y) * ZeroResolventRemainderV13 g rho z
@@ -508,11 +533,15 @@ theorem zero_resolvent_meromorphicAt_center_v13
       apply sub_ne_zero.mpr
       simpa using hzNE
     have hs := hsplit z (by simpa [y] using hzball)
-    rw [hs]
+    have hs' :
+        WeilZeroResolventV12 g z =
+          WeilZeroCoefficientV11 g rho / (z - y) +
+            ZeroResolventRemainderV13 g rho z := by
+      simpa [y] using hs
+    rw [hs']
     dsimp [G]
     rw [zpow_neg_one]
-    field_simp [hzy]
-    ring
+    field_simp [hzy] <;> ring
   rw [MeromorphicAt.iff_eventuallyEq_zpow_smul_analyticAt]
   refine ⟨(-1 : ℤ), G, hGanalytic, ?_⟩
   filter_upwards [heq] with z hz
@@ -533,8 +562,7 @@ theorem zero_resolvent_meromorphicOn_rightHalfPlane_v13
       zero_resolvent_differentiable_near_nonpole_v13
         g (by simpa [RightHalfPlaneV13] using hw) hpole
     have han : AnalyticAt ℂ (WeilZeroResolventV12 g) w := by
-      apply hdiff.analyticAt
-      exact Metric.ball_mem_nhds w (by linarith)
+      exact hdiff.analyticAt (Metric.ball_mem_nhds w (by linarith))
     exact han.meromorphicAt
 
 
