@@ -86,6 +86,7 @@ jobs:
           ! grep -F 'sorryAx' evidence/axioms.log
 
       - name: Emit bounded disposition
+        if: always()
         shell: bash
         run: |
           cat > evidence/DISPOSITION.txt <<EOF
@@ -101,6 +102,7 @@ jobs:
           EOF
 
       - name: Upload evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: rh-ten-block-bridge-95f-exact-replay
