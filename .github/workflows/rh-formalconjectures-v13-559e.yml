@@ -16,10 +16,10 @@ permissions:
 
 env:
   FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
-  AEGIS_SHA: 2dc728bc07ae3b6d0913e9cdbcea5a7a09ccddf7
+  AEGIS_SHA: 3082f57f37c804dc984c8bcbe6331dc26c0c8398
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
-  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13 RHThresholdClassV13
+  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13 RHThresholdClassV13 RHBonusClassV13 RHThreeCellClassV13
   LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
   LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
   FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
@@ -277,6 +277,14 @@ jobs:
             echo '#print axioms AEGIS.RHThresholdGainV13.threshold_diagonal'
             echo '#print axioms AEGIS.RHThresholdClassV13.thrGain_5_32_one_fifth'
             echo '#print axioms AEGIS.RHThresholdClassV13.universal_on_one_fifth_class'
+            echo '#print axioms AEGIS.RHBonusGainV13.half_le_bonus'
+            echo '#print axioms AEGIS.RHBonusGainV13.bonus_diagonal'
+            echo '#print axioms AEGIS.RHBonusClassV13.bonusGain_5_32_21_100'
+            echo '#print axioms AEGIS.RHBonusClassV13.universal_on_bonus_class'
+            echo '#print axioms AEGIS.RHThreeCellV13.three_cell_logCorrelation'
+            echo '#print axioms AEGIS.RHThreeCellGainV13.cell_diagonal'
+            echo '#print axioms AEGIS.RHThreeCellClassV13.cellGain_5_32_7_32'
+            echo '#print axioms AEGIS.RHThreeCellClassV13.universal_on_cell_class'
           } > AEGISV13ResultAxiomAudit.lean
           cat AEGISV13ResultAxiomAudit.lean
           lake env lean AEGISV13ResultAxiomAudit.lean > evidence/aegis-v13-result-axioms.log 2>&1
