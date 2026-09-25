@@ -16,10 +16,10 @@ permissions:
 
 env:
   FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
-  AEGIS_SHA: 559e2a7f897bd48fe4559e8405ca5f6f9d6c3b3a
+  AEGIS_SHA: b5d63c23cdb3b9f7bb6e26b27cb3600c879c6d40
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
-  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13
+  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13
   LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
   LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
   FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
@@ -266,6 +266,13 @@ jobs:
             echo '#print axioms AEGIS.RHMomentGainV13.wide_coercive'
             echo '#print axioms AEGIS.RHMomentGainV13.wide_zero_quadratic_nonnegative'
             echo '#print axioms AEGIS.RHMomentGainV13.universal_on_wide_class'
+            echo '#print axioms AEGIS.RHHalfCapV13.half_cap_logCorrelation'
+            echo '#print axioms AEGIS.RHHalfCapV13.half_cap_exp_re_lower'
+            echo '#print axioms AEGIS.RHHalfCapGainV13.arch_half_cap_budget'
+            echo '#print axioms AEGIS.RHHalfCapGainV13.half_cap_diagonal'
+            echo '#print axioms AEGIS.RHHalfCapClassV13.halfGain_11_64'
+            echo '#print axioms AEGIS.RHHalfCapClassV13.half_cap_coercive'
+            echo '#print axioms AEGIS.RHHalfCapClassV13.universal_on_half_cap_class'
           } > AEGISV13ResultAxiomAudit.lean
           cat AEGISV13ResultAxiomAudit.lean
           lake env lean AEGISV13ResultAxiomAudit.lean > evidence/aegis-v13-result-axioms.log 2>&1
