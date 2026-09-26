@@ -15,10 +15,10 @@ permissions:
 
 env:
   FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
-  AEGIS_SHA: 4026b6c80cf89e31ff350a3156c75c418b66bc10
+  AEGIS_SHA: 514e4493b5896b18f12e55e4119a7439b1cd8eef
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
-  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13 RHThresholdClassV13 RHBonusClassV13 RHThreeCellClassV13 RHHatClassV13 RHHatClass310V13 RHHatClass13V13
+  AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13 RHThresholdClassV13 RHBonusClassV13 RHThreeCellClassV13 RHHatClassV13 RHHatClass310V13 RHHatClass13V13 RHHatClass69200V13
   LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
   LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
   FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
@@ -301,6 +301,11 @@ jobs:
             echo '#print axioms AEGIS.RHHatClass13V13.gain_bound'
             echo '#print axioms AEGIS.RHHatClass13V13.hat_coercive'
             echo '#print axioms AEGIS.RHHatClass13V13.universal_on_class'
+            echo '#print axioms AEGIS.RHHatCellsWideV13.Q_of_checksW'
+            echo '#print axioms AEGIS.RHHatClass69200V13.Q_all'
+            echo '#print axioms AEGIS.RHHatClass69200V13.gain_bound'
+            echo '#print axioms AEGIS.RHHatClass69200V13.hat_coercive'
+            echo '#print axioms AEGIS.RHHatClass69200V13.universal_on_class'
           } > AEGISV13ResultAxiomAudit.lean
           cat AEGISV13ResultAxiomAudit.lean
           lake env lean AEGISV13ResultAxiomAudit.lean > evidence/aegis-v13-result-axioms.log 2>&1
@@ -312,10 +317,10 @@ jobs:
           flat=re.sub(r"\s+"," ",log)
           allowed={'propext','Classical.choice','Quot.sound'}
           bad=[]
-          required={'AEGIS.RHHatClass13V13.'+n for n in
+          required={'AEGIS.'+c+'.'+n for c in ('RHHatClass13V13','RHHatClass69200V13') for n in
                     ('Q_all','gain_bound','hat_coercive','universal_on_class')}
-          if len(names)!=67 or len(set(names))!=67 or not required<=set(names):
-              bad.append('expected 67 distinct declarations including all four RHHatClass13V13 producers')
+          if len(names)!=72 or len(set(names))!=72 or not required<=set(names):
+              bad.append('expected 72 distinct declarations including all four RHHatClass13V13 and RHHatClass69200V13 producers')
           if 'sorryAx' in log or 'error' in log: bad.append('sorryAx or error in audit log')
           for n in names:
               m=re.search(r"'"+re.escape(n)+r"' depends on axioms: \[([^\]]*)\]",flat)
