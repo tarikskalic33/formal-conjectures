@@ -31,6 +31,7 @@ No sign theorem and no RH conclusion is asserted here.
 -/
 
 open MeasureTheory FourierTransform Complex
+open scoped ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -70,7 +71,7 @@ theorem critical_mellin_eq_fourier_scaled_v1
 
 /-- On the critical line the reflected Mellin factor is the same factor. -/
 theorem critical_reflection_v1 (t : ℝ) :
-    1 - Complex.conj ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I)) =
+    1 - conj ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I)) =
       (((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) := by
   apply Complex.ext <;> simp <;> ring
 
