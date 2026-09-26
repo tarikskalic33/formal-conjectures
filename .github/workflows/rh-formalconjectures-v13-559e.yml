@@ -1,21 +1,22 @@
-name: AEGIS RH FormalConjectures V13 Full-Closure Replay
+name: AEGIS RH FormalConjectures V13 559e Full-Closure Replay
 
 on:
+  push:
+    branches:
+      - 'evidence/rh-formalconjectures-v13-559e-replay'
+    paths:
+      - '.github/workflows/rh-formalconjectures-v13-559e.yml'
   pull_request:
     paths:
       - '.github/workflows/rh-formalconjectures-v13-559e.yml'
   workflow_dispatch:
-
-concurrency:
-  group: aegis-rh-v13-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
 env:
   FORMAL_CONJECTURES_SHA: 02da1ad1288b4881ea1f8e575fbe84af7db04364
-  AEGIS_SHA: 023a3e82e6f34e49c268f27f5801529e08daf529
+  AEGIS_SHA: 4026b6c80cf89e31ff350a3156c75c418b66bc10
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
   AEGIS_TARGETS: WeilRHImpliesFinalSignV13 RHNineFacesV13 RHFourPacketZeroQuadraticV13 RHFourBlockCertificateLimitV13 RHNinePacket33Over16V13 RHDyadicTowerV13 RHMomentGainV13 RHHalfCapClassV13 RHThresholdClassV13 RHBonusClassV13 RHThreeCellClassV13 RHHatClassV13 RHHatClass310V13 RHHatClass13V13
@@ -299,7 +300,6 @@ jobs:
             echo '#print axioms AEGIS.RHHatClass310V13.universal_on_class'
             echo '#print axioms AEGIS.RHHatClass13V13.Q_all'
             echo '#print axioms AEGIS.RHHatClass13V13.gain_bound'
-            echo '#print axioms AEGIS.RHHatClass13V13.hat_coercive'
             echo '#print axioms AEGIS.RHHatClass13V13.universal_on_class'
           } > AEGISV13ResultAxiomAudit.lean
           cat AEGISV13ResultAxiomAudit.lean
@@ -405,8 +405,7 @@ jobs:
           AEGIS_LOCAL_CLOSURE_COUNT=$count
           FORMAL_CONJECTURES_TARGET_USES_SORRYAX=EXPECTED_CURRENT_UPSTREAM_STATE
           AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
-          V13_CRITERION_TO_EXTERNAL_TARGET=REQUIRED_GREEN
-          UNCONDITIONAL_EXTERNAL_TARGET=EXPECTED_RED_ON_UNIVERSAL_ZERO_QUADRATIC
+          V13_CRITERION_TO_EXTERNAL_TARGET=REQUIRED_GREEN\n          UNCONDITIONAL_EXTERNAL_TARGET=EXPECTED_RED_ON_UNIVERSAL_ZERO_QUADRATIC
           RH_PROVEN=FALSE
           AUTHORITY_EFFECT=NONE
           EOF
@@ -415,7 +414,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: rh-formalconjectures-v13-${{ env.AEGIS_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: rh-formalconjectures-v13-559e
           path: evidence/
           if-no-files-found: error
           retention-days: 30
