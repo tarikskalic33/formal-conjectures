@@ -210,7 +210,8 @@ theorem gap_prime_sum_exact_three
         (mixed (translatePacket g 0) (translatePacket g (k * Real.log 3))) =
       ((Real.log 3 * triadicHalf k * energy g.1 : ℝ) : ℂ) := by
   rw [gap_prime_sum_single_three g r a k hk hr0 hr hr64 hw]
-  have hidx : 3 ^ k - 1 + 1 = 3 ^ k := by omega
+  have hidx : 3 ^ k - 1 + 1 = 3 ^ k :=
+    Nat.sub_add_cancel (Nat.one_le_pow k 3 (by norm_num))
   have hpP :
       mixed (translatePacket g 0) (translatePacket g (k * Real.log 3))
         (((3 ^ k : ℕ) : ℝ)) = 0 :=
