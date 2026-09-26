@@ -37,7 +37,7 @@ open AEGIS.RHDyadicDiagonalV13
 open AEGIS.WeilFixedLineGammaCoreV10
 open AEGIS.WeilDisjointEnergyV2
 
-/-- Beyond full width log 3, every possible nonzero prime term other than 2
+/-- For full width below log 3, every possible nonzero prime term other than 2
 is outside the autocorrelation support. -/
 theorem prime_sum_eq_two_of_halfWidth
     (g : WeilCompactSmoothGV1) (r a : ℝ)

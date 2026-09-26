@@ -41,7 +41,7 @@ theorem symbol_mass_integrable (g : WeilCompactSmoothGV1) :
   refine ((archSymbol_mass_integrable g).sub
     ((cosine_mass_integrable g (Real.log 2)).const_mul
       (Real.sqrt 2 * Real.log 2))).congr (Filter.Eventually.of_forall fun t => ?_)
-  simp only [symbol]
+  simp only [symbol, Pi.sub_apply]
   ring
 
 /-- An integrable zero-cost correction and a pointwise weighted certificate
@@ -68,7 +68,10 @@ theorem actual_margin_of_weighted_certificate
     calc
       0 ≤ ((t ^ 2 + 1 / 4) ^ 2 * (symbol t - m) + C t) * ρ t :=
         mul_nonneg (hcert t) (hρ t)
-      _ = _ := by rw [hmass]; ring
+      _ = _ := by
+        dsimp only
+        rw [hmass]
+        ring
   rw [integral_add hD hCint, hCzero, add_zero,
     integral_sub hS hM, integral_const_mul] at hnonneg
   rw [actual_arithmetic_real_eq_symbol_integral g r a hw hr, energy_eq_mass_integral]

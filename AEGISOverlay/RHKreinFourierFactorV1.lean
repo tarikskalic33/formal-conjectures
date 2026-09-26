@@ -72,7 +72,7 @@ theorem fourier_differential_factor (χ : ℝ → ℂ)
   have hF : 𝓕 (fun x => deriv (deriv χ) x - (1 / 4 : ℂ) * χ x) =
       fun ξ => 𝓕 (deriv (deriv χ)) ξ - (1 / 4 : ℂ) * 𝓕 χ ξ := by
     funext ξ
-    simpa only [Real.fourier_eq, VectorFourier.fourierIntegral,
+    simpa only [Real.fourier_eq, VectorFourier.fourierIntegral, innerₗ_apply_apply,
       Pi.add_apply, Pi.smul_apply, smul_eq_mul,
       neg_div, neg_mul, ← sub_eq_add_neg] using congrFun (hlin.trans
         (congrArg (fun v => VectorFourier.fourierIntegral Real.fourierChar volume

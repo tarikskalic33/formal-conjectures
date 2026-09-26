@@ -56,17 +56,18 @@ private theorem spectral_pair_integrable (G H : ℝ → ℂ)
     (hG : Integrable G) (hFH : Integrable (𝓕 H)) :
     Integrable (fun ξ : ℝ => (Complex.normSq (𝓕 G ξ) : ℂ) * 𝓕 H ξ) := by
   have hc : Continuous (𝓕 G) := by
-    simpa only [Real.fourier_eq] using
-      (VectorFourier.fourierIntegral_continuous (e := Real.fourierChar)
-        (μ := volume) (L := innerₗ ℝ) Real.continuous_fourierChar continuous_inner hG)
+    change Continuous (VectorFourier.fourierIntegral Real.fourierChar volume (innerₗ ℝ) G)
+    exact VectorFourier.fourierIntegral_continuous (e := Real.fourierChar)
+      (μ := volume) (L := innerₗ ℝ) Real.continuous_fourierChar continuous_inner hG
   have hn : Continuous (fun ξ : ℝ => (Complex.normSq (𝓕 G ξ) : ℂ)) :=
     Complex.continuous_ofReal.comp (Complex.continuous_normSq.comp hc)
   have hb : ∀ ξ : ℝ, ‖(Complex.normSq (𝓕 G ξ) : ℂ)‖ ≤ (∫ x : ℝ, ‖G x‖) ^ 2 := by
     intro ξ
     have hbound : ‖𝓕 G ξ‖ ≤ ∫ x : ℝ, ‖G x‖ := by
-      simpa only [Real.fourier_eq] using
-        VectorFourier.norm_fourierIntegral_le_integral_norm
-          Real.fourierChar volume (innerₗ ℝ) G ξ
+      change ‖VectorFourier.fourierIntegral Real.fourierChar volume (innerₗ ℝ) G ξ‖ ≤
+        ∫ x : ℝ, ‖G x‖
+      exact VectorFourier.norm_fourierIntegral_le_integral_norm
+        Real.fourierChar volume (innerₗ ℝ) G ξ
     rw [Complex.norm_real, Real.norm_eq_abs,
       abs_of_nonneg (Complex.normSq_nonneg _), Complex.normSq_eq_norm_sq]
     have hn0 : 0 ≤ ∫ x : ℝ, ‖G x‖ := integral_nonneg (fun x => norm_nonneg _)
@@ -162,7 +163,12 @@ theorem zero_quadratic_margin_from_genuine_certificate
     dsimp [C, ρ]
     ring
   have hCi : Integrable (fun t : ℝ => C t * ρ t) :=
-    (hfirst.1.add hsecond.1).congr (Filter.Eventually.of_forall fun t => (hsplit t).symm)
+    (hfirst.1.add hsecond.1).congr (Filter.Eventually.of_forall fun t => by
+      change (𝓕 H (-t / (2 * Real.pi))).re *
+          Complex.normSq (𝓕 χ (-t / (2 * Real.pi))) +
+        (𝓕 H (-t / (2 * Real.pi))).re *
+          Complex.normSq (𝓕 χn (-t / (2 * Real.pi))) = C t * ρ t
+      exact (hsplit t).symm)
   have hCz : (∫ t : ℝ, C t * ρ t) = 0 := by
     simp_rw [hsplit]
     rw [integral_add hfirst.1 hsecond.1, hfirst.2, hsecond.2, add_zero]
