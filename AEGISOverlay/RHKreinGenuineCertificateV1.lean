@@ -42,13 +42,15 @@ open AEGIS.WeilDisjointEnergyV2
 
 private theorem angular_integrable {f : ℝ → ℂ} (hf : Integrable f) :
     Integrable (fun t : ℝ => f (-t / (2 * Real.pi))) := by
-  have hne : (-(2 * Real.pi))⁻¹ ≠ 0 := by positivity
+  have hne : (-(2 * Real.pi))⁻¹ ≠ 0 :=
+    inv_ne_zero (neg_ne_zero.mpr (mul_ne_zero (by norm_num) Real.pi_ne_zero))
   have h := hf.comp_mul_right' hne
   have he : (fun t : ℝ => f (-t / (2 * Real.pi))) =
       (fun t : ℝ => f (t * (-(2 * Real.pi))⁻¹)) := by
     funext t
     congr 1
-    simp only [inv_neg, neg_div, div_eq_mul_inv, mul_neg]
+    rw [div_eq_mul_inv, inv_neg]
+    ring
   rw [he]
   exact h
 
