@@ -77,7 +77,9 @@ theorem kreinAtom_exponential_moment (φ : ℝ → ℂ) (hφ : ContDiff ℝ ∞ 
   have hF : ContDiff ℝ 1 F := by
     exact ((contDiff_ex c).mul (hD.sub (contDiff_const.mul hφ))).of_le (by simp)
   have hFc : HasCompactSupport F := (hc.deriv.sub hc.mul_left).mul_left
-  have hcc : (c : ℂ) * (c : ℂ) = (1 / 4 : ℂ) := by exact_mod_cast hc2
+  have hcc : (c : ℂ) * (c : ℂ) = (1 / 4 : ℂ) := by
+    rw [← Complex.ofReal_mul, hc2]
+    norm_num
   have hder : deriv F = fun x => ex c x * kreinAtom φ x := by
     funext x
     have h1 := (hφ.differentiable (by simp) x).hasDerivAt
@@ -137,6 +139,7 @@ theorem kreinAtom_mul (χ φ : ℝ → ℂ) (hχ : ContDiff ℝ ∞ χ)
   have hχ2 := ((contDiff_deriv hχ).differentiable (by simp) x).hasDerivAt
   have hφ2 := ((contDiff_deriv hφ).differentiable (by simp) x).hasDerivAt
   have hsecond := (hχ2.mul hφ1).add (hχ1.mul hφ2)
+  change HasDerivAt (fun y => deriv χ y * φ y + χ y * deriv φ y) _ x at hsecond
   simp only [kreinAtom, hfirst, hsecond.deriv]
   ring
 

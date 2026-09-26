@@ -59,7 +59,7 @@ theorem quarterTerm_eq_seriesTerm_re (t : ℝ) (n : ℕ) :
     norm_cast
   have hzre : (quarterPoint t + n).re = (n : ℝ) + 1 / 4 := by
     simp [quarterPoint]
-    <;> ring
+    ring
   have hzim : (quarterPoint t + n).im = t / 2 := by simp [quarterPoint]
   have hsq : normSq (quarterPoint t + n) = ((n : ℝ) + 1 / 4) ^ 2 + t ^ 2 / 4 := by
     rw [Complex.normSq_apply, hzre, hzim]
@@ -78,7 +78,7 @@ private theorem quarterTerm_lower (t : ℝ) (n : ℕ) :
     calc
       x / (x ^ 2 + t ^ 2 / 4) ≤ x / x ^ 2 :=
         div_le_div_of_nonneg_left hx.le (sq_pos_of_pos hx) (by nlinarith [sq_nonneg t])
-      _ = 1 / x := by field_simp; ring
+      _ = 1 / x := by field_simp
   have hprod : x ^ 2 ≤ ((n : ℝ) + 1) * x := by dsimp [x]; nlinarith
   have hb := div_le_div_of_nonneg_left (by norm_num : (0 : ℝ) ≤ 3 / 4)
     (sq_pos_of_pos hx) hprod
@@ -89,6 +89,7 @@ private theorem quarterTerm_lower (t : ℝ) (n : ℕ) :
     <;> ring
   change -(3 / 4 : ℝ) / x ^ 2 ≤
     1 / ((n : ℝ) + 1) - x / (x ^ 2 + t ^ 2 / 4)
+  simp only [neg_div] at heq ⊢
   linarith
 
 private theorem reciprocal_square_telescoper (q x : ℝ)
@@ -105,6 +106,7 @@ private theorem reciprocal_square_telescoper (q x : ℝ)
     <;> ring
   rw [heq]
   apply (div_le_div_iff₀ (sq_pos_of_pos hx) (mul_pos hx hx1)).2
+  simp only [div_eq_mul_inv, one_mul] at hxq ⊢
   nlinarith
 
 /-- A telescoping lower bound for each term of the omitted tail. -/
@@ -114,10 +116,13 @@ theorem quarterTerm_telescoping_lower (t : ℝ) (N n : ℕ) (hN : N ≤ n) :
         quarterTerm t n := by
   have hrecip := reciprocal_square_telescoper
     ((N : ℝ) + 1 / 4) ((n : ℝ) + 1 / 4)
-    (by positivity) (add_le_add_right (Nat.cast_le.mpr hN : (N : ℝ) ≤ n) (1 / 4))
+    (by positivity) (by
+      have hcast : (N : ℝ) ≤ n := Nat.cast_le.mpr hN
+      linarith)
   have hmul := mul_le_mul_of_nonneg_left hrecip (by norm_num : (0 : ℝ) ≤ 3 / 4)
   have hterm := quarterTerm_lower t n
-  linarith
+  simp only [div_eq_mul_inv] at hmul hterm ⊢
+  nlinarith only [hmul, hterm]
 
 private theorem finite_tail_lower (t : ℝ) (N k : ℕ) :
     (∑ n ∈ Finset.range N, quarterTerm t n) -
@@ -131,7 +136,9 @@ private theorem finite_tail_lower (t : ℝ) (N k : ℕ) :
     have ht := quarterTerm_telescoping_lower t N (N + k) (by omega)
     rw [Nat.add_succ, Finset.sum_range_succ]
     push_cast at ht ih ⊢
-    linarith
+    rw [show (N : ℝ) + k + 1 + 1 / 4 = (N : ℝ) + k + 1 / 4 + 1 by ring]
+    simp only [div_eq_mul_inv] at ht ih ⊢
+    nlinarith only [ht, ih]
 
 private theorem quarter_partial_sums_tendsto (t : ℝ) :
     Tendsto (fun k : ℕ => ∑ n ∈ Finset.range k, quarterTerm t n)
@@ -170,7 +177,6 @@ theorem digamma_quarter_finite_lower (t : ℝ) (N : ℕ) :
       ((N : ℝ) + 1 / 4) =
       (3 / 4 : ℝ) * (1 / ((N : ℝ) + 1 / 4) + 1 / ((N : ℝ) + 1 / 4) ^ 2) := by
     field_simp
-    <;> ring
   rw [heq] at h
   linarith
 

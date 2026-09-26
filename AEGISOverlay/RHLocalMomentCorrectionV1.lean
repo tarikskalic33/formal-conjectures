@@ -83,7 +83,11 @@ private theorem cramer_cancel (f₀ f₁ u₀ u₁ v₀ v₁ : ℂ)
       (u₀ * f₁ - u₁ * f₀) / (u₀ * v₁ - v₀ * u₁) * v₀ = 0) ∧
     (f₁ - (f₀ * v₁ - f₁ * v₀) / (u₀ * v₁ - v₀ * u₁) * u₁ -
       (u₀ * f₁ - u₁ * f₀) / (u₀ * v₁ - v₀ * u₁) * v₁ = 0) := by
-  constructor <;> field_simp [hd] <;> ring
+  have hi := mul_inv_cancel₀ hd
+  simp only [div_eq_mul_inv]
+  constructor
+  · linear_combination -f₀ * hi
+  · linear_combination -f₁ * hi
 
 /-- Exact local two-moment correction on the repository carrier. -/
 theorem correctPacket_moments (f u v : WeilCompactSmoothGV1)

@@ -71,7 +71,7 @@ theorem countable_zero_set_of_entire (F : ℂ → ℂ)
     intro hzero
     exact hz₀ (hzero (Set.mem_univ z₀))
   have hdis : IsDiscrete ({z : ℂ | F z = 0} ∩ Set.univ) :=
-    isDiscrete_of_codiscreteWithin (by simpa using hev)
+    isDiscrete_of_codiscreteWithin (s := {z : ℂ | F z = 0}) hev
   have hc := (HereditarilyLindelofSpace.isLindelof _).countable_of_isDiscrete hdis
   simpa using hc
 

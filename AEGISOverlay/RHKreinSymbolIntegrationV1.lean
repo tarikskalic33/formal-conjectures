@@ -83,7 +83,7 @@ private theorem half_line_shift_norm_le_v10 (c t : ℝ) :
       (((c : ℂ) + (t : ℂ) * I) / 2) - 1 =
         ((c / 2 - 1 : ℝ) : ℂ) +
           ((t / 2 : ℝ) : ℂ) * I := by
-    apply Complex.ext <;> simp <;> ring
+    apply Complex.ext <;> simp
   rw [hsplit]
   calc
     ‖((c / 2 - 1 : ℝ) : ℂ) + ((t / 2 : ℝ) : ℂ) * I‖
@@ -754,7 +754,7 @@ theorem completed_gamma_critical_real (t : ℝ) :
       (1 / 4 : ℂ) + (t : ℂ) * I / 2 := by push_cast; ring
   simp only [WeilCompletedGammaFactorV10, hz, archSymbol]
   simp
-  <;> ring
+  ring
 
 /-- The actual arithmetic form, with its Archimedean part represented on the
 critical line. The prime sum is unchanged. -/
@@ -800,7 +800,9 @@ theorem actual_arithmetic_real_eq_prime_sub_archSymbol
       (∫ t : ℝ, WeilCompletedGammaFactorV10 (1 / 2) t *
         (criticalSpectralMass g t : ℂ)).re =
       (1 / 2) * ∫ t : ℝ, archSymbol t * criticalSpectralMass g t := by
-    rw [← integral_re hI]
+    have hre := (integral_re hI).symm
+    simp only [RCLike.re_to_complex] at hre
+    rw [hre]
     simp_rw [hpoint]
     rw [integral_const_mul]
   rw [actual_arithmetic_eq_prime_sub_critical_gamma]

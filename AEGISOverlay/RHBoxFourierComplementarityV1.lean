@@ -64,7 +64,6 @@ theorem box_angular_integral (a t : ℝ) :
   rw [mul_comm t a]
   have htc : (t : ℂ) ≠ 0 := by exact_mod_cast ht
   field_simp [htc]
-  ring
 
 /-- The actual Mathlib Fourier transform of the compact interval profile,
 with the same angular-frequency conversion as the critical Mellin bridge. -/

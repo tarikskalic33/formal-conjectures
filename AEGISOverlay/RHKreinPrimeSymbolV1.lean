@@ -129,7 +129,9 @@ theorem cosine_mass_inversion (g : WeilCompactSmoothGV1) (u : ℝ) :
       (∫ t : ℝ, Complex.exp (-((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ))) *
         (criticalSpectralMass g t : ℂ)).re =
       Real.exp (-u / 2) * ∫ t : ℝ, Real.cos (t * u) * criticalSpectralMass g t := by
-    rw [← integral_re (critical_exp_profile_integrable g u)]
+    have hre := (integral_re (critical_exp_profile_integrable g u)).symm
+    simp only [RCLike.re_to_complex] at hre
+    rw [hre]
     simp_rw [hpoint]
     rw [integral_const_mul]
   have hs : (1 / (2 * Real.pi) : ℂ) = ((1 / (2 * Real.pi) : ℝ) : ℂ) := by
