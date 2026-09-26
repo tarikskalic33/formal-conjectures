@@ -68,8 +68,9 @@ theorem digamma_quarter_mono_of_sq_le (s t : ℝ) (hst : s ^ 2 ≤ t ^ 2) :
       (Complex.digamma ((1 / 4 : ℂ) + (t : ℂ) * I / 2)).re := by
   have hs := quarterTerm_hasSum s
   have ht := quarterTerm_hasSum t
-  have h := tsum_le_tsum (quarterTerm_mono_of_sq_le s t hst) hs.summable ht.summable
-  rw [hs.tsum_eq, ht.tsum_eq] at h
+  have h := le_of_tendsto_of_tendsto' hs.tendsto_sum_nat ht.tendsto_sum_nat
+    (fun N : ℕ => Finset.sum_le_sum
+      (fun n (_hn : n ∈ Finset.range N) => quarterTerm_mono_of_sq_le s t hst n))
   dsimp [quarterPoint] at h
   linarith
 

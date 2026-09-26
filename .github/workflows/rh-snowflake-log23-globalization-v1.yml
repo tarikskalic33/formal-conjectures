@@ -384,6 +384,14 @@ jobs:
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.critical_mellin_eq_fourier_scaled_v1' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.autocorrelation_mellin_critical_normSq_v1' evidence-krein/overlay.log
 
+      - name: Compile density dependency for the fixed-packet criterion
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lake env lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RHSnowflakeLog23.olean FormalConjectures/Millennium/RHSnowflakeLog23.lean 2>&1 | tee evidence-krein/snowflake.log
+          python3 scripts/verify_rh_overlay_axioms.py FormalConjectures/Millennium/RHSnowflakeLog23.lean evidence-krein/snowflake.log
+
       - name: Compile and audit certified approximation and spectral obstruction
         shell: bash
         run: |
@@ -394,7 +402,7 @@ jobs:
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1; do
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1 RHFixedPacketDenseShiftV1; do
             cp "AEGISOverlay/$m.lean" "$m.lean"
             if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi

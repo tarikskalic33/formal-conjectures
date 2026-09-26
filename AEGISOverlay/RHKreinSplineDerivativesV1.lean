@@ -43,7 +43,7 @@ theorem spline19_derivative_contDiff (L : ℝ) {h : ℝ} (hh : 0 ≤ h)
     (j : ℕ) (hj : j ≤ 17) :
     ContDiff ℝ (17 - j : ℕ) (deriv^[j] (spline19 L h)) := by
   apply ContDiff.iterate_deriv' (17 - j) j
-  simpa only [Nat.sub_add_cancel hj] using spline19_contDiff L hh
+  simpa [Nat.sub_add_cancel hj] using spline19_contDiff L hh
 
 private theorem compact_derivative_iterate (f : ℝ → ℂ) (hf : HasCompactSupport f) (j : ℕ) :
     HasCompactSupport (deriv^[j] f) := by
@@ -95,7 +95,9 @@ theorem spline19_derivative_fourier (L : ℝ) {h : ℝ} (hh : 0 < h)
     have hi' : Integrable (deriv (deriv^[j] (spline19 L h))) := by
       simpa only [Function.iterate_succ_apply'] using
         spline19_derivative_integrable L hh.le (j + 1) hj
-    rw [Function.iterate_succ_apply', Real.fourier_deriv hi hd hi', ih hj']
+    rw [Function.iterate_succ_apply', Real.fourier_deriv hi hd hi']
+    dsimp only
+    rw [ih hj']
     simp only [smul_eq_mul]
     have hr : 2 * Real.pi * (-t / (2 * Real.pi)) = -t := by
       field_simp [Real.pi_ne_zero]
@@ -135,12 +137,11 @@ theorem spline19_derivative_fourier_integrable (L : ℝ) {h : ℝ} (hh : 0 < h)
             (Real.sinc (h * t / 2) : ℂ) ^ 19) := by fun_prop
       exact hc.aestronglyMeasurable
     · exact Filter.Eventually.of_forall (fun t => by
-        simp [norm_mul, norm_pow, Complex.norm_exp])
+        simp [norm_pow, Complex.norm_exp])
   have hp : -(2 * Real.pi) ≠ 0 := neg_ne_zero.mpr (by positivity)
   have hi' := hi.comp_mul_right' hp
   convert hi' using 1
   funext ξ
-  congr 1
   field_simp [Real.pi_ne_zero]
 
 end AEGIS.RHKreinSplineDerivativesV1

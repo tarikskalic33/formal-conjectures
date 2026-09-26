@@ -91,7 +91,9 @@ theorem real_angular_krein_pairing (G : ℝ → ℂ) (a b : ℝ)
     intro t
     simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero]
     ring
-  refine ⟨hi.re.congr (Filter.Eventually.of_forall he), ?_⟩
+  have hri := hi.re
+  simp only [RCLike.re_to_complex] at hri
+  refine ⟨hri.congr (Filter.Eventually.of_forall he), ?_⟩
   have hz := congrArg Complex.re (angular_krein_pairing G a b hG hs H hHc hH hFH hHs)
   have hre := (integral_re hi).symm
   simp only [RCLike.re_to_complex] at hre

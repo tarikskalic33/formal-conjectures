@@ -137,7 +137,7 @@ theorem spline19_fourier_scaled_integrable (L : ℝ) {h : ℝ} (hh : 0 < h) :
       fun_prop
     exact hc.aestronglyMeasurable
   · exact Filter.Eventually.of_forall (fun t => by
-      simp [norm_mul, Complex.norm_exp])
+      simp [Complex.norm_exp])
 
 /-- The actual Mathlib Fourier transform of the genuine order-19 spline is integrable. -/
 theorem spline19_fourier_integrable (L : ℝ) {h : ℝ} (hh : 0 < h) :
@@ -146,7 +146,6 @@ theorem spline19_fourier_integrable (L : ℝ) {h : ℝ} (hh : 0 < h) :
   have hi := (spline19_fourier_scaled_integrable L hh).comp_mul_right' hp
   convert hi using 1
   funext ξ
-  congr 1
   field_simp [Real.pi_ne_zero]
 
 end AEGIS.RHKreinSplineFourierIntegrableV1

@@ -60,13 +60,14 @@ theorem prime_sum_eq_two_of_halfWidth
   have hAi : WeilAutocorrelationV1 g (((n + 1 : ℕ) : ℝ))⁻¹ = 0 := by
     rw [weil_autocorrelation_reciprocal_v1 g hmpos, hA]
     simp
-  simp [WeilPrimeTermV1, hA, hAi]
+  simp only [WeilPrimeTermV1, hA, hAi, mul_zero, add_zero]
 
 theorem criticalSpectralMass_integrable (g : WeilCompactSmoothGV1) :
     Integrable (criticalSpectralMass g) := by
   have h := (weil_paired_mellin_profile_has_vertical_norm_moments_two_v5
     (WeilAutocorrelationCompactSmoothV1 g) (1 / 2)).1.re
-  simpa only [paired_autocorrelation_eq_criticalSpectralMass, Complex.ofReal_re] using h
+  simpa only [paired_autocorrelation_eq_criticalSpectralMass,
+    RCLike.re_to_complex, Complex.ofReal_re] using h
 
 theorem criticalSpectralMass_nonnegative (g : WeilCompactSmoothGV1) (t : ℝ) :
     0 ≤ criticalSpectralMass g t := by
@@ -86,6 +87,8 @@ private theorem critical_exp_profile_integrable
         (criticalSpectralMass g t : ℂ)) := by
   have hH := (weil_paired_mellin_profile_has_vertical_norm_moments_two_v5
     (WeilAutocorrelationCompactSmoothV1 g) (1 / 2)).1
+  change Integrable (fun t : ℝ =>
+    WeilPairedMellinProfileV5 (WeilAutocorrelationCompactSmoothV1 g) (1 / 2) t) at hH
   simp_rw [paired_autocorrelation_eq_criticalSpectralMass] at hH
   have hc : Continuous (fun t : ℝ =>
       Complex.exp (-((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ)))) := by fun_prop
@@ -139,7 +142,7 @@ theorem cosine_mass_inversion (g : WeilCompactSmoothGV1) (u : ℝ) :
     rfl
   rw [hs, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero,
     hreal] at hr
-  simpa only [mul_assoc] using hr
+  simpa only [WeilAutocorrelationCompactSmoothV1, mul_assoc] using hr
 
 /-- The factor linking the prime-2 coefficient to the explicit numerical symbol. -/
 theorem twice_exp_neg_half_log_two : 2 * Real.exp (-Real.log 2 / 2) = Real.sqrt 2 := by
@@ -163,7 +166,7 @@ theorem prime_two_real_eq_cosine_mass (g : WeilCompactSmoothGV1) :
     ArithmeticFunction.vonMangoldt_apply_prime Nat.prime_two
   have hs := twice_exp_neg_half_log_two
   simp only [WeilPrimeTermV1, show (1 + 1 : ℕ) = 2 from rfl, hv]
-  norm_num only [Nat.cast_ofNat, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
+  norm_num only [Nat.cast_ofNat, Complex.add_re, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
     zero_mul, sub_zero]
   rw [← h]
   rw [← hs]
@@ -180,7 +183,7 @@ theorem archSymbol_mass_integrable (g : WeilCompactSmoothGV1) :
     (WeilAutocorrelationCompactSmoothV1 g) (1 / 2) (by norm_num)
   simp_rw [paired_autocorrelation_eq_criticalSpectralMass] at hI
   refine (hI.re.const_mul (2 : ℝ)).congr (Filter.Eventually.of_forall fun t => ?_)
-  simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero,
+  simp only [RCLike.re_to_complex, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero,
     sub_zero, completed_gamma_critical_real]
   ring
 
@@ -196,7 +199,14 @@ theorem actual_arithmetic_real_eq_symbol_integral
       (∫ t : ℝ, archSymbol t * criticalSpectralMass g t) -
       (Real.sqrt 2 * Real.log 2) *
         ∫ t : ℝ, Real.cos (t * Real.log 2) * criticalSpectralMass g t := by
-    simp_rw [symbol, sub_mul, mul_assoc]
+    have he : (fun t : ℝ => symbol t * criticalSpectralMass g t) =
+        (fun t : ℝ => archSymbol t * criticalSpectralMass g t -
+          (Real.sqrt 2 * Real.log 2) *
+            (Real.cos (t * Real.log 2) * criticalSpectralMass g t)) := by
+      funext t
+      unfold symbol
+      ring
+    rw [he]
     rw [integral_sub (archSymbol_mass_integrable g)
       ((cosine_mass_integrable g (Real.log 2)).const_mul (Real.sqrt 2 * Real.log 2)),
       integral_const_mul]
