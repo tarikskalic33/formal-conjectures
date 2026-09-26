@@ -122,7 +122,7 @@ theorem snowflake_nonnegative_of_continuous
     closure_minimal hsub hclosed
   intro x
   apply hclosure
-  simpa [snowflake_shift_group_dense.closure_eq]
+  simp [snowflake_shift_group_dense.closure_eq]
 
 #print axioms RHSnowflakeLog23.irrational_log_two_div_log_three
 #print axioms RHSnowflakeLog23.snowflake_shift_group_dense

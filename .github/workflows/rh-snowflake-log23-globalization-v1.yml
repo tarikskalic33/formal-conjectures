@@ -4,11 +4,7 @@ on:
   pull_request:
     paths:
       - 'FormalConjectures/Millennium/RHSnowflakeLog23.lean'
-      - 'AEGISOverlay/RHPrimeThreeWindowV1.lean'
-      - 'AEGISOverlay/RHKreinCriticalLineBridgeV1.lean'
-      - 'AEGISOverlay/RHWidthQuantifierObstructionV1.lean'
-      - 'AEGISOverlay/RHCertifiedApproximationV1.lean'
-      - 'AEGISOverlay/RHTranslateSpectralObstructionV1.lean'
+      - 'AEGISOverlay/**'
       - 'scripts/verify_rh_overlay_axioms.py'
       - '.github/workflows/rh-snowflake-log23-globalization-v1.yml'
   workflow_dispatch:
@@ -54,7 +50,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean FormalConjectures/Millennium/RHSnowflakeLog23.lean 2>&1 | tee snowflake-log23.log
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lake env lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RHSnowflakeLog23.olean FormalConjectures/Millennium/RHSnowflakeLog23.lean 2>&1 | tee snowflake-log23.log
+          python3 scripts/verify_rh_overlay_axioms.py FormalConjectures/Millennium/RHSnowflakeLog23.lean snowflake-log23.log
           ! grep -F 'sorryAx' snowflake-log23.log
           ! grep -F 'error:' snowflake-log23.log
           grep -F 'RHSnowflakeLog23.irrational_log_two_div_log_three' snowflake-log23.log
@@ -83,6 +81,28 @@ jobs:
         with:
           name: rh-width-obstruction-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
           path: width-obstruction.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Compile and audit complementary symbols and Euler operator obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-structural
+          result=0
+          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1; do
+            if ! lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
+            if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
+          done
+          git rev-parse HEAD > evidence-structural/formal-conjectures-sha.txt
+          exit "$result"
+
+      - name: Upload structural replay
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-structural-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-structural/
           if-no-files-found: warn
           retention-days: 30
 
@@ -286,7 +306,7 @@ jobs:
           python3 - "$ROOT" evidence-krein/modules.txt <<'PY'
           import pathlib,sys
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11"]
+          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30"]
           mods={p.stem:p for p in root.glob("*.lean")}
           for target in targets:
               if target not in mods:
@@ -325,7 +345,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean AEGISOverlay/RHKreinCriticalLineBridgeV1.lean 2>&1 | tee evidence-krein/overlay.log
+          cp AEGISOverlay/RHKreinCriticalLineBridgeV1.lean RHKreinCriticalLineBridgeV1.lean
+          lake env lean -o .lake/build/lib/lean/RHKreinCriticalLineBridgeV1.olean RHKreinCriticalLineBridgeV1.lean 2>&1 | tee evidence-krein/overlay.log
           ! grep -F 'sorryAx' evidence-krein/overlay.log
           ! grep -F 'error:' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.critical_mellin_eq_fourier_scaled_v1' evidence-krein/overlay.log
@@ -336,8 +357,9 @@ jobs:
         run: |
           set -euo pipefail
           result=0
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1; do
-            if ! lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1; do
+            cp "AEGISOverlay/$m.lean" "$m.lean"
+            if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done
           if ! python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHKreinCriticalLineBridgeV1.lean evidence-krein/overlay.log; then result=1; fi
