@@ -1,8 +1,38 @@
+/-
+Copyright 2026 The Formal Conjectures Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-/
+
 import Mathlib.Topology.Instances.AddCircle.DenseSubgroup
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Algebra.Group.Nat.Even
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Tactic
+
+/-!
+# RH snowflake log-2/log-3 globalization bridge
+
+This file proves the arithmetic-topological part of a candidate globalization
+lane for the Riemann Hypothesis formalization: the logarithmic scales generated
+by 2 and 3 are rationally independent, hence the additive subgroup they
+generate is dense in the real log-coordinate line.
+
+This is not itself a proof of the Riemann Hypothesis.  Its intended use is to
+combine the existing dyadic translation tower with a second, hexagonal/
+Eisenstein scale before proving continuity and positivity closure on finite
+log-windows.
+-/
 
 open Set
 
