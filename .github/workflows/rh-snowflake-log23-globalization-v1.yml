@@ -6,6 +6,10 @@ on:
       - 'FormalConjectures/Millennium/RHSnowflakeLog23.lean'
       - 'AEGISOverlay/RHPrimeThreeWindowV1.lean'
       - 'AEGISOverlay/RHKreinCriticalLineBridgeV1.lean'
+      - 'AEGISOverlay/RHWidthQuantifierObstructionV1.lean'
+      - 'AEGISOverlay/RHCertifiedApproximationV1.lean'
+      - 'AEGISOverlay/RHTranslateSpectralObstructionV1.lean'
+      - 'scripts/verify_rh_overlay_axioms.py'
       - '.github/workflows/rh-snowflake-log23-globalization-v1.yml'
   workflow_dispatch:
 
@@ -28,6 +32,7 @@ jobs:
       - name: Checkout exact candidate head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Install pinned Lean and Mathlib cache
@@ -65,6 +70,22 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Compile and audit width quantifier obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean AEGISOverlay/RHWidthQuantifierObstructionV1.lean 2>&1 | tee width-obstruction.log
+          python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHWidthQuantifierObstructionV1.lean width-obstruction.log
+
+      - name: Upload width obstruction replay
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-width-obstruction-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: width-obstruction.log
+          if-no-files-found: warn
+          retention-days: 30
+
   prime3-window:
     needs: log23-density
     runs-on: ubuntu-24.04
@@ -73,6 +94,7 @@ jobs:
       - name: Checkout exact candidate head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Install pinned Lean and Mathlib cache
@@ -171,6 +193,7 @@ jobs:
       - name: Checkout exact candidate head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Install pinned Lean and Mathlib cache
@@ -263,7 +286,7 @@ jobs:
           python3 - "$ROOT" evidence-krein/modules.txt <<'PY'
           import pathlib,sys
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13"]
+          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11"]
           mods={p.stem:p for p in root.glob("*.lean")}
           for target in targets:
               if target not in mods:
@@ -307,6 +330,20 @@ jobs:
           ! grep -F 'error:' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.critical_mellin_eq_fourier_scaled_v1' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.autocorrelation_mellin_critical_normSq_v1' evidence-krein/overlay.log
+          python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHKreinCriticalLineBridgeV1.lean evidence-krein/overlay.log
+
+      - name: Compile and audit certified approximation and spectral obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1; do
+            lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"
+            python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"
+          done
+          git rev-parse HEAD > evidence-krein/formal-conjectures-sha.txt
+          git -C .aegis rev-parse HEAD > evidence-krein/aegis-sha.txt
+          git -C .lake/packages/mathlib rev-parse HEAD > evidence-krein/mathlib-sha.txt
+          lean --version > evidence-krein/lean-version.txt
 
       - name: Upload Krein bridge replay logs
         if: always()
