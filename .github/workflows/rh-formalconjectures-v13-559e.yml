@@ -1,15 +1,14 @@
 name: AEGIS RH FormalConjectures V13 559e Full-Closure Replay
 
 on:
-  push:
-    branches:
-      - 'evidence/rh-formalconjectures-v13-559e-replay'
-    paths:
-      - '.github/workflows/rh-formalconjectures-v13-559e.yml'
   pull_request:
     paths:
       - '.github/workflows/rh-formalconjectures-v13-559e.yml'
   workflow_dispatch:
+
+concurrency:
+  group: aegis-rh-v13-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -300,6 +299,7 @@ jobs:
             echo '#print axioms AEGIS.RHHatClass310V13.universal_on_class'
             echo '#print axioms AEGIS.RHHatClass13V13.Q_all'
             echo '#print axioms AEGIS.RHHatClass13V13.gain_bound'
+            echo '#print axioms AEGIS.RHHatClass13V13.hat_coercive'
             echo '#print axioms AEGIS.RHHatClass13V13.universal_on_class'
           } > AEGISV13ResultAxiomAudit.lean
           cat AEGISV13ResultAxiomAudit.lean
@@ -312,6 +312,10 @@ jobs:
           flat=re.sub(r"\s+"," ",log)
           allowed={'propext','Classical.choice','Quot.sound'}
           bad=[]
+          required={'AEGIS.RHHatClass13V13.'+n for n in
+                    ('Q_all','gain_bound','hat_coercive','universal_on_class')}
+          if len(names)!=67 or len(set(names))!=67 or not required<=set(names):
+              bad.append('expected 67 distinct declarations including all four RHHatClass13V13 producers')
           if 'sorryAx' in log or 'error' in log: bad.append('sorryAx or error in audit log')
           for n in names:
               m=re.search(r"'"+re.escape(n)+r"' depends on axioms: \[([^\]]*)\]",flat)
@@ -379,10 +383,16 @@ jobs:
           set -e
           cat evidence/aegis-formalconjectures-v13-unconditional.log
           test "$rc" -ne 0
-          grep -F 'unsolved goals' evidence/aegis-formalconjectures-v13-unconditional.log
-          grep -F 'UniversalZeroQuadraticNonnegativeV10' evidence/aegis-formalconjectures-v13-unconditional.log
-          ! grep -F 'unknown module' evidence/aegis-formalconjectures-v13-unconditional.log
-          ! grep -F 'unknown identifier' evidence/aegis-formalconjectures-v13-unconditional.log
+          python3 - evidence/aegis-formalconjectures-v13-unconditional.log <<'PY'
+          import pathlib,re,sys
+          log=pathlib.Path(sys.argv[1]).read_text()
+          errors=re.findall(r'^.*\berror:\s*(.*)$',log,re.M)
+          goals=re.findall(r'^\s*⊢\s*(.*)$',log,re.M)
+          expected='AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10'
+          if errors!=['unsolved goals'] or goals!=[expected] or 'sorryAx' in log:
+              raise SystemExit('FORENSIC_REVIEW_REQUIRED: unexpected unconditional probe diagnostics')
+          print('UNCONDITIONAL_PROBE_RESIDUAL=EXACT_UNIVERSAL_ZERO_QUADRATIC')
+          PY
 
       - name: Emit exact diagnostic disposition
         if: always()
@@ -405,7 +415,8 @@ jobs:
           AEGIS_LOCAL_CLOSURE_COUNT=$count
           FORMAL_CONJECTURES_TARGET_USES_SORRYAX=EXPECTED_CURRENT_UPSTREAM_STATE
           AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
-          V13_CRITERION_TO_EXTERNAL_TARGET=REQUIRED_GREEN\n          UNCONDITIONAL_EXTERNAL_TARGET=EXPECTED_RED_ON_UNIVERSAL_ZERO_QUADRATIC
+          V13_CRITERION_TO_EXTERNAL_TARGET=REQUIRED_GREEN
+          UNCONDITIONAL_EXTERNAL_TARGET=EXPECTED_RED_ON_UNIVERSAL_ZERO_QUADRATIC
           RH_PROVEN=FALSE
           AUTHORITY_EFFECT=NONE
           EOF
@@ -414,7 +425,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: rh-formalconjectures-v13-559e
+          name: rh-formalconjectures-v13-${{ env.AEGIS_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: evidence/
           if-no-files-found: error
           retention-days: 30
