@@ -104,7 +104,27 @@ theorem snowflake_shift_group_dense :
   simpa [SnowflakeShiftGroup] using
     (dense_addSubgroupClosure_pair_iff.mpr irrational_log_two_div_log_three)
 
+/-- A continuous real-valued quantity that is nonnegative on the snowflake
+shift group is nonnegative everywhere.  This is the exact closure principle
+needed once a translation-kernel quadratic value is shown continuous. -/
+theorem snowflake_nonnegative_of_continuous
+    (Q : ℝ → ℝ) (hQ : Continuous Q)
+    (hnonneg : ∀ x : ℝ, x ∈ SnowflakeShiftGroup → 0 ≤ Q x) :
+    ∀ x : ℝ, 0 ≤ Q x := by
+  have hclosed : IsClosed {x : ℝ | 0 ≤ Q x} :=
+    isClosed_Ici.preimage hQ
+  have hsub : (SnowflakeShiftGroup : Set ℝ) ⊆ {x : ℝ | 0 ≤ Q x} := by
+    intro x hx
+    exact hnonneg x hx
+  have hclosure :
+      closure (SnowflakeShiftGroup : Set ℝ) ⊆ {x : ℝ | 0 ≤ Q x} :=
+    closure_minimal hsub hclosed
+  intro x
+  apply hclosure
+  simpa [snowflake_shift_group_dense.closure_eq]
+
 #print axioms RHSnowflakeLog23.irrational_log_two_div_log_three
 #print axioms RHSnowflakeLog23.snowflake_shift_group_dense
+#print axioms RHSnowflakeLog23.snowflake_nonnegative_of_continuous
 
 end RHSnowflakeLog23
