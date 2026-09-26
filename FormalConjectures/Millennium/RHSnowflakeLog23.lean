@@ -70,7 +70,8 @@ theorem irrational_log_two_div_log_three :
   have hnumAbsInt : (q.num.natAbs : ℤ) = q.num :=
     Int.natAbs_of_nonneg hnumpos.le
   have hnumAbsR : (q.num.natAbs : ℝ) = ((q.num : ℤ) : ℝ) := by
-    exact_mod_cast hnumAbsInt
+    have hcast := congrArg (fun z : ℤ => (z : ℝ)) hnumAbsInt
+    simpa only [Int.cast_natCast] using hcast
   have hlogpow :
       Real.log ((2 : ℝ) ^ q.den) =
         Real.log ((3 : ℝ) ^ q.num.natAbs) := by
