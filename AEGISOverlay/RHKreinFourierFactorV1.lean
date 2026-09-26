@@ -71,10 +71,12 @@ theorem fourier_differential_factor (χ : ℝ → ℂ)
     Real.fourierChar volume (innerₗ ℝ) χ (-1 / 4 : ℂ)
   have hF : 𝓕 (fun x => deriv (deriv χ) x - (1 / 4 : ℂ) * χ x) =
       fun ξ => 𝓕 (deriv (deriv χ)) ξ - (1 / 4 : ℂ) * 𝓕 χ ξ := by
-    simpa only [Real.fourier_eq, Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-      neg_div, neg_mul, ← sub_eq_add_neg] using hlin.trans
+    funext ξ
+    simpa only [Real.fourier_eq, VectorFourier.fourierIntegral,
+      Pi.add_apply, Pi.smul_apply, smul_eq_mul,
+      neg_div, neg_mul, ← sub_eq_add_neg] using congrFun (hlin.trans
         (congrArg (fun v => VectorFourier.fourierIntegral Real.fourierChar volume
-          (innerₗ ℝ) (deriv (deriv χ)) + v) hscaled)
+          (innerₗ ℝ) (deriv (deriv χ)) + v) hscaled)) ξ
   rw [hF, Real.fourier_deriv hχ' hdχ' hχ'', Real.fourier_deriv hχ hdχ hχ']
   simp only [smul_eq_mul]
   have hp : (Real.pi : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr Real.pi_ne_zero
@@ -98,7 +100,8 @@ theorem actual_packet_fourier_factor
   have hG : ContDiff ℝ ∞ G := by
     have hg := g.2.1
     unfold G AEGIS.WeilLogCoordinateIsometryV21.logLift
-    fun_prop
+    exact (Complex.ofRealCLM.contDiff.comp (contDiff_id.div_const (2 : ℝ)).exp).mul
+      (hg.comp Real.contDiff_exp)
   have hp : (∫ u : ℝ, (Real.exp (u / 2) : ℂ) * G u) = 0 := by
     change (∫ u : ℝ, (Real.exp (u / 2) : ℂ) * AEGIS.RHKreinFactorV13.lift g.1 u) = 0
     rw [AEGIS.RHKreinFactorV13.lift_moment_plus]

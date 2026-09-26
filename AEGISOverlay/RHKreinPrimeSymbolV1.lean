@@ -166,7 +166,9 @@ theorem prime_two_real_eq_cosine_mass (g : WeilCompactSmoothGV1) :
     ArithmeticFunction.vonMangoldt_apply_prime Nat.prime_two
   have hs := twice_exp_neg_half_log_two
   simp only [WeilPrimeTermV1, show (1 + 1 : ℕ) = 2 from rfl, hv]
-  norm_num [Complex.add_re, Complex.mul_re]
+  norm_num only [Nat.cast_ofNat, Complex.add_re, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
+    zero_mul, sub_zero]
+  norm_num
   rw [← h]
   rw [← hs]
   ring

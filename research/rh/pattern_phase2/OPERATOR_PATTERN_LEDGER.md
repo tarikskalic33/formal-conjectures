@@ -59,8 +59,8 @@ No ledger entry is an input axiom or a replacement for kernel replay.
   The parallel Euler lane computes principal-class coefficients at 1,2,3,6
   as `[1,0,0,2]`, other-class coefficients as `[0,1,2,0]`, and
   `b_6=(a_6-a_2*a_3)*log(6)`: nonzero for the principal class, zero for
-  their class sum. Its `RHEulerOperatorObstructionV1` Lean declarations are
-  candidates pending the director's exact-head replay. The inference from
+  their class sum. Its `RHEulerOperatorObstructionV1` Lean declarations have
+  passed hosted kernel replay with only ordinary logical axioms. The inference from
   positive prime weights to positive convolution operator is FALSIFIED by
   a two-point section; the global arithmetic bound is not established.
 
@@ -160,6 +160,6 @@ No ledger entry is an input axiom or a replacement for kernel replay.
   RH-to-universal implication. The packet uses classical choice; it is not a
   computed certificate.
 - STATUS: PROMISING for unconditional sign production; the criterion reduction
-  is explicit Lean code subject to exact-head replay. The open sign requires
+  passed hosted kernel replay and an independent source/axiom audit. The open sign requires
   control of many prime-power terms at large shifts. Existing isolated-prime
   bounds do not supply that control.
