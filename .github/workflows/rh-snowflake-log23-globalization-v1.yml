@@ -330,20 +330,22 @@ jobs:
           ! grep -F 'error:' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.critical_mellin_eq_fourier_scaled_v1' evidence-krein/overlay.log
           grep -F 'AEGIS.RHKreinCriticalLineBridgeV1.autocorrelation_mellin_critical_normSq_v1' evidence-krein/overlay.log
-          python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHKreinCriticalLineBridgeV1.lean evidence-krein/overlay.log
 
       - name: Compile and audit certified approximation and spectral obstruction
         shell: bash
         run: |
           set -euo pipefail
+          result=0
           for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1; do
-            lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"
-            python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"
+            if ! lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
+            if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done
+          if ! python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHKreinCriticalLineBridgeV1.lean evidence-krein/overlay.log; then result=1; fi
           git rev-parse HEAD > evidence-krein/formal-conjectures-sha.txt
           git -C .aegis rev-parse HEAD > evidence-krein/aegis-sha.txt
           git -C .lake/packages/mathlib rev-parse HEAD > evidence-krein/mathlib-sha.txt
           lean --version > evidence-krein/lean-version.txt
+          exit "$result"
 
       - name: Upload Krein bridge replay logs
         if: always()

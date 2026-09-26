@@ -73,7 +73,7 @@ theorem critical_mellin_eq_fourier_scaled_v1
 theorem critical_reflection_v1 (t : ℝ) :
     1 - conj ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I)) =
       (((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) := by
-  apply Complex.ext <;> simp <;> ring
+  apply Complex.ext <;> norm_num
 
 /-- The actual repository multiplicative autocorrelation has critical-line
 Mellin transform equal to the Fourier norm-square of the logarithmic lift,
