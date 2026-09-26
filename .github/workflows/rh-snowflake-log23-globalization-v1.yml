@@ -88,10 +88,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p evidence-structural
+          mkdir -p evidence-structural .lake/build/lib/lean/AEGISOverlay
           result=0
-          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1; do
-            if ! lake env lean "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
+          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHBoxFourierComplementarityV1; do
+            if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
           done
           git rev-parse HEAD > evidence-structural/formal-conjectures-sha.txt
@@ -107,7 +107,6 @@ jobs:
           retention-days: 30
 
   prime3-window:
-    needs: log23-density
     runs-on: ubuntu-24.04
     timeout-minutes: 70
     steps:
@@ -206,7 +205,6 @@ jobs:
 
 
   krein-critical-line:
-    needs: log23-density
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -306,7 +304,7 @@ jobs:
           python3 - "$ROOT" evidence-krein/modules.txt <<'PY'
           import pathlib,sys
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30"]
+          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30","RHKreinFactorV13"]
           mods={p.stem:p for p in root.glob("*.lean")}
           for target in targets:
               if target not in mods:
@@ -357,7 +355,7 @@ jobs:
         run: |
           set -euo pipefail
           result=0
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1; do
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1; do
             cp "AEGISOverlay/$m.lean" "$m.lean"
             if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi

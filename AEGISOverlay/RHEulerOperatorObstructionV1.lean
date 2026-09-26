@@ -1,7 +1,17 @@
 /-
 Copyright 2026 The Formal Conjectures Authors.
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 -/
 
 import Mathlib.NumberTheory.ArithmeticFunction.VonMangoldt
@@ -128,11 +138,10 @@ theorem other_representation_bounds (x y : ℤ) (n : ℕ)
       (-(n : ℤ) ≤ y ∧ y ≤ (n : ℤ)) := by
   dsimp [otherForm] at h
   exact ⟨coord_bounds x n (by nlinarith [sq_nonneg (x + y), sq_nonneg y]),
-    coord_bounds y n (by nlinarith [sq_nonneg (x + y), sq_nonneg x,
-      sq_nonneg y])⟩
+    coord_bounds y n (by nlinarith [sq_nonneg (x + y), sq_nonneg x, sq_nonneg y])⟩
 
 /-- Representation counts divided by the two units, using the proved box. -/
-def coefficient (Q : ℤ → ℤ → ℤ) (n : ℕ) : ℕ :=
+noncomputable def coefficient (Q : ℤ → ℤ → ℤ) (n : ℕ) : ℕ :=
   ((Finset.Icc (-(n : ℤ)) n ×ˢ Finset.Icc (-(n : ℤ)) n).filter
     (fun p => Q p.1 p.2 = (n : ℤ))).card / 2
 

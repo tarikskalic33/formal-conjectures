@@ -44,10 +44,10 @@ theorem sinc_no_common_zero_of_irrational {a b : ℝ}
   rintro ⟨ha, hb⟩
   have hat : a * t ≠ 0 := by
     intro h
-    simpa [h] using ha
+    simp [h] at ha
   have hbt : b * t ≠ 0 := by
     intro h
-    simpa [h] using hb
+    simp [h] at hb
   have hb0 : b ≠ 0 := fun h => hbt (by simp [h])
   have ht0 : t ≠ 0 := fun h => hbt (by simp [h])
   have hsinA : Real.sin (a * t) = 0 := by
@@ -89,7 +89,8 @@ theorem momentSplineSymbol_eq_zero_iff {order : ℕ} (horder : order ≠ 0)
     (scale t : ℝ) :
     momentSplineSymbol order scale t = 0 ↔ Real.sinc (scale * t) = 0 := by
   have hmult : t ^ 2 + 1 / 4 ≠ 0 := by nlinarith [sq_nonneg t]
-  simp [momentSplineSymbol, hmult, horder]
+  simp only [momentSplineSymbol, mul_eq_zero, hmult, false_or]
+  exact pow_eq_zero_iff horder
 
 /-- Complementarity holds at every positive spline order, including order 19. -/
 theorem log23_momentSpline_no_common_zero {order : ℕ} (horder : order ≠ 0)
@@ -136,7 +137,7 @@ theorem log23_continuous_spectral_bezout {order : ℕ} (horder : order ≠ 0) :
     hF.div hden hne, hG.div hden hne, ?_⟩
   intro t
   field_simp [hne t]
-  <;> ring
+  ring
 
 /-- Order 19 is one instance of the all-orders complementarity theorem. -/
 theorem order19_log23_continuous_spectral_bezout :
