@@ -55,14 +55,13 @@ theorem critical_mellin_eq_fourier_scaled_v1
   have hphase :
       -2 * Real.pi * u * (-t / (2 * Real.pi)) = t * u := by
     field_simp [Real.pi_ne_zero]
-    ring
   rw [hphase]
   have hexp :
       Complex.exp
           ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ)) =
         Complex.exp (((t * u : ℝ) : ℂ) * I) *
           (Real.exp (u / 2) : ℂ) := by
-    rw [← Complex.ofReal_exp, ← Complex.exp_add]
+    rw [Complex.ofReal_exp, ← Complex.exp_add]
     congr 1
     push_cast
     ring
@@ -71,7 +70,7 @@ theorem critical_mellin_eq_fourier_scaled_v1
 
 /-- On the critical line the reflected Mellin factor is the same factor. -/
 theorem critical_reflection_v1 (t : ℝ) :
-    1 - conj ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I)) =
+    1 - Complex.conj ((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I)) =
       (((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) := by
   apply Complex.ext <;> simp <;> ring
 
