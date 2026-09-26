@@ -57,7 +57,8 @@ theorem box_angular_integral (a t : ℝ) :
     simp
     ring
   change (∫ u in -a..a, (fun v : ℝ => Complex.exp ((v : ℂ) * Complex.I)) (t * u)) = _
-  rw [intervalIntegral.integral_comp_mul_left _ ht, mul_neg,
+  rw [intervalIntegral.integral_comp_mul_left
+    (fun v : ℝ => Complex.exp ((v : ℂ) * Complex.I)) ht, mul_neg,
     integral_exp_mul_I_eq_sinc]
   simp only [Complex.real_smul, Complex.ofReal_inv, Complex.ofReal_mul]
   rw [mul_comm t a]
@@ -94,7 +95,13 @@ theorem log23_box_fourier_no_common_zero (t : ℝ) :
   have h2c : (Real.log (2 : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt h2
   have h3c : (Real.log (3 : ℝ) : ℂ) ≠ 0 := by exact_mod_cast ne_of_gt h3
   rw [fourier_boxProfile_scaled h2.le, fourier_boxProfile_scaled h3.le]
-  simpa [h2c, h3c] using log23_sinc_no_common_zero t
+  rintro ⟨hA, hB⟩
+  apply log23_sinc_no_common_zero t
+  constructor
+  · have hA' := (mul_eq_zero.mp hA).resolve_left (mul_ne_zero (by norm_num) h2c)
+    exact_mod_cast hA'
+  · have hB' := (mul_eq_zero.mp hB).resolve_left (mul_ne_zero (by norm_num) h3c)
+    exact_mod_cast hB'
 
 #print axioms AEGIS.RHBoxFourierComplementarityV1.fourier_boxProfile_scaled
 #print axioms AEGIS.RHBoxFourierComplementarityV1.log23_box_fourier_no_common_zero

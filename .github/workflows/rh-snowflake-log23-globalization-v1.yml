@@ -84,13 +84,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Checkout exact AEGIS source for independent analytic lemmas
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Compile small analytic source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          mkdir -p evidence-structural .lake/build/lib/lean/AEGISOverlay
+          ROOT=.aegis/sovereign-omega-v2/formal/bridges/lean
+          for m in WeilCriterionCompactSmoothV1 WeilDigammaIntegralReductionV1 WeilDigammaSeriesRealV1 WeilDigammaSeriesHalfPlaneV1 RHEulerGammaV13 RHKreinFactorV13 ZeroHeightFiniteSumV1 ZeroHeightLimitContractV1 ZeroHeightSummabilityBridgeV1 ZeroMajorantSummabilityV1 ZeroCriticalStripV1 ZeroHeightShellMassV1 ZeroShellQuadraticBoundV1 ZeroShellAnalyticSynthesisV1 MellinDecayEstimateV1 WeilMellinInversionV1; do
+            cp "$ROOT/$m.lean" "$m.lean"
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-structural/source-$m.log"
+          done
+
       - name: Compile and audit complementary symbols and Euler operator obstruction
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p evidence-structural .lake/build/lib/lean/AEGISOverlay
           result=0
-          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHBoxFourierComplementarityV1; do
+          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinDigammaLowerBoundV1 RHLocalKreinPartitionV1 RHCompactMellinEntireV1; do
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
           done
@@ -355,7 +376,7 @@ jobs:
         run: |
           set -euo pipefail
           result=0
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1; do
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHGlobalPrimeArchFrontierV1; do
             cp "AEGISOverlay/$m.lean" "$m.lean"
             if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
