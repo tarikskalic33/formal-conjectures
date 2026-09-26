@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -/
 
-import RHKreinPrimeSymbolV1
+import RHKreinSymbolIntegrationV1
 import RHKreinFactorV13
 import Mathlib.Analysis.Fourier.FourierTransformDeriv
 

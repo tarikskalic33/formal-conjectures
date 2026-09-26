@@ -1,6 +1,6 @@
 {
   "sha256": {
-    "OPERATOR_PATTERN_LEDGER.md": "7a0cea7a515a640235c4d27e09e8073074178f2bdd32ea31e06340cc80155e42",
+    "OPERATOR_PATTERN_LEDGER.md": "6665af2dee36b8a6eed103c7e57433ec992ee597d435fe42f9d90fede737fec8",
     "README.md": "32af4cb3ec64133f14ba50dbdedeb57b7e1fbc0beb22094e22bdb53939a06bfd",
     "compare_orders.py": "cfb0c7424d11bf78a47fa2c7b627989e63aaaba7c705547263eb96a70616d175",
     "order_comparison.json": "ce4c6054f46cb69960fb3a748c1071e4150fbc2802d8bdd0aafcebd6dbe461e1",

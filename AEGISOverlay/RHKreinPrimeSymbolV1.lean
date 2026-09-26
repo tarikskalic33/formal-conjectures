@@ -99,7 +99,7 @@ private theorem critical_exp_profile_integrable
     rw [Complex.norm_exp]
     have he : (-((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ))).re = -u / 2 := by
       simp
-      <;> ring
+      ring
     rw [he]
   exact hH.bdd_mul hc.aestronglyMeasurable (Filter.Eventually.of_forall hb)
 
@@ -124,7 +124,7 @@ theorem cosine_mass_inversion (g : WeilCompactSmoothGV1) (u : ℝ) :
       Complex.exp_re]
     have he : (-((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ))).re = -u / 2 := by
       simp
-      <;> ring
+      ring
     have hi : (-((((1 / 2 : ℝ) : ℂ) + (t : ℂ) * I) * (u : ℂ))).im = -(t * u) := by simp
     rw [he, hi, Real.cos_neg]
     ring
@@ -166,8 +166,7 @@ theorem prime_two_real_eq_cosine_mass (g : WeilCompactSmoothGV1) :
     ArithmeticFunction.vonMangoldt_apply_prime Nat.prime_two
   have hs := twice_exp_neg_half_log_two
   simp only [WeilPrimeTermV1, show (1 + 1 : ℕ) = 2 from rfl, hv]
-  norm_num only [Nat.cast_ofNat, Complex.add_re, Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
-    zero_mul, sub_zero]
+  norm_num [Complex.add_re, Complex.mul_re]
   rw [← h]
   rw [← hs]
   ring
