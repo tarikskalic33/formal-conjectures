@@ -165,7 +165,6 @@ theorem gap_prime_sum_single_three
         (mixed (translatePacket g 0) (translatePacket g (k * Real.log 3)))
         (3 ^ k - 1) := by
   unfold WeilPrimeSumV1
-  have hP1 : 1 ≤ 3 ^ k := Nat.one_le_pow₀ (by norm_num)
   apply tsum_eq_single (3 ^ k - 1)
   intro n hn
   have hne : n + 1 ≠ 3 ^ k := by omega
@@ -211,7 +210,6 @@ theorem gap_prime_sum_exact_three
         (mixed (translatePacket g 0) (translatePacket g (k * Real.log 3))) =
       ((Real.log 3 * triadicHalf k * energy g.1 : ℝ) : ℂ) := by
   rw [gap_prime_sum_single_three g r a k hk hr0 hr hr64 hw]
-  have hP1 : 1 ≤ 3 ^ k := Nat.one_le_pow₀ (by norm_num)
   have hidx : 3 ^ k - 1 + 1 = 3 ^ k := by omega
   have hpP :
       mixed (translatePacket g 0) (translatePacket g (k * Real.log 3))
@@ -265,7 +263,7 @@ theorem gap_B_norm_bound_three
     nlinarith [log_two_lt_log_three,
       Real.log_pos (by norm_num : (1 : ℝ) < 3)]
   have ha := translated_arch_norm_bound
-    g a 0 (k * Real.log 3) hret hm hgap
+    g a 0 (k * Real.log 3) hret hm (by simpa using hgap)
   have hz :
       mixed (translatePacket g 0) (translatePacket g (k * Real.log 3)) 1 = 0 := by
     simpa using gap_mixed_nat_zero_three g r a k hk hr64 hw 1 (by norm_num)
