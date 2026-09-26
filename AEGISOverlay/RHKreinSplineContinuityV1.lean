@@ -71,14 +71,14 @@ theorem continuous_convolution_normalizedBox (f : ℝ → ℂ) (hf : Integrable 
   rw [he]
   exact continuous_const.mul
     (((hf.continuous_primitive 0).comp (continuous_id.add_const (h / 2))).sub
-      ((hf.continuous_primitive 0).comp (continuous_id.sub_const (h / 2))))
+      ((hf.continuous_primitive 0).comp (continuous_id.sub continuous_const)))
 
 /-- The actual order-19 spline satisfies the continuity hypothesis of Krein pairing. -/
 theorem spline19_continuous (L : ℝ) {h : ℝ} (hh : 0 ≤ h) :
     Continuous (spline19 L h) := by
   have hc : Continuous (splineCore h 18) :=
     continuous_convolution_normalizedBox (splineCore h 17) (splineCore_integrable h 17) hh
-  exact hc.comp (continuous_id.sub_const (L + 19 * h / 2))
+  exact hc.comp (continuous_id.sub continuous_const)
 
 /-- An interval primitive gains one finite order of differentiability. -/
 theorem primitive_contDiff (n : ℕ) (f : ℝ → ℂ) (hf : ContDiff ℝ n f) :

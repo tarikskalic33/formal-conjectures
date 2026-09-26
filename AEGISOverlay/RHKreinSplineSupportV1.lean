@@ -121,7 +121,7 @@ theorem normalizedBox_fourier {h : ℝ} (hh : 0 < h) (t : ℝ) :
   have hh' : (h : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hh.ne'
   rw [show h / 2 * t = h * t / 2 by ring]
   push_cast
-  field_simp [hh'] <;> ring
+  field_simp [hh']
 
 theorem splineCore_fourier {h : ℝ} (hh : 0 < h) (n : ℕ) (t : ℝ) :
     𝓕 (splineCore h n) (-t / (2 * Real.pi)) =
@@ -186,8 +186,7 @@ theorem certificate_derivative_parity (j : Fin 5) (c t : ℝ) :
         Complex.exp (((t * c : ℝ) : ℂ) * Complex.I)).re =
       t ^ j.val * (if j.val % 2 = 0 then Real.cos (t * c) else Real.sin (t * c)) := by
   fin_cases j <;>
-    norm_num [pow_succ, Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im] <;>
-    ring
+    norm_num [pow_succ, Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
 
 /-- The certificate's factor `1/2` exactly cancels the doubled real part from
 Hermitian reflection, with the derivative parity signs included. -/

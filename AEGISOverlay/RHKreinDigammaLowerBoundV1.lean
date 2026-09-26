@@ -86,7 +86,7 @@ private theorem quarterTerm_lower (t : ℝ) (n : ℕ) :
       -(3 / 4 : ℝ) / (((n : ℝ) + 1) * x) := by
     dsimp [x]
     field_simp
-    <;> ring
+    ring
   change -(3 / 4 : ℝ) / x ^ 2 ≤
     1 / ((n : ℝ) + 1) - x / (x ^ 2 + t ^ 2 / 4)
   simp only [neg_div] at heq ⊢
@@ -103,7 +103,7 @@ private theorem reciprocal_square_telescoper (q x : ℝ)
   have heq : (1 + 1 / q) * (1 / x - 1 / (x + 1)) =
       (1 + 1 / q) / (x * (x + 1)) := by
     field_simp
-    <;> ring
+    ring
   rw [heq]
   apply (div_le_div_iff₀ (sq_pos_of_pos hx) (mul_pos hx hx1)).2
   simp only [div_eq_mul_inv, one_mul] at hxq ⊢

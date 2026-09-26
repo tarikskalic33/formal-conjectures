@@ -111,8 +111,12 @@ No ledger entry is an input axiom or a replacement for kernel replay.
 - CHEAPEST FALSIFIER: A common real transform zero, or an unjustified use of
   pointwise zero exclusion as a uniform positive lower bound.
 - POSSIBLE THEOREM PRODUCER: No common real sinc zero at irrational scale ratio;
-  separate density and mixed-Gram statements remain necessary.
-- STATUS: PROMISING; the parallel Lean lane supplies the formal assessment.
+  generic real exponential tilting avoids all common complex Mellin zeros.
+  Applying the moment filter preserves complementarity inside the critical
+  strip. A further generic linear combination detects every actual zeta zero.
+- STATUS: CONFIRMED for complementary Fourier symbols, entire Mellin transforms,
+  and the exact no-common-zero construction. This supplies no mixed-Gram sign.
+  Exact-head hosted logs determine which theorem implementations have replayed.
 
 ## G. Variable width and local moment correction
 
@@ -127,4 +131,31 @@ No ledger entry is an input axiom or a replacement for kernel replay.
   missing mixed cross-term estimates.
 - POSSIBLE THEOREM PRODUCER: Explicit two-moment correction, support-preserving
   differential decomposition, and normed continuity of the actual form.
-- STATUS: PROMISING; no positivity or density is asserted by this ledger.
+- STATUS: CONFIRMED for exact local correction and finite partition of a compact
+  Krein factor. The local moment and partition theorems replayed with ordinary
+  logical axioms. Positivity of the sum remains unproved: neighboring cutoff
+  commutators and mixed terms cannot be discarded as the mesh shrinks.
+
+## H. Detect the zero set instead of approximating every packet
+
+- OBSERVATION: Complementarity only needs to prevent vanishing at the points
+  that enter the existing pole contradiction.
+- ABSTRACT STRUCTURE: Avoid a countable union of bad scalar coefficients, then
+  use analyticity of a bounded kernel's Laplace transform.
+- PRIOR FORMAL YIELD: Generic spectral shift, actual packet Mellin entirety,
+  two-point Hermitian expansion, and the existing restricted-Weil pole argument.
+- CURRENT RH RELEVANCE: The new detecting-packet lane reduces the universal sign
+  to four phase tests on translations of one fixed genuine moment-zero packet.
+  No density of a translated-function span is needed in this reduction.
+- CHEAPEST FALSIFIER: Check both Mellin factors at each zero, nonzero multiplicity,
+  and that Laplace analyticity uses only this packet's kernel bound. On the
+  non-Euler-product control, the detector may still exist; the uniform bound
+  must fail if the control has an off-critical zero.
+- POSSIBLE THEOREM PRODUCER: `RHFixedPacketFrontierV1` composes the detecting
+  packet, four-phase bound, parameterized pole criterion, and the existing
+  RH-to-universal implication. The packet uses classical choice; it is not a
+  computed certificate.
+- STATUS: PROMISING for unconditional sign production; the criterion reduction
+  is explicit Lean code subject to exact-head replay. The open sign requires
+  control of many prime-power terms at large shifts. Existing isolated-prime
+  bounds do not supply that control.
