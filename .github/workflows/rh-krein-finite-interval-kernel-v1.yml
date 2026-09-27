@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'AEGISOverlay/RHKreinFiniteIntervalKernelV1.lean'
+      - 'AEGISOverlay/RHKreinFourierTaylorBoundV1.lean'
       - '.github/workflows/rh-krein-finite-interval-kernel-v1.yml'
   workflow_dispatch:
 
@@ -48,9 +49,15 @@ jobs:
           lake env lean -o .lake/build/lib/lean/AEGISOverlay/RHKreinFiniteIntervalKernelV1.olean             AEGISOverlay/RHKreinFiniteIntervalKernelV1.lean 2>&1 | tee evidence-finite/kernel.log
           ! grep -F 'sorryAx' evidence-finite/kernel.log
           ! grep -F 'error:' evidence-finite/kernel.log
+          ! grep -F 'warning:' evidence-finite/kernel.log
           grep -F 'AEGIS.RHKreinFiniteIntervalKernelV1.expIPartial_error' evidence-finite/kernel.log
-          grep -F 'AEGIS.RHKreinFiniteIntervalKernelV1.sin_expIPartial_error' evidence-finite/kernel.log
-          grep -F 'AEGIS.RHKreinFiniteIntervalKernelV1.cos_expIPartial_error' evidence-finite/kernel.log
+          grep -F 'AEGIS.RHKreinFiniteIntervalKernelV1.centeredTaylor7_remainder_of_ne' evidence-finite/kernel.log
+          grep -F 'AEGIS.RHKreinFiniteIntervalKernelV1.sin_periodic_expIPartial_enclosure' evidence-finite/kernel.log
+          lake env lean -o .lake/build/lib/lean/AEGISOverlay/RHKreinFourierTaylorBoundV1.olean             AEGISOverlay/RHKreinFourierTaylorBoundV1.lean 2>&1 | tee evidence-finite/fourier-taylor.log
+          ! grep -F 'sorryAx' evidence-finite/fourier-taylor.log
+          ! grep -F 'error:' evidence-finite/fourier-taylor.log
+          ! grep -F 'warning:' evidence-finite/fourier-taylor.log
+          grep -F 'AEGIS.RHKreinFourierTaylorBoundV1.angular_eighth_derivative_norm_le' evidence-finite/fourier-taylor.log
 
       - name: Record exact-head receipt
         shell: bash
