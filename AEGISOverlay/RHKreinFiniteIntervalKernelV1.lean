@@ -100,6 +100,87 @@ theorem cos_expIPartial_error (n : ℕ) (x : ℝ) (hn : 0 < n) (hx : |x| ≤ 1) 
   rw [heq] at hre
   exact hre.trans hnorm
 
+/-- Convert the complex Taylor norm enclosure into a two-sided real sine
+interval.  For rational `x`, both endpoints except for the theorem-proved
+remainder are exact rational arithmetic. -/
+theorem sin_expIPartial_interval (n : ℕ) (x : ℝ) (hn : 0 < n) (hx : |x| ≤ 1) :
+    (expIPartial n x).im -
+        |x| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) ≤ Real.sin x ∧
+      Real.sin x ≤ (expIPartial n x).im +
+        |x| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
+  have h := sin_expIPartial_error n x hn hx
+  rw [abs_sub_le_iff] at h
+  exact ⟨by linarith [h.1], by linarith [h.2]⟩
+
+/-- Convert the complex Taylor norm enclosure into a two-sided real cosine
+interval. -/
+theorem cos_expIPartial_interval (n : ℕ) (x : ℝ) (hn : 0 < n) (hx : |x| ≤ 1) :
+    (expIPartial n x).re -
+        |x| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) ≤ Real.cos x ∧
+      Real.cos x ≤ (expIPartial n x).re +
+        |x| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
+  have h := cos_expIPartial_error n x hn hx
+  rw [abs_sub_le_iff] at h
+  exact ⟨by linarith [h.1], by linarith [h.2]⟩
+
+/-- Full sine primitive used by the integer checker: evaluate the Taylor
+polynomial at a small center `q`, allow an arbitrary integral number of full
+periods, and transport over a certified phase radius. -/
+theorem sin_periodic_expIPartial_enclosure
+    (n : ℕ) (q x r : ℝ) (k : ℤ)
+    (hn : 0 < n) (hq : |q| ≤ 1) (hr : 0 ≤ r)
+    (hx : |x - (q + k * (2 * Real.pi))| ≤ r) :
+    (expIPartial n q).im -
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) - r ≤ Real.sin x ∧
+      Real.sin x ≤
+        (expIPartial n q).im +
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) + r := by
+  have hc := sin_expIPartial_interval n q hn hq
+  have hlo :
+      (expIPartial n q).im -
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) ≤
+        Real.sin (q + k * (2 * Real.pi)) := by
+    simpa using hc.1
+  have hhi :
+      Real.sin (q + k * (2 * Real.pi)) ≤
+        (expIPartial n q).im +
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
+    simpa using hc.2
+  exact sin_cell_enclosure x (q + k * (2 * Real.pi)) r
+    ((expIPartial n q).im -
+      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
+    ((expIPartial n q).im +
+      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
+    hr hx hlo hhi
+
+/-- Full cosine analogue of `sin_periodic_expIPartial_enclosure`. -/
+theorem cos_periodic_expIPartial_enclosure
+    (n : ℕ) (q x r : ℝ) (k : ℤ)
+    (hn : 0 < n) (hq : |q| ≤ 1) (hr : 0 ≤ r)
+    (hx : |x - (q + k * (2 * Real.pi))| ≤ r) :
+    (expIPartial n q).re -
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) - r ≤ Real.cos x ∧
+      Real.cos x ≤
+        (expIPartial n q).re +
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) + r := by
+  have hc := cos_expIPartial_interval n q hn hq
+  have hlo :
+      (expIPartial n q).re -
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) ≤
+        Real.cos (q + k * (2 * Real.pi)) := by
+    simpa using hc.1
+  have hhi :
+      Real.cos (q + k * (2 * Real.pi)) ≤
+        (expIPartial n q).re +
+          |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
+    simpa using hc.2
+  exact cos_cell_enclosure x (q + k * (2 * Real.pi)) r
+    ((expIPartial n q).re -
+      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
+    ((expIPartial n q).re +
+      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
+    hr hx hlo hhi
+
 /-- A certified sine value at a center transports across a cell with no
 additional transcendental reasoning. -/
 theorem sin_cell_enclosure (x c r lo hi : ℝ)
@@ -238,6 +319,10 @@ end AEGIS.RHKreinFiniteIntervalKernelV1
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.expIPartial_error
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_expIPartial_error
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_expIPartial_error
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_expIPartial_interval
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_expIPartial_interval
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_periodic_expIPartial_enclosure
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_periodic_expIPartial_enclosure
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_cell_enclosure
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_cell_enclosure
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_scaled_cell_enclosure
