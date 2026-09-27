@@ -272,6 +272,17 @@ private theorem reflected_integrable {f : ℝ → ℂ} (hf : Integrable f) :
     simpa using (Complex.conjLIE.toContinuousLinearMap).integrable_comp hf.comp_neg
   exact hf.add hi
 
+private theorem reflected_hasCompactSupport {f : ℝ → ℂ}
+    (hf : HasCompactSupport f) : HasCompactSupport (reflected f) := by
+  have hneg : HasCompactSupport (fun x : ℝ => f (-x)) := by
+    have h := hf.comp_homeomorph (Homeomorph.neg ℝ)
+    simpa [Function.comp_def] using h
+  have hconj : HasCompactSupport (fun x : ℝ => (starRingEnd ℂ) (f (-x))) := by
+    have h := hneg.comp_left (map_zero (starRingEnd ℂ))
+    simpa [Function.comp_def] using h
+  unfold reflected
+  exact hf.add hconj
+
 private theorem fourier_add (f g : ℝ → ℂ) (hf : Integrable f) (hg : Integrable g)
     (ξ : ℝ) : 𝓕 (fun x => f x + g x) ξ = 𝓕 f ξ + 𝓕 g ξ := by
   exact congrArg (fun F : ℝ → ℂ => F ξ)
@@ -325,6 +336,16 @@ private theorem positiveHat_continuous (j : Fin 199) : Continuous (positiveHat j
 
 private theorem positiveHat_integrable (j : Fin 199) : Integrable (positiveHat j) :=
   ((splineCore_integrable (1 / 50) 1).comp_sub_right (hatCenter j)).const_mul _
+
+private theorem positiveHat_hasCompactSupport (j : Fin 199) :
+    HasCompactSupport (positiveHat j) := by
+  have hb := splineCore_hasCompactSupport (1 / 50) 1
+  have ht : HasCompactSupport
+      (fun x : ℝ => splineCore (1 / 50) 1 (x - hatCenter j)) := by
+    have h := hb.comp_homeomorph (Homeomorph.addRight (-hatCenter j))
+    simpa [Function.comp_def, sub_eq_add_neg] using h
+  unfold positiveHat
+  exact ht.mul_left
 
 private theorem positiveHat_fourier (j : Fin 199) (t : ℝ) :
     𝓕 (positiveHat j) (-t / (2 * Real.pi)) =
@@ -438,6 +459,31 @@ private theorem hatColumn_integrable (j : Fin 199) : Integrable (hatColumn j) :=
 private theorem splineColumn_integrable (j : Fin 5) : Integrable (splineColumn j) :=
   (reflected_integrable (edge_integrable j)).const_mul _
 
+private theorem hatColumn_hasCompactSupport (j : Fin 199) :
+    HasCompactSupport (hatColumn j) :=
+  reflected_hasCompactSupport (positiveHat_hasCompactSupport j)
+
+private theorem edge_hasCompactSupport (j : Fin 5) :
+    HasCompactSupport (deriv^[j.val] (spline19 (4 / 5) (1 / 1000))) := by
+  apply HasCompactSupport.intro
+    (K := Set.Icc (4 / 5) (4 / 5 + 19 * (1 / 1000))) isCompact_Icc
+  intro x hx
+  by_contra hn
+  exact hx (spline19_derivative_support (4 / 5) (1 / 1000) j.val
+    (subset_closure hn))
+
+private theorem splineColumn_hasCompactSupport (j : Fin 5) :
+    HasCompactSupport (splineColumn j) := by
+  unfold splineColumn
+  exact (reflected_hasCompactSupport (edge_hasCompactSupport j)).mul_left
+
+private theorem finiteSum_hasCompactSupport {ι : Type*} [Fintype ι]
+    (f : ι → ℝ → ℂ) (hf : ∀ i, HasCompactSupport (f i)) :
+    HasCompactSupport (fun x : ℝ => ∑ i, f i x) := by
+  classical
+  change HasCompactSupport (∑ i, f i)
+  exact (HasCompactSupport.addSubmonoid ℝ ℂ).sum_mem (fun i _ => hf i)
+
 /-- The correction is continuous despite containing derivative columns. -/
 theorem correction_continuous : Continuous correction := by
   have hh (j : Fin 199) : Continuous (hatColumn j) :=
@@ -456,6 +502,21 @@ theorem correction_integrable : Integrable correction := by
     (hatColumn_integrable j).const_mul ((hatCoefficient j : ℝ) : ℂ)).add
     (integrable_finsetSum _ fun j _ =>
       (splineColumn_integrable j).const_mul ((splineCoefficient j : ℝ) : ℂ))
+
+/-- The explicit correction is genuinely compactly supported. -/
+theorem correction_hasCompactSupport : HasCompactSupport correction := by
+  have hh : HasCompactSupport (fun x : ℝ =>
+      ∑ j : Fin 199, ((hatCoefficient j : ℝ) : ℂ) * hatColumn j x) := by
+    apply finiteSum_hasCompactSupport
+    intro j
+    exact (hatColumn_hasCompactSupport j).mul_left
+  have hs : HasCompactSupport (fun x : ℝ =>
+      ∑ j : Fin 5, ((splineCoefficient j : ℝ) : ℂ) * splineColumn j x) := by
+    apply finiteSum_hasCompactSupport
+    intro j
+    exact (splineColumn_hasCompactSupport j).mul_left
+  unfold correction
+  exact hh.add hs
 
 /-- The correction vanishes on the entire forbidden window. -/
 theorem correction_zero_in_window (x : ℝ) (hx : |x| < 4 / 5) : correction x = 0 := by
@@ -552,6 +613,7 @@ end AEGIS.RHKreinExplicitCorrectionV1
 
 #print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_continuous
 #print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_integrable
+#print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_hasCompactSupport
 #print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_zero_in_window
 #print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_fourier_integrable
 #print axioms AEGIS.RHKreinExplicitCorrectionV1.correction_fourier_re
