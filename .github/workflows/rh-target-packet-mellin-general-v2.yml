@@ -13,6 +13,7 @@ permissions:
 env:
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  AEGIS_SHA: 2c3d041b633147ec97c7ef753aa9d157a47bb9f5
 
 jobs:
   target-packet-mellin-general:
@@ -39,6 +40,58 @@ jobs:
           lake exe cache get
           test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
           lean --version
+
+      - name: Checkout exact AEGIS source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Compile exact AEGIS residue-witness dependency closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SHA"
+          ROOT=.aegis/sovereign-omega-v2/formal/bridges/lean
+          mkdir -p evidence-target-mellin .lake/build/lib/lean
+          python3 - "$ROOT" evidence-target-mellin/aegis-modules.txt <<'PY'
+          import pathlib,sys
+          root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
+          target="RestrictedWeilCriterionResidueWitnessV11"
+          mods={p.stem:p for p in root.glob("*.lean")}
+          if target not in mods:
+              raise SystemExit(f"missing target: {target}")
+          deps={}
+          for m,p in mods.items():
+              ds=[]
+              for line in p.read_text(encoding="utf-8").splitlines():
+                  s=line.strip()
+                  if not s.startswith("import "):
+                      continue
+                  for token in s[len("import "):].split():
+                      local=token.split(".")[0]
+                      if local in mods:
+                          ds.append(local)
+              deps[m]=ds
+          seen=set(); active=set(); order=[]
+          def visit(m):
+              if m in seen: return
+              if m in active: raise SystemExit("cycle:"+m)
+              active.add(m)
+              for d in deps[m]: visit(d)
+              active.remove(m); seen.add(m); order.append(m)
+          visit(target)
+          out.write_text("\n".join(order)+"\n")
+          print("TARGET_PACKET_AEGIS_CLOSURE_COUNT",len(order))
+          print("\n".join(order))
+          PY
+          while IFS= read -r m; do
+            cp "$ROOT/$m.lean" "$m.lean"
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean"               2>&1 | tee "evidence-target-mellin/source-$m.log"
+          done < evidence-target-mellin/aegis-modules.txt
 
       - name: Compile general target packet Mellin theorem
         shell: bash
