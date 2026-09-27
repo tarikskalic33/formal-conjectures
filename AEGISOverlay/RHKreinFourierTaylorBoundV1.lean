@@ -54,16 +54,19 @@ theorem angularScale_mul (t : ℝ) :
 def HasMomentsUpToEight (f : ℝ → ℂ) : Prop :=
   ∀ n : ℕ, n ≤ 8 → Integrable (fun x : ℝ => x ^ n • f x)
 
+set_option maxHeartbeats 2000000 in
 /-- Every continuous compactly supported function has the finite polynomial
 moments needed for the eighth-order Fourier Taylor argument. -/
-set_option maxHeartbeats 2000000 in
 theorem hasMomentsUpToEight_of_continuous_compact
     (f : ℝ → ℂ) (hc : Continuous f) (hs : HasCompactSupport f) :
     HasMomentsUpToEight f := by
   intro n _hn
   have hcont : Continuous (fun x : ℝ => x ^ n • f x) :=
     (continuous_id.pow n).smul hc
-  exact hcont.integrable_of_hasCompactSupport hs.smul_left
+  have hs' : HasCompactSupport ((fun x : ℝ => x ^ n) • f) :=
+    HasCompactSupport.smul_left hs
+  exact hcont.integrable_of_hasCompactSupport (by
+    simpa only [Pi.smul_apply'] using hs')
 
 /-- Ordinary moments imply the norm moments required by Mathlib's Fourier
 smoothness theorem. -/
