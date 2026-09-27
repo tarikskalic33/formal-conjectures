@@ -285,7 +285,7 @@ theorem centeredTaylor7_remainder_of_ne
 /-- Cell-radius version of the degree-seven remainder bound. -/
 theorem centeredTaylor7_cell_remainder_of_ne
     (f : ℝ → ℝ) (c x r M : ℝ) (hcx : c ≠ x)
-    (hr : 0 ≤ r) (hx : |x - c| ≤ r)
+    (_hr : 0 ≤ r) (hx : |x - c| ≤ r)
     (hf : ContDiff ℝ 8 f)
     (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M) :
     |f x - centeredTaylorEval f 7 c x| ≤
