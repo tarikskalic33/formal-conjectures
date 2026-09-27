@@ -2261,6 +2261,75 @@ def chainPayloadOK : ℚ → List FiniteCellV1 → Bool
   | x, [] => decide (x = 300)
   | x, c :: cs => cellPayloadOK x c && chainPayloadOK c.hi cs
 
+/-- Proposition-level version of the exact serialized chain. -/
+def ChainV1 : ℚ → ℚ → List FiniteCellV1 → Prop
+  | x, z, [] => x = z
+  | x, z, c :: cs =>
+      c.lo = x ∧ c.lo < c.hi ∧
+        (1 / 100000 : ℚ) < lowerValue c ∧
+        ChainV1 c.hi z cs
+
+instance (x z : ℚ) (cs : List FiniteCellV1) : Decidable (ChainV1 x z cs) := by
+  unfold ChainV1
+  infer_instance
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 8000000 in
+theorem finiteCells_chain_v1 : ChainV1 0 300 finiteCells := by
+  native_decide
+
+set_option maxRecDepth 8192 in
+set_option maxHeartbeats 8000000 in
+theorem finiteCells_ne_nil_v1 : finiteCells ≠ [] := by
+  native_decide
+
+/-- A rational chain of adjacent positive-width cells covers its whole real
+interval.  The returned cell also carries the exact serialized positive
+dyadic lower-bound fact. -/
+theorem exists_cell_of_chain_v1
+    {start finish : ℚ} {cells : List FiniteCellV1}
+    (hchain : ChainV1 start finish cells) (hne : cells ≠ [])
+    {t : ℝ} (hstart : (start : ℝ) ≤ t) (hfinish : t ≤ (finish : ℝ)) :
+    ∃ c ∈ cells,
+      (c.lo : ℝ) ≤ t ∧ t ≤ (c.hi : ℝ) ∧
+        (1 / 100000 : ℚ) < lowerValue c := by
+  induction cells generalizing start with
+  | nil =>
+      exact False.elim (hne rfl)
+  | cons c cs ih =>
+      change c.lo = start ∧ c.lo < c.hi ∧
+        (1 / 100000 : ℚ) < lowerValue c ∧
+        ChainV1 c.hi finish cs at hchain
+      rcases hchain with ⟨hcstart, hwidth, hlower, hrest⟩
+      have hleft : (c.lo : ℝ) ≤ t := by
+        rw [hcstart]
+        exact hstart
+      by_cases ht : t ≤ (c.hi : ℝ)
+      · exact ⟨c, by simp, hleft, ht, hlower⟩
+      · have hnext : (c.hi : ℝ) ≤ t := le_of_lt (lt_of_not_ge ht)
+        by_cases hcs : cs = []
+        · subst cs
+          change c.hi = finish at hrest
+          have hcf : (c.hi : ℝ) = (finish : ℝ) := by exact_mod_cast hrest
+          rw [hcf] at hnext
+          have : t = (finish : ℝ) := le_antisymm hfinish hnext
+          rw [this] at ht
+          exact False.elim (ht le_rfl)
+        · obtain ⟨d, hdmem, hdlo, hdhi, hdlower⟩ :=
+            ih hrest hcs hnext hfinish
+          exact ⟨d, by simp [hdmem], hdlo, hdhi, hdlower⟩
+
+/-- The exact 2199-cell payload covers every real frequency in [0,300], and
+the cell containing that frequency has serialized dyadic lower endpoint
+strictly above 1/100000. -/
+theorem finiteCells_cover_zero_three_hundred_v1
+    {t : ℝ} (ht0 : 0 ≤ t) (ht300 : t ≤ 300) :
+    ∃ c ∈ finiteCells,
+      (c.lo : ℝ) ≤ t ∧ t ≤ (c.hi : ℝ) ∧
+        (1 / 100000 : ℚ) < lowerValue c := by
+  exact exists_cell_of_chain_v1 finiteCells_chain_v1 finiteCells_ne_nil_v1
+    (by exact_mod_cast ht0) (by exact_mod_cast ht300)
+
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 8000000 in
 theorem finiteCells_count_v1 : finiteCells.length = 2199 := by
