@@ -202,6 +202,19 @@ theorem riemannHypothesis_iff_all_reflection_squares_zero_v1 :
   · intro h rho
     exact Complex.normSq_eq_zero.mp (h rho)
 
+/-- In the repository's own translation representation, RH is already
+equivalent to a one-step unit-modulus statement at translation d = 1. -/
+theorem riemannHypothesis_iff_unit_translation_factors_v1 :
+    RiemannHypothesis ↔
+      ∀ rho : RiemannNontrivialZeroIndexV2,
+        ‖WeilZeroTranslationFactorV11 rho 1‖ = 1 := by
+  rw [riemannHypothesis_iff_all_reflection_defects_zero_v1]
+  constructor
+  · intro h rho
+    exact (unit_translation_factor_norm_eq_one_iff_v1 rho).2 (h rho)
+  · intro h rho
+    exact (unit_translation_factor_norm_eq_one_iff_v1 rho).1 (h rho)
+
 /-- Existing final-sign machinery forces the elementary reflection defect to
 vanish for every nontrivial zero.  This isolates the genuinely difficult
 input from the trivial algebraic endpoint. -/
@@ -234,5 +247,6 @@ end AEGIS.RHReflectionDefectV1
 #print axioms AEGIS.RHReflectionDefectV1.zero_re_half_iff_all_translation_factors_unit_v1
 #print axioms AEGIS.RHReflectionDefectV1.riemannHypothesis_iff_all_reflection_defects_zero_v1
 #print axioms AEGIS.RHReflectionDefectV1.riemannHypothesis_iff_all_reflection_squares_zero_v1
+#print axioms AEGIS.RHReflectionDefectV1.riemannHypothesis_iff_unit_translation_factors_v1
 #print axioms AEGIS.RHReflectionDefectV1.final_sign_zero_reflection_defect_v1
 #print axioms AEGIS.RHReflectionDefectV1.final_sign_all_translation_factors_unit_v1
