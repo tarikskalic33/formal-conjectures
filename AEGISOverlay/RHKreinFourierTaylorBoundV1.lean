@@ -63,10 +63,10 @@ theorem hasMomentsUpToEight_of_continuous_compact
   intro n _hn
   have hcont : Continuous (fun x : ℝ => x ^ n • f x) :=
     (continuous_id.pow n).smul hc
-  have hs' : HasCompactSupport ((fun x : ℝ => x ^ n) • f) :=
-    HasCompactSupport.smul_left hs
-  exact hcont.integrable_of_hasCompactSupport (by
-    simpa only [Pi.smul_apply'] using hs')
+  have hs' : HasCompactSupport (fun x : ℝ => x ^ n • f x) := by
+    rw [hasCompactSupport_iff_eventuallyEq] at hs ⊢
+    exact hs.mono fun x hx => by simp [hx]
+  exact hcont.integrable_of_hasCompactSupport hs'
 
 /-- Ordinary moments imply the norm moments required by Mathlib's Fourier
 smoothness theorem. -/
