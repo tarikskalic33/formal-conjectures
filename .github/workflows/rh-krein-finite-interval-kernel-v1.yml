@@ -5,6 +5,7 @@ on:
     paths:
       - 'AEGISOverlay/RHKreinFiniteIntervalKernelV1.lean'
       - 'AEGISOverlay/RHKreinFourierTaylorBoundV1.lean'
+      - 'AEGISOverlay/RHKreinCorrectionTaylorBridgeV1.lean'
       - '.github/workflows/rh-krein-finite-interval-kernel-v1.yml'
   workflow_dispatch:
 
@@ -58,6 +59,11 @@ jobs:
           ! grep -F 'error:' evidence-finite/fourier-taylor.log
           ! grep -F 'warning:' evidence-finite/fourier-taylor.log
           grep -F 'AEGIS.RHKreinFourierTaylorBoundV1.angular_eighth_derivative_norm_le' evidence-finite/fourier-taylor.log
+          lake env lean -o .lake/build/lib/lean/AEGISOverlay/RHKreinCorrectionTaylorBridgeV1.olean             AEGISOverlay/RHKreinCorrectionTaylorBridgeV1.lean 2>&1 | tee evidence-finite/correction-taylor.log
+          ! grep -F 'sorryAx' evidence-finite/correction-taylor.log
+          ! grep -F 'error:' evidence-finite/correction-taylor.log
+          ! grep -F 'warning:' evidence-finite/correction-taylor.log
+          grep -F 'AEGIS.RHKreinCorrectionTaylorBridgeV1.correction_angular_eighth_derivative_norm_le' evidence-finite/correction-taylor.log
 
       - name: Record exact-head receipt
         shell: bash
