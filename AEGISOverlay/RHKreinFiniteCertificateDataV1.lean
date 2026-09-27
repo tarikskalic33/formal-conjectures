@@ -39,7 +39,6 @@ RH is not asserted here.
 -/
 
 set_option autoImplicit false
-noncomputable section
 
 namespace AEGIS.RHKreinFiniteCertificateDataV1
 
