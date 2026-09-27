@@ -166,6 +166,42 @@ theorem zero_re_half_iff_all_translation_factors_unit_v1
     exact (zero_reflection_defect_eq_zero_iff_v1 rho).1
       ((unit_translation_factor_norm_eq_one_iff_v1 rho).1 (h 1))
 
+/-- RH itself is exactly the statement that every canonical nontrivial zero
+has zero reflection defect.  No analytic estimate remains in this
+reformulation. -/
+theorem riemannHypothesis_iff_all_reflection_defects_zero_v1 :
+    RiemannHypothesis ↔
+      ∀ rho : RiemannNontrivialZeroIndexV2,
+        ZeroReflectionDefectV1 rho = 0 := by
+  constructor
+  · intro hRH rho
+    have hstrip :=
+      riemann_zeta_nontrivial_zero_critical_strip_v1 rho.2.1 rho.2.2
+    have hr1 : rho.1 ≠ 1 := by
+      intro h
+      have hre := congrArg Complex.re h
+      simp at hre
+      linarith [hstrip.2]
+    have hr : rho.1.re = 1 / 2 :=
+      hRH rho.1 rho.2.1 rho.2.2 hr1
+    exact (zero_reflection_defect_eq_zero_iff_v1 rho).2 hr
+  · intro h s hz hnt h1
+    let rho : RiemannNontrivialZeroIndexV2 := ⟨s, hz, hnt⟩
+    exact (zero_reflection_defect_eq_zero_iff_v1 rho).1 (h rho)
+
+/-- Equivalent square-only statement: RH iff every nonnegative reflection
+square vanishes. -/
+theorem riemannHypothesis_iff_all_reflection_squares_zero_v1 :
+    RiemannHypothesis ↔
+      ∀ rho : RiemannNontrivialZeroIndexV2,
+        Complex.normSq (ZeroReflectionDefectV1 rho) = 0 := by
+  rw [riemannHypothesis_iff_all_reflection_defects_zero_v1]
+  constructor
+  · intro h rho
+    exact Complex.normSq_eq_zero.mpr (h rho)
+  · intro h rho
+    exact Complex.normSq_eq_zero.mp (h rho)
+
 /-- Existing final-sign machinery forces the elementary reflection defect to
 vanish for every nontrivial zero.  This isolates the genuinely difficult
 input from the trivial algebraic endpoint. -/
@@ -196,5 +232,7 @@ end AEGIS.RHReflectionDefectV1
 #print axioms AEGIS.RHReflectionDefectV1.zero_reflection_defect_eq_zero_iff_v1
 #print axioms AEGIS.RHReflectionDefectV1.zero_translation_factor_norm_eq_defect_exp_v1
 #print axioms AEGIS.RHReflectionDefectV1.zero_re_half_iff_all_translation_factors_unit_v1
+#print axioms AEGIS.RHReflectionDefectV1.riemannHypothesis_iff_all_reflection_defects_zero_v1
+#print axioms AEGIS.RHReflectionDefectV1.riemannHypothesis_iff_all_reflection_squares_zero_v1
 #print axioms AEGIS.RHReflectionDefectV1.final_sign_zero_reflection_defect_v1
 #print axioms AEGIS.RHReflectionDefectV1.final_sign_all_translation_factors_unit_v1
