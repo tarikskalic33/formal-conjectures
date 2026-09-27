@@ -41,6 +41,7 @@ No positivity or RH conclusion is asserted.
 -/
 
 open Set MeasureTheory Complex FourierTransform
+open scoped ContDiff
 set_option autoImplicit false
 noncomputable section
 
@@ -116,7 +117,8 @@ theorem symbol_mass_angular_to_mathlib_v1
       field_simp [hp]
     rw [ht]
   rw [hlhs] at hcv
-  rw [abs_of_pos hpi, Real.smul_def] at hcv
+  rw [abs_of_pos hpi] at hcv
+  simp only [smul_eq_mul] at hcv
   calc
     (∫ t : ℝ, symbol t * criticalSpectralMass g t)
         = (2 * Real.pi) * ∫ xi : ℝ, Q xi := hcv
