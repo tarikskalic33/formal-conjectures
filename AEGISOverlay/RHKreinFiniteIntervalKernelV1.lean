@@ -103,7 +103,7 @@ theorem cos_expIPartial_error (n : ℕ) (x : ℝ) (hn : 0 < n) (hx : |x| ≤ 1) 
 /-- A certified sine value at a center transports across a cell with no
 additional transcendental reasoning. -/
 theorem sin_cell_enclosure (x c r lo hi : ℝ)
-    (hr : 0 ≤ r) (hx : |x - c| ≤ r)
+    (_hr : 0 ≤ r) (hx : |x - c| ≤ r)
     (hlo : lo ≤ Real.sin c) (hhi : Real.sin c ≤ hi) :
     lo - r ≤ Real.sin x ∧ Real.sin x ≤ hi + r := by
   have h := Real.abs_sin_sub_sin_le x c
@@ -112,7 +112,7 @@ theorem sin_cell_enclosure (x c r lo hi : ℝ)
 
 /-- The analogous cell transport for cosine. -/
 theorem cos_cell_enclosure (x c r lo hi : ℝ)
-    (hr : 0 ≤ r) (hx : |x - c| ≤ r)
+    (_hr : 0 ≤ r) (hx : |x - c| ≤ r)
     (hlo : lo ≤ Real.cos c) (hhi : Real.cos c ≤ hi) :
     lo - r ≤ Real.cos x ∧ Real.cos x ≤ hi + r := by
   have h := Real.abs_cos_sub_cos_le x c
@@ -149,7 +149,7 @@ so after the derivative formulas are proved its coefficients can be checked by
 exact arithmetic. -/
 def centeredTaylorEval (f : ℝ → ℝ) (n : ℕ) (c x : ℝ) : ℝ :=
   ∑ k ∈ Finset.range (n + 1),
-    ((k ! : ℝ)⁻¹ * (x - c) ^ k) * iteratedDeriv k f c
+    (((Nat.factorial k : ℕ) : ℝ)⁻¹ * (x - c) ^ k) * iteratedDeriv k f c
 
 /-- On a unique-differentiability set, Mathlib's within-Taylor polynomial is
 the explicit ordinary-derivative polynomial above. -/
@@ -182,7 +182,7 @@ theorem centeredTaylor7_remainder_of_ne
     (hf : ContDiff ℝ 8 f)
     (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M) :
     |f x - centeredTaylorEval f 7 c x| ≤
-      M * |x - c| ^ 8 / (8 ! : ℕ) := by
+      M * |x - c| ^ 8 / (40320 : ℝ) := by
   obtain ⟨y, hy, hrem⟩ :=
     taylor_mean_remainder_lagrange_iteratedDeriv
       (f := f) (x := x) (x₀ := c) (n := 7) hcx hf.contDiffOn
@@ -208,7 +208,7 @@ theorem centeredTaylor7_cell_remainder_of_ne
     (hf : ContDiff ℝ 8 f)
     (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M) :
     |f x - centeredTaylorEval f 7 c x| ≤
-      M * r ^ 8 / (8 ! : ℕ) := by
+      M * r ^ 8 / (40320 : ℝ) := by
   have hbase := centeredTaylor7_remainder_of_ne f c x M hcx hf hM
   have hM0 : 0 ≤ M := (abs_nonneg (iteratedDeriv 8 f c)).trans (hM c)
   have hp := pow_le_pow_left₀ (abs_nonneg (x - c)) hx 8
@@ -226,7 +226,7 @@ theorem lower_of_centeredTaylor7
     (hf : ContDiff ℝ 8 f)
     (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M)
     (hpoly : L ≤ centeredTaylorEval f 7 c x) :
-    L - M * r ^ 8 / (8 ! : ℕ) ≤ f x := by
+    L - M * r ^ 8 / (40320 : ℝ) ≤ f x := by
   have hrem := centeredTaylor7_cell_remainder_of_ne f c x r M hcx hr hx hf hM
   rw [abs_sub_le_iff] at hrem
   linarith
