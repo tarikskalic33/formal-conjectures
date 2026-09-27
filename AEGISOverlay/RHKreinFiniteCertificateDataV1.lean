@@ -51,6 +51,7 @@ deriving DecidableEq, Repr
 def lowerValue (c : FiniteCellV1) : ℚ :=
   (c.lower64 : ℚ) / (18446744073709551616 : ℚ)
 
+set_option maxRecDepth 16384 in
 def finiteCells : List FiniteCellV1 := [
   ⟨0, 75/4096, 114511397055347687⟩,
   ⟨75/4096, 225/8192, 123598475210567660⟩,
@@ -2261,35 +2262,20 @@ def chainPayloadOK : ℚ → List FiniteCellV1 → Bool
   | x, [] => decide (x = 300)
   | x, c :: cs => cellPayloadOK x c && chainPayloadOK c.hi cs
 
-/-- Proposition-level version of the exact serialized chain. -/
-def ChainV1 : ℚ → ℚ → List FiniteCellV1 → Prop
-  | x, z, [] => x = z
-  | x, z, c :: cs =>
-      c.lo = x ∧ c.lo < c.hi ∧
-        (1 / 100000 : ℚ) < lowerValue c ∧
-        ChainV1 c.hi z cs
-
-instance (x z : ℚ) (cs : List FiniteCellV1) : Decidable (ChainV1 x z cs) := by
-  unfold ChainV1
-  infer_instance
-
-set_option maxRecDepth 8192 in
-set_option maxHeartbeats 8000000 in
-theorem finiteCells_chain_v1 : ChainV1 0 300 finiteCells := by
-  native_decide
-
-set_option maxRecDepth 8192 in
-set_option maxHeartbeats 8000000 in
+/-- The exact payload has at least one cell. -/
 theorem finiteCells_ne_nil_v1 : finiteCells ≠ [] := by
-  native_decide
+  intro h
+  have hc : finiteCells.length = 2199 := by
+    native_decide
+  rw [h] at hc
+  simp at hc
 
-/-- A rational chain of adjacent positive-width cells covers its whole real
-interval.  The returned cell also carries the exact serialized positive
-dyadic lower-bound fact. -/
-theorem exists_cell_of_chain_v1
-    {start finish : ℚ} {cells : List FiniteCellV1}
-    (hchain : ChainV1 start finish cells) (hne : cells ≠ [])
-    {t : ℝ} (hstart : (start : ℝ) ≤ t) (hfinish : t ≤ (finish : ℝ)) :
+/-- A payload accepted by the executable chain checker covers [start,300].
+The returned cell also carries the serialized strict lower-bound fact. -/
+theorem exists_cell_of_chainPayloadOK_v1
+    {start : ℚ} {cells : List FiniteCellV1}
+    (hchain : chainPayloadOK start cells = true) (hne : cells ≠ [])
+    {t : ℝ} (hstart : (start : ℝ) ≤ t) (hfinish : t ≤ 300) :
     ∃ c ∈ cells,
       (c.lo : ℝ) ≤ t ∧ t ≤ (c.hi : ℝ) ∧
         (1 / 100000 : ℚ) < lowerValue c := by
@@ -2297,10 +2283,10 @@ theorem exists_cell_of_chain_v1
   | nil =>
       exact False.elim (hne rfl)
   | cons c cs ih =>
-      change c.lo = start ∧ c.lo < c.hi ∧
-        (1 / 100000 : ℚ) < lowerValue c ∧
-        ChainV1 c.hi finish cs at hchain
-      rcases hchain with ⟨hcstart, hwidth, hlower, hrest⟩
+      simp only [chainPayloadOK, Bool.and_eq_true] at hchain
+      rcases hchain with ⟨hcell, hrest⟩
+      simp only [cellPayloadOK, decide_eq_true_eq] at hcell
+      rcases hcell with ⟨hcstart, hwidth, hlower⟩
       have hleft : (c.lo : ℝ) ≤ t := by
         rw [hcstart]
         exact hstart
@@ -2309,11 +2295,11 @@ theorem exists_cell_of_chain_v1
       · have hnext : (c.hi : ℝ) ≤ t := le_of_lt (lt_of_not_ge ht)
         by_cases hcs : cs = []
         · subst cs
-          change c.hi = finish at hrest
-          have hcf : (c.hi : ℝ) = (finish : ℝ) := by exact_mod_cast hrest
-          rw [hcf] at hnext
-          have : t = (finish : ℝ) := le_antisymm hfinish hnext
-          rw [this] at ht
+          simp only [chainPayloadOK, decide_eq_true_eq] at hrest
+          have hc300 : (c.hi : ℝ) = 300 := by exact_mod_cast hrest
+          have h300le : (300 : ℝ) ≤ t := by simpa [hc300] using hnext
+          have ht300 : t = 300 := le_antisymm hfinish h300le
+          rw [ht300, hc300] at ht
           exact False.elim (ht le_rfl)
         · obtain ⟨d, hdmem, hdlo, hdhi, hdlower⟩ :=
             ih hrest hcs hnext hfinish
@@ -2327,8 +2313,8 @@ theorem finiteCells_cover_zero_three_hundred_v1
     ∃ c ∈ finiteCells,
       (c.lo : ℝ) ≤ t ∧ t ≤ (c.hi : ℝ) ∧
         (1 / 100000 : ℚ) < lowerValue c := by
-  exact exists_cell_of_chain_v1 finiteCells_chain_v1 finiteCells_ne_nil_v1
-    (by exact_mod_cast ht0) (by exact_mod_cast ht300)
+  exact exists_cell_of_chainPayloadOK_v1 finiteCells_payload_valid_v1
+    finiteCells_ne_nil_v1 (by simpa using ht0) ht300
 
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 8000000 in
