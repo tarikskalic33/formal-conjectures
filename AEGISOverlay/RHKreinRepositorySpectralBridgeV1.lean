@@ -76,7 +76,6 @@ theorem mathlibSymbol_eq_angular_v1 (xi : ℝ) :
     push_cast
     ring
   rw [hz]
-  ring
 
 /-- The existing paired critical mass after the whole-line substitution
 t = 2*pi*xi. -/
@@ -94,7 +93,7 @@ theorem criticalSpectralMass_two_pi_v1
   rw [hneg, hpos]
 
 /-- Whole-line change of variables from angular frequency to Mathlib
-frequency. Both +/- xi Fourier channels remain visible. -/
+frequency. Both positive and negative xi Fourier channels remain visible. -/
 theorem symbol_mass_angular_to_mathlib_v1
     (g : WeilCompactSmoothGV1) :
     (∫ t : ℝ, symbol t * criticalSpectralMass g t) =
