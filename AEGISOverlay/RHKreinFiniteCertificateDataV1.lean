@@ -2268,11 +2268,11 @@ set_option maxHeartbeats 32000000 in
 theorem finiteCells_count_v1 : finiteCells.length = 2199 := by
   decide
 
-set_option maxRecDepth 16384 in
-set_option maxHeartbeats 32000000 in
+set_option maxRecDepth 32768 in
+set_option maxHeartbeats 128000000 in
 theorem finiteCells_payload_valid_v1 :
     chainPayloadOK 0 finiteCells = true := by
-  decide
+  norm_num [chainPayloadOK, cellPayloadOK, lowerValue, finiteCells]
 
 /-- The exact payload has at least one cell. -/
 theorem finiteCells_ne_nil_v1 : finiteCells ≠ [] := by
