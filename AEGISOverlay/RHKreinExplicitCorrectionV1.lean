@@ -297,7 +297,9 @@ private theorem reflected_fourier {f : ℝ → ℂ} (hf : Integrable f) (ξ : �
     𝓕 (reflected f) ξ = 𝓕 f ξ + (starRingEnd ℂ) (𝓕 f ξ) := by
   have hi : Integrable (fun x : ℝ => (starRingEnd ℂ) (f (-x))) := by
     simpa using (Complex.conjLIE.toContinuousLinearMap).integrable_comp hf.comp_neg
-  rw [reflected, fourier_add f _ hf hi, AEGIS.RHKreinPairingV13.fourier_conj_neg]
+  change 𝓕 (fun x : ℝ => f x + (starRingEnd ℂ) (f (-x))) ξ =
+    𝓕 f ξ + (starRingEnd ℂ) (𝓕 f ξ)
+  rw [fourier_add f _ hf hi, AEGIS.RHKreinPairingV13.fourier_conj_neg]
 
 private theorem reflected_fourier_integrable {f : ℝ → ℂ}
     (hf : Integrable f) (hF : Integrable (𝓕 f)) : Integrable (𝓕 (reflected f)) := by
@@ -350,8 +352,7 @@ private theorem positiveHat_fourier_integrable (j : Fin 199) :
       exact hc.aestronglyMeasurable
     · exact Filter.Eventually.of_forall fun t => by simp [Complex.norm_exp]
   exact (he.const_mul (1 / 50 : ℂ)).congr (Filter.Eventually.of_forall fun t => by
-    rw [positiveHat_fourier]
-    ring)
+    simpa [mul_assoc] using (positiveHat_fourier j t).symm)
 
 private theorem positiveHat_zero (j : Fin 199) {x : ℝ} (hx : |x| < 4 / 5) :
     positiveHat j x = 0 := by
@@ -362,7 +363,9 @@ private theorem positiveHat_zero (j : Fin 199) {x : ℝ} (hx : |x| < 4 / 5) :
     dsimp [hatCenter] at hs
     norm_num at hs
     linarith [le_abs_self x]
-  simp [positiveHat, hz]
+  have hz' : splineCore (50⁻¹ : ℝ) 1 (x - hatCenter j) = 0 := by
+    simpa only [one_div] using hz
+  simp [positiveHat, one_div, hz']
 
 /-- The Hermitian pair of triangular hats centered at opposite locations. -/
 def hatColumn (j : Fin 199) : ℝ → ℂ := reflected (positiveHat j)
@@ -407,14 +410,15 @@ private theorem splineColumn_fourier_re (j : Fin 5) (t : ℝ) :
         (starRingEnd ℂ) (z * (r : ℂ) ^ 19))).re =
       r ^ 19 * (((-1 : ℂ) ^ (j.val / 2) / 2) *
         (z + (starRingEnd ℂ) z)).re := by
-    simp only [map_mul, map_pow, Complex.conj_ofReal]
     have hz : ((-1 : ℂ) ^ (j.val / 2) / 2) *
-        (z * (r : ℂ) ^ 19 + (starRingEnd ℂ) z * (r : ℂ) ^ 19) =
-        (r ^ 19 : ℝ) * (((-1 : ℂ) ^ (j.val / 2) / 2) * (z + (starRingEnd ℂ) z)) := by
+        (z * (r : ℂ) ^ 19 + (starRingEnd ℂ) (z * (r : ℂ) ^ 19)) =
+        ((r ^ 19 : ℝ) : ℂ) *
+          (((-1 : ℂ) ^ (j.val / 2) / 2) * (z + (starRingEnd ℂ) z)) := by
+      simp only [map_mul, map_pow, Complex.conj_ofReal]
       push_cast
       ring
     rw [hz]
-    simp
+    simp [Complex.mul_re]
   rw [he, certificate_reflected_derivative_parity]
   ring
 
@@ -454,7 +458,15 @@ theorem correction_zero_in_window (x : ℝ) (hx : |x| < 4 / 5) : correction x = 
   have hh (j : Fin 199) : hatColumn j x = 0 := by
     simp [hatColumn, reflected, positiveHat_zero j hx, positiveHat_zero j hn]
   have hs (j : Fin 5) : splineColumn j x = 0 := by
-    simp [splineColumn, reflected, edge_zero j hx, edge_zero j hn]
+    have hxp :
+        deriv^[j.val] (spline19 (4 / 5) (1000⁻¹ : ℝ)) x = 0 := by
+      simpa only [one_div] using (edge_zero j hx)
+    have hxn :
+        deriv^[j.val] (spline19 (4 / 5) (1000⁻¹ : ℝ)) (-x) = 0 := by
+      simpa only [one_div] using (edge_zero j hn)
+    unfold splineColumn reflected
+    rw [hxp, hxn]
+    simp
   simp [correction, hh, hs]
 
 private theorem correction_fourier (ξ : ℝ) :
