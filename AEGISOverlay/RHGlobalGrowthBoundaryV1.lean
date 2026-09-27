@@ -161,11 +161,20 @@ theorem symmetric_model_exceeds_every_eighth_rate (C : ℝ) :
   have hn := Real.exp_pos (-2 * u)
   have hmul : (2 * C) * Real.exp u < Real.exp u * Real.exp u :=
     mul_lt_mul_of_pos_right he hp
+  have hhalf : C * Real.exp u < (Real.exp u * Real.exp u) / 2 := by
+    nlinarith only [hmul]
+  have heq : Real.exp u * Real.exp u = Real.exp (u + u) := by
+    rw [← Real.exp_add]
+  rw [heq] at hhalf
+  have hmain :
+      C * Real.exp u <
+        (Real.exp (u + u) + Real.exp (-2 * u)) / 2 := by
+    nlinarith only [hhalf, hn]
   have h2 : (8 * u) / 4 = u + u := by ring
   have h8 : (8 * u) / 8 = u := by ring
   have hn2 : -(8 * u) / 4 = -2 * u := by ring
-  rw [symmetricModelKernel, h8, h2, hn2, Real.exp_add]
-  nlinarith
+  rw [symmetricModelKernel, h8, h2, hn2]
+  exact hmain
 
 end AEGIS.RHGlobalGrowthBoundaryV1
 
