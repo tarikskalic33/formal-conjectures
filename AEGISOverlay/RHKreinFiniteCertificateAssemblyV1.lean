@@ -148,9 +148,39 @@ theorem correctedExpression_even_v1 (t : ℝ) :
   rw [symbol_even_v1, correctionSymbol_even_v1]
   ring
 
+/-- Analytic meaning of one serialized cell.  The stored dyadic rational
+must be a genuine lower bound for the normalized excess throughout that
+cell.  This is exactly the assertion the finite checker must kernel-justify. -/
+def CellAnalyticSoundV1 (c : FiniteCellV1) : Prop :=
+  ∀ t : ℝ, (c.lo : ℝ) ≤ t → t ≤ (c.hi : ℝ) →
+    (lowerValue c : ℝ) ≤ normalizedExcess t
+
+/-- All 2199 serialized cells have their intended analytic meaning. -/
+def AllCellsAnalyticSoundV1 : Prop :=
+  ∀ c, c ∈ finiteCells → CellAnalyticSoundV1 c
+
 /-- The only remaining analytic theorem needed after the already-closed tail. -/
 def FiniteIntervalCertificateV1 : Prop :=
   ∀ t : ℝ, 0 ≤ t → t ≤ 300 → 0 ≤ correctedExpression t
+
+
+/-- Exact reduction of the positive finite interval to the 2199 cell
+soundness obligations.  Coverage and positivity of every stored dyadic lower
+endpoint come from the kernel-checked payload theorem, not from floating
+point output. -/
+theorem finiteIntervalCertificate_of_allCellsAnalyticSound_v1
+    (hcells : AllCellsAnalyticSoundV1) :
+    FiniteIntervalCertificateV1 := by
+  intro t ht0 ht300
+  obtain ⟨c, hc, hlo, hhi, hlower⟩ :=
+    finiteCells_cover_zero_three_hundred_v1 ht0 ht300
+  have hsound := hcells c hc t hlo hhi
+  have hlower0q : (0 : ℚ) < lowerValue c := by
+    exact (by norm_num : (0 : ℚ) < 1 / 100000).trans hlower
+  have hlower0 : (0 : ℝ) < (lowerValue c : ℝ) := by
+    exact_mod_cast hlower0q
+  apply correctedExpression_nonnegative_of_normalizedExcess_v1
+  exact hlower0.le.trans hsound
 
 /-- Once the positive finite interval is kernel-certified, evenness plus the
 existing tail theorem gives the full pointwise certificate consumed by the
@@ -173,6 +203,14 @@ theorem pointwiseCertificate_of_finite_interval_v1
     rw [← heven]
     exact hfiniteAbs
 
+/-- Therefore the entire pointwise order-19 Krein certificate reduces to
+one exact statement: analytic soundness of the 2199 serialized cells. -/
+theorem pointwiseCertificate_of_allCellsAnalyticSound_v1
+    (hcells : AllCellsAnalyticSoundV1) :
+    PointwiseCertificate :=
+  pointwiseCertificate_of_finite_interval_v1
+    (finiteIntervalCertificate_of_allCellsAnalyticSound_v1 hcells)
+
 end AEGIS.RHKreinFiniteCertificateAssemblyV1
 
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctedExpression_eq_weight_mul_normalizedExcess_v1
@@ -180,4 +218,6 @@ end AEGIS.RHKreinFiniteCertificateAssemblyV1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.symbol_even_v1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctionSymbol_even_v1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctedExpression_even_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.finiteIntervalCertificate_of_allCellsAnalyticSound_v1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.pointwiseCertificate_of_finite_interval_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.pointwiseCertificate_of_allCellsAnalyticSound_v1
