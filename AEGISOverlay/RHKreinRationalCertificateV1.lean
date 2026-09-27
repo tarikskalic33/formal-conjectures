@@ -41,9 +41,9 @@ open AEGIS.RHKreinPrimeSymbolV1
 open AEGIS.RHKreinSymbolIntegrationV1
 open AEGIS.RHKreinExplicitCorrectionV1
 
-/-- Exact rational endpoint calculation, with sixty-four proved series terms. -/
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
+/-- Exact rational endpoint calculation, with sixty-four proved series terms. -/
 theorem digamma_tail_endpoint :
     (4 : ℝ) ≤ -(5792 / 10000 : ℝ) +
       (∑ n ∈ Finset.range 64, quarterTerm 300 n) -
@@ -105,9 +105,9 @@ theorem correction_polynomial_tail_bound (x : ℝ) (hx : 300 ≤ x) :
       (12240875 / 4 : ℝ) * (x - 300) + 32454608017 / 256 := by positivity
   nlinarith only [hp]
 
-/-- Exact coefficient arithmetic, independent of interval-enclosure output. -/
 set_option maxRecDepth 8192 in
 set_option maxHeartbeats 4000000 in
+/-- Exact coefficient arithmetic, independent of interval-enclosure output. -/
 theorem hat_coefficient_budget :
     (∑ j : Fin 199, |(hatCoefficient j : ℝ)|) ≤ 18125000 := by
   have h : (∑ j : Fin 199, |hatCoefficient j|) ≤ (18125000 : ℚ) := by
@@ -150,6 +150,7 @@ theorem abs_correctionSymbol_le_polynomial (t : ℝ) :
     rw [abs_mul, abs_mul, abs_pow]
     norm_num
     have hb := mul_le_mul hp hh (abs_nonneg _) (by norm_num : (0 : ℝ) ≤ 1)
+    rw [sq_abs] at hb
     nlinarith only [hb]
   have hs : |∑ j : Fin 5, (splineCoefficient j : ℝ) * t ^ j.val *
       (if j.val % 2 = 0 then Real.cos (t * (1619 / 2000))
