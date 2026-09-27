@@ -56,6 +56,7 @@ def HasMomentsUpToEight (f : ℝ → ℂ) : Prop :=
 
 /-- Every continuous compactly supported function has the finite polynomial
 moments needed for the eighth-order Fourier Taylor argument. -/
+set_option maxHeartbeats 2000000 in
 theorem hasMomentsUpToEight_of_continuous_compact
     (f : ℝ → ℂ) (hc : Continuous f) (hs : HasCompactSupport f) :
     HasMomentsUpToEight f := by
