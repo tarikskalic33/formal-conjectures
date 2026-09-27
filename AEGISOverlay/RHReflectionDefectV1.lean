@@ -105,6 +105,7 @@ theorem zero_reflection_defect_eq_zero_iff_v1
   · intro h
     apply Complex.ext
     · rw [zero_reflection_defect_re_v1]
+      simp only [zero_re]
       linarith
     · rw [zero_reflection_defect_im_v1]
       simp
@@ -125,7 +126,9 @@ theorem zero_translation_factor_norm_eq_defect_exp_v1
   unfold WeilZeroTranslationFactorV11
   rw [Complex.norm_exp]
   congr 1
-  simp [ZeroReflectionDefectV1, Complex.mul_re, Complex.sub_re]
+  rw [zero_reflection_defect_re_v1]
+  simp only [Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
+    Complex.ofReal_im, mul_zero, sub_zero]
   ring
 
 /-- A single nonzero translation already detects whether the centered
