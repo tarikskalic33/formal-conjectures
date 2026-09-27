@@ -6,6 +6,8 @@ on:
       - 'AEGISOverlay/RHKreinFiniteIntervalKernelV1.lean'
       - 'AEGISOverlay/RHKreinFourierTaylorBoundV1.lean'
       - 'AEGISOverlay/RHKreinCorrectionTaylorBridgeV1.lean'
+      - 'AEGISOverlay/RHKreinFiniteCertificateDataV1.lean'
+      - 'AEGISOverlay/RHKreinFiniteCertificateAssemblyV1.lean'
       - '.github/workflows/rh-krein-finite-interval-kernel-v1.yml'
   workflow_dispatch:
 
@@ -59,6 +61,11 @@ jobs:
           ! grep -F 'error:' evidence-finite/fourier-taylor.log
           ! grep -F 'warning:' evidence-finite/fourier-taylor.log
           grep -F 'AEGIS.RHKreinFourierTaylorBoundV1.angular_eighth_derivative_norm_le' evidence-finite/fourier-taylor.log
+          lake env lean -o .lake/build/lib/lean/AEGISOverlay/RHKreinFiniteCertificateDataV1.olean             AEGISOverlay/RHKreinFiniteCertificateDataV1.lean 2>&1 | tee evidence-finite/certificate-data.log
+          ! grep -F 'sorryAx' evidence-finite/certificate-data.log
+          ! grep -F 'error:' evidence-finite/certificate-data.log
+          ! grep -F 'warning:' evidence-finite/certificate-data.log
+          grep -F 'AEGIS.RHKreinFiniteCertificateDataV1.finiteCells_payload_valid_v1' evidence-finite/certificate-data.log
 
       - name: Record exact-head receipt
         shell: bash
