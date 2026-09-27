@@ -504,6 +504,7 @@ theorem correction_integrable : Integrable correction := by
       (splineColumn_integrable j).const_mul ((splineCoefficient j : ℝ) : ℂ))
 
 /-- The explicit correction is genuinely compactly supported. -/
+set_option maxHeartbeats 2000000 in
 theorem correction_hasCompactSupport : HasCompactSupport correction := by
   have hh : HasCompactSupport (fun x : ℝ =>
       ∑ j : Fin 199, ((hatCoefficient j : ℝ) : ℂ) * hatColumn j x) := by
