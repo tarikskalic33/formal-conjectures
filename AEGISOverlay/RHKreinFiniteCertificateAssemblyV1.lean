@@ -211,6 +211,22 @@ theorem pointwiseCertificate_of_allCellsAnalyticSound_v1
   pointwiseCertificate_of_finite_interval_v1
     (finiteIntervalCertificate_of_allCellsAnalyticSound_v1 hcells)
 
+/-- Once the 2199 analytic cell obligations are discharged, the existing
+genuine correction theorem yields the actual repository zero-quadratic
+margin on every moment-zero packet of logarithmic half-width at most 2/5. -/
+theorem actual_zero_quadratic_margin_of_allCellsAnalyticSound_v1
+    (hcells : AllCellsAnalyticSoundV1)
+    (g : WeilCompactSmoothGV1) (r a : ℝ)
+    (hr0 : 0 ≤ r) (hr : r ≤ 2 / 5)
+    (hw : AEGIS.RHDyadicDiagonalV13.HalfWidthAt g r a)
+    (hm : WeilMomentConditionsV1 g) :
+    (1 / 16) * AEGIS.WeilDisjointEnergyV2.energy g.1 ≤
+      (∑' rho : RiemannNontrivialZeroIndexV2,
+        WeilZeroIndexSummandV1 (WeilAutocorrelationV1 g) rho).re := by
+  exact actual_zero_quadratic_margin
+    (pointwiseCertificate_of_allCellsAnalyticSound_v1 hcells)
+    g r a hr0 hr hw hm
+
 end AEGIS.RHKreinFiniteCertificateAssemblyV1
 
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctedExpression_eq_weight_mul_normalizedExcess_v1
@@ -221,3 +237,4 @@ end AEGIS.RHKreinFiniteCertificateAssemblyV1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.finiteIntervalCertificate_of_allCellsAnalyticSound_v1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.pointwiseCertificate_of_finite_interval_v1
 #print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.pointwiseCertificate_of_allCellsAnalyticSound_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.actual_zero_quadratic_margin_of_allCellsAnalyticSound_v1
