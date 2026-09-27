@@ -2264,15 +2264,15 @@ def chainPayloadOK : ℚ → List FiniteCellV1 → Bool
 
 
 set_option maxRecDepth 16384 in
-set_option maxHeartbeats 8000000 in
+set_option maxHeartbeats 32000000 in
 theorem finiteCells_count_v1 : finiteCells.length = 2199 := by
-  native_decide
+  decide
 
 set_option maxRecDepth 16384 in
-set_option maxHeartbeats 8000000 in
+set_option maxHeartbeats 32000000 in
 theorem finiteCells_payload_valid_v1 :
     chainPayloadOK 0 finiteCells = true := by
-  native_decide
+  decide
 
 /-- The exact payload has at least one cell. -/
 theorem finiteCells_ne_nil_v1 : finiteCells ≠ [] := by
@@ -2313,7 +2313,7 @@ theorem exists_cell_of_chainPayloadOK_v1
           rw [ht300, hc300] at ht
           exact False.elim (ht le_rfl)
         · obtain ⟨d, hdmem, hdlo, hdhi, hdlower⟩ :=
-            ih hrest hcs hnext hfinish
+            ih hrest hcs hnext
           exact ⟨d, by simp [hdmem], hdlo, hdhi, hdlower⟩
 
 /-- The exact 2199-cell payload covers every real frequency in [0,300], and
