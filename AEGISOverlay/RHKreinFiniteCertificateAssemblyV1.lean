@@ -1,0 +1,177 @@
+/-
+Copyright 2026 The Formal Conjectures Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+-/
+
+import AEGISOverlay.RHKreinFiniteCertificateDataV1
+import RHKreinRationalCertificateV1
+import Mathlib.Tactic
+
+/-!
+# Assembly boundary for the finite Krein certificate
+
+The infinite tail is already unconditional in
+`RHKreinRationalCertificateV1.corrected_symbol_tail_nonnegative`.
+This file isolates the only remaining analytic obligation to the positive
+finite interval `[0,300]`.
+
+It also proves the evenness needed to reflect that finite interval to
+`[-300,0]`; no numerical certificate is used for these symmetry facts.
+
+The serialized 2199-cell payload is imported, but its stored lower bounds
+are not promoted to analytic inequalities here.  That is the remaining
+kernel-checker obligation.
+
+AUTHORITY_EFFECT = NONE.
+RH is not asserted here.
+-/
+
+open Complex
+open scoped BigOperators
+
+set_option autoImplicit false
+noncomputable section
+
+namespace AEGIS.RHKreinFiniteCertificateAssemblyV1
+
+open AEGIS.RHKreinFiniteCertificateDataV1
+open AEGIS.RHKreinDigammaMonotonicityV1
+open AEGIS.RHKreinPrimeSymbolV1
+open AEGIS.RHKreinSymbolIntegrationV1
+open AEGIS.RHKreinExplicitCorrectionV1
+open AEGIS.RHKreinRationalCertificateV1
+
+/-- The exact pointwise expression consumed by `PointwiseCertificate`. -/
+def correctedExpression (t : ℝ) : ℝ :=
+  (t ^ 2 + 1 / 4) ^ 2 * (symbol t - 1 / 16) + correctionSymbol t
+
+/-- The normalized excess used by the numerical 2199-cell certificate. -/
+def normalizedExcess (t : ℝ) : ℝ :=
+  symbol t + correctionSymbol t / (t ^ 2 + 1 / 4) ^ 2 - 1 / 16
+
+/-- The polynomial weight is strictly positive at every real frequency. -/
+theorem weight_pos_v1 (t : ℝ) :
+    0 < (t ^ 2 + 1 / 4) ^ 2 := by
+  have hbase : 0 < t ^ 2 + 1 / 4 := by
+    nlinarith [sq_nonneg t]
+  positivity
+
+/-- The checker-normalized expression and the pointwise certificate are
+exactly related by the positive polynomial weight. -/
+theorem correctedExpression_eq_weight_mul_normalizedExcess_v1 (t : ℝ) :
+    correctedExpression t =
+      (t ^ 2 + 1 / 4) ^ 2 * normalizedExcess t := by
+  unfold correctedExpression normalizedExcess
+  have hw : (t ^ 2 + 1 / 4) ^ 2 ≠ 0 := (weight_pos_v1 t).ne'
+  field_simp [hw]
+  ring
+
+/-- A positive normalized lower bound is sufficient for the actual pointwise
+certificate at that frequency. -/
+theorem correctedExpression_nonnegative_of_normalizedExcess_v1
+    (t : ℝ) (h : 0 ≤ normalizedExcess t) :
+    0 ≤ correctedExpression t := by
+  rw [correctedExpression_eq_weight_mul_normalizedExcess_v1]
+  exact mul_nonneg (weight_pos_v1 t).le h
+
+/-- The real part of the quarter-line digamma is an even function of the
+angular frequency.  This follows from the already-proved dependence on t^2. -/
+theorem digamma_quarter_even_v1 (t : ℝ) :
+    (Complex.digamma ((1 / 4 : ℂ) + ((-t : ℝ) : ℂ) * I / 2)).re =
+      (Complex.digamma ((1 / 4 : ℂ) + (t : ℂ) * I / 2)).re := by
+  apply le_antisymm
+  · exact digamma_quarter_mono_of_sq_le (-t) t (by ring)
+  · exact digamma_quarter_mono_of_sq_le t (-t) (by ring)
+
+/-- The full first-post-log2 Weil symbol is even. -/
+theorem symbol_even_v1 (t : ℝ) :
+    symbol (-t) = symbol t := by
+  unfold symbol archSymbol
+  rw [digamma_quarter_even_v1]
+  have hc :
+      Real.cos ((-t) * Real.log 2) =
+        Real.cos (t * Real.log 2) := by
+    rw [show (-t) * Real.log 2 = -(t * Real.log 2) by ring, Real.cos_neg]
+  rw [hc]
+
+/-- Every hat contribution in the explicit correction is even. -/
+private theorem hat_sum_even_v1 (t : ℝ) :
+    (∑ j : Fin 199,
+      (hatCoefficient j : ℝ) * Real.cos ((-t) * hatCenter j)) =
+    ∑ j : Fin 199,
+      (hatCoefficient j : ℝ) * Real.cos (t * hatCenter j) := by
+  apply Finset.sum_congr rfl
+  intro j _hj
+  rw [show (-t) * hatCenter j = -(t * hatCenter j) by ring, Real.cos_neg]
+
+/-- The five derivative columns have the parity encoded by the certificate:
+odd powers are paired with sine and even powers with cosine, so the whole
+spline correction is even. -/
+private theorem spline_sum_even_v1 (t : ℝ) :
+    (∑ j : Fin 5, (splineCoefficient j : ℝ) * (-t) ^ j.val *
+      (if j.val % 2 = 0 then Real.cos ((-t) * (1619 / 2000))
+       else Real.sin ((-t) * (1619 / 2000)))) =
+    ∑ j : Fin 5, (splineCoefficient j : ℝ) * t ^ j.val *
+      (if j.val % 2 = 0 then Real.cos (t * (1619 / 2000))
+       else Real.sin (t * (1619 / 2000))) := by
+  apply Finset.sum_congr rfl
+  intro j _hj
+  fin_cases j <;>
+    norm_num <;>
+    simp only [Real.cos_neg, Real.sin_neg] <;>
+    ring
+
+/-- The exact genuine-function correction symbol is even. -/
+theorem correctionSymbol_even_v1 (t : ℝ) :
+    correctionSymbol (-t) = correctionSymbol t := by
+  unfold correctionSymbol
+  have h100 : (-t) / 100 = -(t / 100) := by ring
+  have h2000 : (-t) / 2000 = -(t / 2000) := by ring
+  rw [h100, Real.sinc_neg, h2000, Real.sinc_neg,
+    hat_sum_even_v1, spline_sum_even_v1]
+
+/-- Hence the complete corrected expression is orientation-free. -/
+theorem correctedExpression_even_v1 (t : ℝ) :
+    correctedExpression (-t) = correctedExpression t := by
+  unfold correctedExpression
+  rw [symbol_even_v1, correctionSymbol_even_v1]
+  ring
+
+/-- The only remaining analytic theorem needed after the already-closed tail. -/
+def FiniteIntervalCertificateV1 : Prop :=
+  ∀ t : ℝ, 0 ≤ t → t ≤ 300 → 0 ≤ correctedExpression t
+
+/-- Once the positive finite interval is kernel-certified, evenness plus the
+existing tail theorem gives the full pointwise certificate consumed by the
+actual Weil quadratic margin theorem. -/
+theorem pointwiseCertificate_of_finite_interval_v1
+    (hfinite : FiniteIntervalCertificateV1) :
+    PointwiseCertificate := by
+  intro t
+  change 0 ≤ correctedExpression t
+  by_cases htail : 300 ≤ |t|
+  · unfold correctedExpression
+    exact corrected_symbol_tail_nonnegative t htail
+  · have habs300 : |t| ≤ 300 := (lt_of_not_ge htail).le
+    have hfiniteAbs := hfinite |t| (abs_nonneg t) habs300
+    have heven : correctedExpression |t| = correctedExpression t := by
+      by_cases ht : 0 ≤ t
+      · rw [abs_of_nonneg ht]
+      · have htn : t ≤ 0 := le_of_not_ge ht
+        rw [abs_of_nonpos htn, correctedExpression_even_v1]
+    rw [← heven]
+    exact hfiniteAbs
+
+end AEGIS.RHKreinFiniteCertificateAssemblyV1
+
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctedExpression_eq_weight_mul_normalizedExcess_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.digamma_quarter_even_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.symbol_even_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctionSymbol_even_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.correctedExpression_even_v1
+#print axioms AEGIS.RHKreinFiniteCertificateAssemblyV1.pointwiseCertificate_of_finite_interval_v1
