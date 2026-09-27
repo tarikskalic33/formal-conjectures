@@ -129,6 +129,9 @@ theorem zero_translation_factor_norm_eq_defect_exp_v1
   rw [zero_reflection_defect_re_v1]
   simp only [Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
     Complex.ofReal_im, mul_zero, sub_zero]
+  have hhalf : ((1 / 2 : ℂ)).re = (1 / 2 : ℝ) := by
+    norm_num
+  rw [hhalf]
   ring
 
 /-- A single nonzero translation already detects whether the centered
