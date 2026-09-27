@@ -146,12 +146,9 @@ theorem sin_periodic_expIPartial_enclosure
         (expIPartial n q).im +
           |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
     simpa using hc.2
-  exact sin_cell_enclosure x (q + k * (2 * Real.pi)) r
-    ((expIPartial n q).im -
-      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
-    ((expIPartial n q).im +
-      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
-    hr hx hlo hhi
+  have hdist := Real.abs_sin_sub_sin_le x (q + k * (2 * Real.pi))
+  rw [abs_sub_le_iff] at hdist
+  constructor <;> linarith [hdist.1, hdist.2, hlo, hhi]
 
 /-- Full cosine analogue of `sin_periodic_expIPartial_enclosure`. -/
 theorem cos_periodic_expIPartial_enclosure
@@ -174,12 +171,9 @@ theorem cos_periodic_expIPartial_enclosure
         (expIPartial n q).re +
           |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) := by
     simpa using hc.2
-  exact cos_cell_enclosure x (q + k * (2 * Real.pi)) r
-    ((expIPartial n q).re -
-      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
-    ((expIPartial n q).re +
-      |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹))
-    hr hx hlo hhi
+  have hdist := Real.abs_cos_sub_cos_le x (q + k * (2 * Real.pi))
+  rw [abs_sub_le_iff] at hdist
+  constructor <;> linarith [hdist.1, hdist.2, hlo, hhi]
 
 /-- A certified sine value at a center transports across a cell with no
 additional transcendental reasoning. -/
