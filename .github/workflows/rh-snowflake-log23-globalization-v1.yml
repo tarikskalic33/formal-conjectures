@@ -338,7 +338,7 @@ jobs:
           python3 - "$ROOT" evidence-krein/modules.txt <<'PY'
           import pathlib,sys
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30","RHKreinFactorV13","WeilMomentAnnihilatorV1","WeilRHImpliesFinalSignV13","WeilTwoPointPositivityV1"]
+          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30","RHKreinFactorV13","WeilMomentAnnihilatorV1","WeilRHImpliesFinalSignV13","WeilTwoPointPositivityV1","RHEulerGammaV13"]
           mods={p.stem:p for p in root.glob("*.lean")}
           for target in targets:
               if target not in mods:
