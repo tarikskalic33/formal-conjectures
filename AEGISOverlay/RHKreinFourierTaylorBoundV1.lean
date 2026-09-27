@@ -91,10 +91,10 @@ theorem angular_eighth_derivative
         angularScale ^ 8 •
           𝓕 (fun x : ℝ => (-2 * Real.pi * Complex.I * (x : ℂ)) ^ 8 • f x)
             (angularScale * t) := by
-  have hc := iteratedDeriv_comp_const_smul (n := 8)
-    (fourier_contDiff_eight f h) angularScale
-  change iteratedDeriv 8 (fun t : ℝ => (𝓕 f) (angularScale * t)) = _
-  rw [hc, fourier_eighth_derivative f h]
+  unfold angularFourier
+  rw [iteratedDeriv_comp_const_smul (n := 8)
+    (fourier_contDiff_eight f h) angularScale]
+  rw [fourier_eighth_derivative f h]
 
 /-- The eighth angular derivative is bounded by the L1 norm of the eighth
 Fourier multiplier, with the exact angular scaling factor exposed. -/
