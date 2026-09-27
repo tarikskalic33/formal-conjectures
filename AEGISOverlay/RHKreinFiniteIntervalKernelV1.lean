@@ -15,6 +15,7 @@ limitations under the License.
 -/
 
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Tactic
@@ -142,6 +143,94 @@ theorem cos_scaled_cell_enclosure (a x c r lo hi : ℝ)
   exact cos_cell_enclosure (a * x) (a * c) (|a| * r) lo hi
     (mul_nonneg (abs_nonneg a) hr) (scaled_phase_radius a x c r hx) hlo hhi
 
+/-- Explicit real Taylor polynomial centered at `c`.  Unlike
+`taylorWithinEval`, this expression contains only ordinary iterated derivatives,
+so after the derivative formulas are proved its coefficients can be checked by
+exact arithmetic. -/
+def centeredTaylorEval (f : ℝ → ℝ) (n : ℕ) (c x : ℝ) : ℝ :=
+  ∑ k ∈ Finset.range (n + 1),
+    ((k ! : ℝ)⁻¹ * (x - c) ^ k) * iteratedDeriv k f c
+
+/-- On a unique-differentiability set, Mathlib's within-Taylor polynomial is
+the explicit ordinary-derivative polynomial above. -/
+theorem taylorWithinEval_eq_centeredTaylor
+    (f : ℝ → ℝ) (n : ℕ) (s : Set ℝ) (c x : ℝ)
+    (hs : UniqueDiffOn ℝ s) (hc : c ∈ s) (hf : ContDiffAt ℝ n f c) :
+    taylorWithinEval f n s c x = centeredTaylorEval f n c x := by
+  rw [taylor_within_apply]
+  unfold centeredTaylorEval
+  apply Finset.sum_congr rfl
+  intro k hk
+  have hkn : k ≤ n := Nat.le_of_lt_succ (Finset.mem_range.mp hk)
+  have hkdiff : ContDiffAt ℝ k f c := hf.of_le (by exact_mod_cast hkn)
+  rw [iteratedDerivWithin_eq_iteratedDeriv hs hkdiff hc]
+  simp only [smul_eq_mul]
+
+/-- The centered polynomial evaluates to the function at its center. -/
+theorem centeredTaylorEval_self (f : ℝ → ℝ) (n : ℕ) (c : ℝ)
+    (hf : ContDiffAt ℝ n f c) :
+    centeredTaylorEval f n c c = f c := by
+  rw [← taylorWithinEval_eq_centeredTaylor f n Set.univ c c
+    uniqueDiffOn_univ (Set.mem_univ c) hf]
+  exact taylorWithinEval_self f n Set.univ c
+
+/-- Degree-seven Lagrange remainder bound in a form tailored to the committed
+finite-interval certificate.  The only analytic input beyond smoothness is a
+uniform bound on the eighth ordinary derivative. -/
+theorem centeredTaylor7_remainder_of_ne
+    (f : ℝ → ℝ) (c x M : ℝ) (hcx : c ≠ x)
+    (hf : ContDiff ℝ 8 f)
+    (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M) :
+    |f x - centeredTaylorEval f 7 c x| ≤
+      M * |x - c| ^ 8 / (8 ! : ℕ) := by
+  obtain ⟨y, hy, hrem⟩ :=
+    taylor_mean_remainder_lagrange_iteratedDeriv
+      (f := f) (x := x) (x₀ := c) (n := 7) hcx hf.contDiffOn
+  have htaylor :
+      taylorWithinEval f 7 (Set.uIcc c x) c x =
+        centeredTaylorEval f 7 c x := by
+    apply taylorWithinEval_eq_centeredTaylor
+    · exact uniqueDiffOn_uIcc hcx
+    · exact Set.left_mem_uIcc
+    · exact hf.contDiffAt.of_le (by norm_num)
+  rw [← htaylor, hrem, abs_div, abs_mul, abs_pow]
+  have hMy := hM y
+  have hM0 : 0 ≤ M := (abs_nonneg (iteratedDeriv 8 f y)).trans hMy
+  have hpow : 0 ≤ |x - c| ^ 8 := pow_nonneg (abs_nonneg _) _
+  norm_num
+  exact div_le_div_of_nonneg_right
+    (mul_le_mul hMy le_rfl hpow hM0) (by norm_num)
+
+/-- Cell-radius version of the degree-seven remainder bound. -/
+theorem centeredTaylor7_cell_remainder_of_ne
+    (f : ℝ → ℝ) (c x r M : ℝ) (hcx : c ≠ x)
+    (hr : 0 ≤ r) (hx : |x - c| ≤ r)
+    (hf : ContDiff ℝ 8 f)
+    (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M) :
+    |f x - centeredTaylorEval f 7 c x| ≤
+      M * r ^ 8 / (8 ! : ℕ) := by
+  have hbase := centeredTaylor7_remainder_of_ne f c x M hcx hf hM
+  have hM0 : 0 ≤ M := (abs_nonneg (iteratedDeriv 8 f c)).trans (hM c)
+  have hp := pow_le_pow_left₀ (abs_nonneg (x - c)) hx 8
+  exact hbase.trans (by
+    apply div_le_div_of_nonneg_right
+    · exact mul_le_mul_of_nonneg_left hp hM0
+    · norm_num)
+
+/-- A lower bound for the explicit degree-seven polynomial promotes to a
+lower bound for the analytic function after subtracting the rigorous
+eighth-derivative remainder budget. -/
+theorem lower_of_centeredTaylor7
+    (f : ℝ → ℝ) (c x r M L : ℝ)
+    (hcx : c ≠ x) (hr : 0 ≤ r) (hx : |x - c| ≤ r)
+    (hf : ContDiff ℝ 8 f)
+    (hM : ∀ y : ℝ, |iteratedDeriv 8 f y| ≤ M)
+    (hpoly : L ≤ centeredTaylorEval f 7 c x) :
+    L - M * r ^ 8 / (8 ! : ℕ) ≤ f x := by
+  have hrem := centeredTaylor7_cell_remainder_of_ne f c x r M hcx hr hx hf hM
+  rw [abs_sub_le_iff] at hrem
+  linarith
+
 end AEGIS.RHKreinFiniteIntervalKernelV1
 
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.pi_enclosure
@@ -153,3 +242,7 @@ end AEGIS.RHKreinFiniteIntervalKernelV1
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_cell_enclosure
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.sin_scaled_cell_enclosure
 #print axioms AEGIS.RHKreinFiniteIntervalKernelV1.cos_scaled_cell_enclosure
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.taylorWithinEval_eq_centeredTaylor
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.centeredTaylor7_remainder_of_ne
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.centeredTaylor7_cell_remainder_of_ne
+#print axioms AEGIS.RHKreinFiniteIntervalKernelV1.lower_of_centeredTaylor7
