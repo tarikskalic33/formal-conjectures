@@ -128,7 +128,7 @@ polynomial at a small center `q`, allow an arbitrary integral number of full
 periods, and transport over a certified phase radius. -/
 theorem sin_periodic_expIPartial_enclosure
     (n : ℕ) (q x r : ℝ) (k : ℤ)
-    (hn : 0 < n) (hq : |q| ≤ 1) (hr : 0 ≤ r)
+    (hn : 0 < n) (hq : |q| ≤ 1) (_hr : 0 ≤ r)
     (hx : |x - (q + k * (2 * Real.pi))| ≤ r) :
     (expIPartial n q).im -
           |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) - r ≤ Real.sin x ∧
@@ -153,7 +153,7 @@ theorem sin_periodic_expIPartial_enclosure
 /-- Full cosine analogue of `sin_periodic_expIPartial_enclosure`. -/
 theorem cos_periodic_expIPartial_enclosure
     (n : ℕ) (q x r : ℝ) (k : ℤ)
-    (hn : 0 < n) (hq : |q| ≤ 1) (hr : 0 ≤ r)
+    (hn : 0 < n) (hq : |q| ≤ 1) (_hr : 0 ≤ r)
     (hx : |x - (q + k * (2 * Real.pi))| ≤ r) :
     (expIPartial n q).re -
           |q| ^ n * ((n.succ : ℝ) * (n.factorial * n : ℝ)⁻¹) - r ≤ Real.cos x ∧
