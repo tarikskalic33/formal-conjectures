@@ -40,6 +40,16 @@ jobs:
           test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
           lean --version
 
+      - name: Compile exact spline dependency chain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium .lake/build/lib/lean/AEGISOverlay evidence-m8
+          lake env lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RHSnowflakeLog23.olean             FormalConjectures/Millennium/RHSnowflakeLog23.lean 2>&1 | tee evidence-m8/RHSnowflakeLog23.log
+          for m in RHMultiGeneratorComplementarityV1 RHBoxFourierComplementarityV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1; do
+            lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean"               "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-m8/$m.log"
+          done
+
       - name: Compile moving-average derivative producer
         shell: bash
         run: |
