@@ -185,7 +185,7 @@ theorem riemannHypothesis_iff_all_reflection_defects_zero_v1 :
     have hr : rho.1.re = 1 / 2 :=
       hRH rho.1 rho.2.1 rho.2.2 hr1
     exact (zero_reflection_defect_eq_zero_iff_v1 rho).2 hr
-  · intro h s hz hnt h1
+  · intro h s hz hnt _h1
     let rho : RiemannNontrivialZeroIndexV2 := ⟨s, hz, hnt⟩
     exact (zero_reflection_defect_eq_zero_iff_v1 rho).1 (h rho)
 
