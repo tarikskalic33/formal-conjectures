@@ -417,8 +417,11 @@ private theorem splineColumn_fourier_re (j : Fin 5) (t : ℝ) :
       simp only [map_mul, map_pow, Complex.conj_ofReal]
       push_cast
       ring
-    rw [hz]
-    simp [Complex.mul_re]
+    calc
+      _ = (((r ^ 19 : ℝ) : ℂ) *
+          (((-1 : ℂ) ^ (j.val / 2) / 2) *
+            (z + (starRingEnd ℂ) z))).re := congrArg Complex.re hz
+      _ = _ := by simp [Complex.mul_re]
   rw [he, certificate_reflected_derivative_parity]
   ring
 
@@ -465,6 +468,7 @@ theorem correction_zero_in_window (x : ℝ) (hx : |x| < 4 / 5) : correction x = 
         deriv^[j.val] (spline19 (4 / 5) (1000⁻¹ : ℝ)) (-x) = 0 := by
       simpa only [one_div] using (edge_zero j hn)
     unfold splineColumn reflected
+    simp only [one_div]
     rw [hxp, hxn]
     simp
   simp [correction, hh, hs]
