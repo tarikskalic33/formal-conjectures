@@ -477,6 +477,7 @@ private theorem splineColumn_hasCompactSupport (j : Fin 5) :
   unfold splineColumn
   exact (reflected_hasCompactSupport (edge_hasCompactSupport j)).mul_left
 
+set_option maxHeartbeats 2000000 in
 private theorem finiteSum_hasCompactSupport {ι : Type*} [Fintype ι]
     (f : ι → ℝ → ℂ) (hf : ∀ i, HasCompactSupport (f i)) :
     HasCompactSupport (fun x : ℝ => ∑ i, f i x) := by
@@ -503,8 +504,8 @@ theorem correction_integrable : Integrable correction := by
     (integrable_finsetSum _ fun j _ =>
       (splineColumn_integrable j).const_mul ((splineCoefficient j : ℝ) : ℂ))
 
-/-- The explicit correction is genuinely compactly supported. -/
 set_option maxHeartbeats 2000000 in
+/-- The explicit correction is genuinely compactly supported. -/
 theorem correction_hasCompactSupport : HasCompactSupport correction := by
   have hh : HasCompactSupport (fun x : ℝ =>
       ∑ j : Fin 199, ((hatCoefficient j : ℝ) : ℂ) * hatColumn j x) := by
