@@ -2262,11 +2262,22 @@ def chainPayloadOK : ℚ → List FiniteCellV1 → Bool
   | x, [] => decide (x = 300)
   | x, c :: cs => cellPayloadOK x c && chainPayloadOK c.hi cs
 
+
+set_option maxRecDepth 16384 in
+set_option maxHeartbeats 8000000 in
+theorem finiteCells_count_v1 : finiteCells.length = 2199 := by
+  native_decide
+
+set_option maxRecDepth 16384 in
+set_option maxHeartbeats 8000000 in
+theorem finiteCells_payload_valid_v1 :
+    chainPayloadOK 0 finiteCells = true := by
+  native_decide
+
 /-- The exact payload has at least one cell. -/
 theorem finiteCells_ne_nil_v1 : finiteCells ≠ [] := by
   intro h
-  have hc : finiteCells.length = 2199 := by
-    native_decide
+  have hc := finiteCells_count_v1
   rw [h] at hc
   simp at hc
 
@@ -2315,17 +2326,6 @@ theorem finiteCells_cover_zero_three_hundred_v1
         (1 / 100000 : ℚ) < lowerValue c := by
   exact exists_cell_of_chainPayloadOK_v1 finiteCells_payload_valid_v1
     finiteCells_ne_nil_v1 (by simpa using ht0) ht300
-
-set_option maxRecDepth 8192 in
-set_option maxHeartbeats 8000000 in
-theorem finiteCells_count_v1 : finiteCells.length = 2199 := by
-  native_decide
-
-set_option maxRecDepth 8192 in
-set_option maxHeartbeats 8000000 in
-theorem finiteCells_payload_valid_v1 :
-    chainPayloadOK 0 finiteCells = true := by
-  native_decide
 
 end AEGIS.RHKreinFiniteCertificateDataV1
 
