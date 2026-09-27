@@ -421,7 +421,9 @@ private theorem splineColumn_fourier_re (j : Fin 5) (t : ℝ) :
       _ = (((r ^ 19 : ℝ) : ℂ) *
           (((-1 : ℂ) ^ (j.val / 2) / 2) *
             (z + (starRingEnd ℂ) z))).re := congrArg Complex.re hz
-      _ = _ := by simp [Complex.mul_re]
+      _ = _ := by
+        simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im,
+          zero_mul, sub_zero]
   rw [he, certificate_reflected_derivative_parity]
   ring
 
