@@ -126,6 +126,7 @@ private theorem complex_monomial_derivative (j k : ℕ) (t : ℝ) :
   change ((iteratedDeriv k (fun x : ℝ => x ^ j) t : ℝ) : ℂ) = _
   rw [iteratedDeriv_pow]
   push_cast
+  rfl
 
 /-- Exact Leibniz polynomial; descending factorials make k > j terms zero. -/
 def edgeBudget (j : ℕ) (T : ℝ) : ℝ :=
@@ -135,7 +136,9 @@ def edgeBudget (j : ℕ) (T : ℝ) : ℝ :=
 /-- The polynomial-times-transform bound before taking real parts or phases. -/
 theorem monomial_spline_eighth_le (j : ℕ) (T t : ℝ) (hT : 0 ≤ T) (ht : |t| ≤ T) :
     ‖iteratedDeriv 8 (fun t : ℝ => (t : ℂ) ^ j * splineFourier t) t‖ ≤ edgeBudget j T := by
-  rw [iteratedDeriv_fun_mul (by fun_prop) splineFourier_contDiff.contDiffAt]
+  have hp : ContDiff ℝ 8 (fun x : ℝ => (x : ℂ) ^ j) :=
+    Complex.ofRealCLM.contDiff.pow j
+  rw [iteratedDeriv_fun_mul hp.contDiffAt splineFourier_contDiff.contDiffAt]
   apply (norm_sum_le _ _).trans
   unfold edgeBudget
   apply Finset.sum_le_sum
@@ -143,8 +146,8 @@ theorem monomial_spline_eighth_le (j : ℕ) (T t : ℝ) (hT : 0 ≤ T) (ht : |t|
   have hnorm : ‖iteratedDeriv k (fun x : ℝ => (x : ℂ) ^ j) t‖ =
       (j.descFactorial k : ℝ) * |t| ^ (j - k) := by
     rw [complex_monomial_derivative]
-    simp only [norm_mul, norm_pow, norm_natCast, Complex.norm_real, Real.norm_eq_abs]
-  simp only [norm_mul, norm_natCast, hnorm]
+    simp only [norm_mul, norm_pow, Complex.norm_natCast, Complex.norm_real, Real.norm_eq_abs]
+  simp only [norm_mul, Complex.norm_natCast, hnorm]
   have hF := splineFourier_derivative_le (8 - k) (by omega) t
   have hpow : |t| ^ (j - k) ≤ T ^ (j - k) := pow_le_pow_left₀ (abs_nonneg t) ht _
   have hR : 0 ≤ radius ^ (8 - k) := by unfold radius; positivity
@@ -157,8 +160,8 @@ private theorem edge_angular (j : Fin 5) :
     angularFourier (edgePacket j) = fun t : ℝ =>
       (-Complex.I) ^ j.val * ((t : ℂ) ^ j.val * splineFourier t) := by
   funext t
-  unfold angularFourier edgePacket splineFourier baseSpline
-  rw [angularScale_mul, spline19_derivative_fourier _ (by norm_num) _ (by omega),
+  simp only [edgePacket, splineFourier, baseSpline, angularFourier, angularScale_mul]
+  rw [spline19_derivative_fourier _ (by norm_num) _ (by omega),
     spline19_fourier _ (by norm_num)]
   rw [mul_pow]
   ring
@@ -166,7 +169,8 @@ private theorem edge_angular (j : Fin 5) :
 private theorem edge_angular_contDiff (j : Fin 5) :
     ContDiff ℝ 8 (angularFourier (edgePacket j)) := by
   rw [edge_angular]
-  have hp : ContDiff ℝ 8 (fun t : ℝ => (t : ℂ) ^ j.val) := by fun_prop
+  have hp : ContDiff ℝ 8 (fun t : ℝ => (t : ℂ) ^ j.val) :=
+    Complex.ofRealCLM.contDiff.pow j.val
   exact contDiff_const.mul (hp.mul splineFourier_contDiff)
 
 /-- Exact unit-modulus phases are harmless; no extra factor two is introduced. -/
@@ -231,9 +235,9 @@ theorem correctionSymbol_eighth_le_finiteWindow (T t : ℝ) (hT : 0 ≤ T) (ht :
     intro j _
     simp only [abs_mul, abs_pow, abs_neg, abs_one, one_pow, mul_one]
 
-/-- Exact finite-window rational, with the hat sum eliminated via the proved global identity. -/
 set_option maxRecDepth 16384 in
 set_option maxHeartbeats 16000000 in
+/-- Exact finite-window rational, with the hat sum eliminated via the proved global identity. -/
 theorem finiteM8_three_hundred_eq :
     finiteM8 300 =
       (138411104278141883145249511099127907904956837 /
@@ -245,7 +249,7 @@ theorem finiteM8_three_hundred_eq :
     ring
   rw [he, m8Real_eq_certificateM8Q, certificateM8_eq_serialized_v1]
   norm_num [serializedM8Q, splineCoefficient, edgeBudget, radius,
-    Fin.sum_univ_succ, Finset.sum_range_succ, Nat.descFactorial]
+    Fin.sum_univ_succ, Finset.sum_range_succ, Nat.descFactorial, Nat.choose]
 
 /-- The 300-window majorant is rigorously over 115 times smaller than the global one. -/
 theorem finiteM8_improvement_factor :
