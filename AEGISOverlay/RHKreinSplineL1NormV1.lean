@@ -69,7 +69,8 @@ theorem integral_norm_boxDifference_le (f : ℝ → ℂ) (hf : Integrable f)
       exact mul_le_mul_of_nonneg_left (norm_sub_le _ _) (inv_nonneg.mpr hh.le)
     _ = (2 / h) * ∫ x : ℝ, ‖f x‖ := by
       rw [integral_const_mul, integral_add hp hm,
-        integral_add_right_eq_self, integral_sub_right_eq_self]
+        integral_add_right_eq_self (fun x : ℝ => ‖f x‖) (h / 2),
+        integral_sub_right_eq_self (fun x : ℝ => ‖f x‖) (h / 2)]
       ring
 
 /-- The derivative is an integrable genuine function. -/
@@ -123,7 +124,8 @@ theorem integral_norm_normalizedBox {h : ℝ} (hh : 0 < h) :
     ← intervalIntegral.integral_of_le (by linarith : -(h / 2) ≤ h / 2),
     intervalIntegral.integral_const]
   simp only [smul_eq_mul]
-  convert mul_inv_cancel₀ hh.ne' using 1 <;> ring
+  convert mul_inv_cancel₀ hh.ne' using 1
+  ring
 
 /-- All normalized-box convolution powers have L1 norm at most one. -/
 theorem integral_norm_splineCore_le_one {h : ℝ} (hh : 0 < h) (n : ℕ) :
@@ -143,13 +145,14 @@ theorem integral_norm_splineCore_le_one {h : ℝ} (hh : 0 < h) (n : ℕ) :
 theorem iteratedDeriv_boxDifference (j : ℕ) (f : ℝ → ℂ)
     (hc : ContDiff ℝ j f) (h : ℝ) :
     iteratedDeriv j (boxDifference h f) = boxDifference h (iteratedDeriv j f) := by
+  have hp : ContDiff ℝ j (fun y : ℝ => f (y + h / 2)) :=
+    hc.comp (contDiff_id.add contDiff_const)
+  have hm : ContDiff ℝ j (fun y : ℝ => f (y - h / 2)) :=
+    hc.comp (contDiff_id.sub contDiff_const)
   funext x
   unfold boxDifference
-  rw [iteratedDeriv_const_mul_field,
-    iteratedDeriv_fun_sub
-      ((hc.comp (contDiff_id.add contDiff_const)).contDiffAt)
-      ((hc.comp (contDiff_id.sub contDiff_const)).contDiffAt),
-    iteratedDeriv_comp_add_const, iteratedDeriv_comp_sub_const]
+  rw [iteratedDeriv_const_mul_field, iteratedDeriv_fun_sub hp.contDiffAt hm.contDiffAt,
+    iteratedDeriv_comp_add_const j f (h / 2), iteratedDeriv_comp_sub_const j f (h / 2)]
 
 /-- Each derivative consumes one box; two undifferentiated boxes remain.
 The integrability component prevents vacuous use of totalized Bochner integrals. -/
@@ -190,7 +193,8 @@ theorem spline19_iteratedDeriv_L1 (L : ℝ) {h : ℝ} (hh : 0 < h)
   unfold spline19
   rw [iteratedDeriv_comp_sub_const]
   refine ⟨hc.1.comp_sub_right _, ?_⟩
-  rw [integral_sub_right_eq_self]
+  rw [integral_sub_right_eq_self
+    (fun x : ℝ => ‖iteratedDeriv j (splineCore h 18) x‖) (L + 19 * h / 2)]
   exact hc.2
 
 /-- The same budget in the derivative-iterate convention of the certificate. -/
@@ -253,7 +257,8 @@ theorem certificate_spline_columns_weighted_eighth_L1 (j : Fin 5) :
         (2000 : ℝ) ^ j.val * (819 / 1000 : ℝ) ^ 8 := by
   have hj : j.val ≤ 17 := by omega
   convert spline19_derivative_weighted_eighth_L1 (4 / 5) (by norm_num)
-    (h := 1 / 1000) (by norm_num) j.val hj using 1 <;> norm_num
+    (h := 1 / 1000) (by norm_num) j.val hj using 1
+  norm_num
 
 end AEGIS.RHKreinSplineL1NormV1
 
