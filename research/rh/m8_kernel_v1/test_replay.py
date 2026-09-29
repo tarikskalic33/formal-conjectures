@@ -40,7 +40,8 @@ class ReplayTests(unittest.TestCase):
     def test_pinned_patch(self):
         self.check_module()
         p=Path('/mnt/data/rh_m8_kernel_cycle/baseline_packet/sources/RHKreinExplicitCorrectionV1.lean')
-        if not p.exists(): self.skipTest('local byte fixture is outside hosted repository')
+        if not p.exists(): p=Path('.baseline/AEGISOverlay/RHKreinExplicitCorrectionV1.lean')
+        self.assertTrue(p.exists(), 'exact baseline fixture is required')
         patched=self.m.patched_correction(p.read_bytes())
         self.assertEqual(self.m.blob(patched), self.m.PATCHED_BLOB)
         with self.assertRaises(ValueError): self.m.patched_correction(p.read_bytes()+b'\n')

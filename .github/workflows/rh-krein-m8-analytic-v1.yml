@@ -35,6 +35,8 @@ jobs:
           set -euo pipefail
           mkdir -p evidence-m8-kernel
           python3 research/rh/m8_kernel_v1/test_replay.py -v 2>&1 | tee evidence-m8-kernel/harness-tests.log
+          python3 research/rh/m8_kernel_v1/test_binding.py -v 2>&1 | tee evidence-m8-kernel/binding-tests.log
+          python3 research/rh/m8_kernel_v1/test_private_axioms.py -v 2>&1 | tee evidence-m8-kernel/private-axiom-tests.log
       - name: Install pinned Lean and Mathlib
         run: |
           set -euo pipefail
@@ -73,7 +75,7 @@ jobs:
       - name: Fresh local closure and compact-support red-green replay
         run: python3 research/rh/m8_kernel_v1/replay.py upstream
       - name: New M8 producer and strict endpoint axiom audit
-        run: python3 research/rh/m8_kernel_v1/replay.py candidate
+        run: python3 research/rh/m8_kernel_v1/bind_pr52.py
       - name: Upload complete source and proof evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

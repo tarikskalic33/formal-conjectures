@@ -51,15 +51,22 @@ def imports(text: str) -> list[str]:
                 result.append(name)
     return result
 
-def audit(source: str, log: str) -> int:
+def audit(source: str, log: str, module_name: str | None = None) -> int:
     names=re.findall(r'^#print axioms (\S+)[ \t]*$',source,re.M)
     if len(names)!=len(set(names)): raise ValueError('duplicate source axiom probe')
     if re.search(r'sorryAx|\berror(?:\([^)]*\))?:',log): raise ValueError('compiler error or placeholder')
     flat=re.sub(r'\s+',' ',log)
     allowed={'propext','Classical.choice','Quot.sound'}
     for name in names:
-        matches=re.findall("'"+re.escape(name)+r"' depends on axioms: \[([^\]]*)\]",flat)
-        zero=flat.count("'"+name+"' does not depend on any axioms")
+        patterns=[re.escape(name)]
+        leaf=name.rsplit('.',1)[-1]
+        private=re.search(r'\bprivate\s+(?:noncomputable\s+)?(?:theorem|lemma|def|opaque)\s+'
+                          +re.escape(leaf)+r'\b',source)
+        if module_name is not None and private:
+            patterns.append(re.escape('_private.'+module_name)+r'\.[0-9]+\.'+re.escape(name))
+        spelling='(?:'+'|'.join(patterns)+')'
+        matches=re.findall("'"+spelling+r"' depends on axioms: \[([^\]]*)\]",flat)
+        zero=len(re.findall("'"+spelling+"' does not depend on any axioms",flat))
         if len(matches)+zero!=1: raise ValueError('missing/duplicate probe '+name)
         if matches and not {x.strip() for x in matches[0].split(',') if x.strip()}<=allowed:
             raise ValueError('nonstandard axiom '+name)
@@ -144,7 +151,7 @@ class Builder:
         rel.write_bytes(data)
         log=E/(stem+'.log')
         command(['lake','env','lean','-o',str(out),str(rel)],log)
-        count=audit(data.decode(),log.read_text())
+        count=audit(data.decode(),log.read_text(),module_name=name)
         if not out.exists() or out.stat().st_size==0: raise ValueError('missing olean '+name)
         dep_log=E/(stem+'-deps.log')
         command(['lake','env','lean','--deps',str(rel)],dep_log)
