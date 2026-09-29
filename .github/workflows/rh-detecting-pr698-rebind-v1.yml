@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: detecting-replay-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   VERIFIER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -122,7 +122,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 .verifier/scripts/rh_detecting_rebind_v1.py 2>&1 | tee evidence-detecting/replay-driver.log
+          timeout 1200s python3 -u .verifier/scripts/rh_detecting_rebind_v1.py 2>&1 | tee evidence-detecting/replay-driver.log
       - name: Upload evidence including fail-closed disposition
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

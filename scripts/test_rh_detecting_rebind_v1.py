@@ -1,5 +1,8 @@
 """Regression tests for the fail-closed replay harness, not mathematical proofs."""
 import hashlib
+import subprocess
+import sys
+from pathlib import Path
 import unittest
 try:
     import rh_detecting_rebind_v1 as m
@@ -36,6 +39,12 @@ class ReplayTests(unittest.TestCase):
     def test_reject_unclosed_header_comment(self):
         with self.assertRaises(ValueError):
             m.imports('/- unterminated')
+
+    def test_long_body_declaration_does_not_backtrack(self):
+        code = ("import sys; sys.path.insert(0, " + repr(str(Path(m.__file__).parent)) + "); "
+                "import rh_detecting_rebind_v1 as m; "
+                "assert m.imports('import Foo\\ndef LongLongLongLongLongLongLongLongName : Nat := 0\\n') == ['Init', 'Foo']")
+        subprocess.run([sys.executable, '-c', code], check=True, timeout=3)
 
     def test_git_blob(self):
         self.assertEqual(m.blob(b'hello\n'), hashlib.sha1(b'blob 6\0hello\n').hexdigest())

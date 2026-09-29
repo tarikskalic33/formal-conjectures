@@ -35,7 +35,7 @@ ALLOWED_AXIOMS = {'propext', 'Classical.choice', 'Quot.sound'}
 FORBIDDEN = {'RHKreinDigammaLowerBoundV1', 'RHKreinDigammaMonotonicityV1',
              'RHKreinExplicitCorrectionV1', 'RHKreinRationalCertificateV1',
              'RHGlobalGrowthBoundaryV1', 'RHPhiParetoControlV1'}
-MOD = r"[A-Za-z_][A-Za-z0-9_'.]*(?:\.[A-Za-z_][A-Za-z0-9_']*)*"
+MOD = r"[A-Za-z_][A-Za-z0-9_']*(?:\.[A-Za-z_][A-Za-z0-9_']*)*"
 
 
 def need(condition: bool, message: str) -> None:
@@ -104,7 +104,7 @@ def imports(text: str) -> list[str]:
             need(not re.match(r'(?:(?:public|meta)\s+)*import\b', line),
                  'Malformed import header: ' + line)
             # A bare module continuation is legal Lean header syntax.
-            if result and re.fullmatch(r'(?:' + MOD + r'\s*)+', line) and line[0].isupper():
+            if result and line[0].isupper() and all(re.fullmatch(MOD, p) for p in line.split()):
                 result.extend(line.split())
                 continue
             break
@@ -279,6 +279,8 @@ def main() -> None:
             record['absent_from_aegis_sha'] = AEGIS_SHA
             record['reason'] = 'Required construction module omitted from PR698 proof payload'
         nodes[name], paths[name] = record, path
+        if len(nodes) % 500 == 0:
+            print('MANIFEST_SOURCE_PROGRESS', len(nodes), name, flush=True)
         return record['imports']
 
     order = closure(list(ROOT_BLOBS), resolve)
