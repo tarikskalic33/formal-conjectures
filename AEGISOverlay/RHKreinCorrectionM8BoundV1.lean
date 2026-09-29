@@ -88,7 +88,7 @@ theorem realAngular_eighth_le_moment (f : ℝ → ℂ) (hf : HasMomentsUpToEight
   have he : iteratedDeriv 8 (realAngular f) t =
       (iteratedDeriv 8 (angularFourier f) t).re := by
     change iteratedFDeriv ℝ 8 (Complex.reCLM ∘ angularFourier f) t (fun _ => 1) = _
-    rw [Complex.reCLM.iteratedFDeriv_comp_left hc.contDiffAt (by norm_num : (8 : ℕ) ≤ 8)]
+    rw [Complex.reCLM.iteratedFDeriv_comp_left hc.contDiffAt (by norm_num)]
     rfl
   rw [he]
   exact (Complex.abs_re_le_norm _).trans (angular_eighth_norm_le_moment f hf t)
@@ -139,7 +139,7 @@ theorem hatPacket_weighted_eighth_L1 (j : Fin 199) :
     · simp [hz]
     · have hz' : splineCore (1 / 50) 1 (x - hatCenter j) ≠ 0 := by
         intro h
-        exact hz (by simp [hatPacket, h])
+        exact hz (by rw [hatPacket, h, mul_zero])
       have hx := splineCore_support (1 / 50) 1 (x - hatCenter j) hz'
       norm_num at hx
       have hj : (0 : ℝ) ≤ j.val := Nat.cast_nonneg _
@@ -210,7 +210,10 @@ private theorem realAngular_edge (j : Fin 5) (t : ℝ) :
   rw [angularScale_mul, spline19_derivative_fourier _ (by norm_num) _ (by omega)]
   rw [show (4 / 5 : ℝ) + 19 * (1 / 1000) / 2 = 1619 / 2000 by norm_num,
     show (1 / 1000 : ℝ) * t / 2 = t / 2000 by ring]
-  simp only [← Complex.ofReal_pow, Complex.mul_ofReal_re]
+  have hr (z : ℂ) (r : ℝ) : (z * (r : ℂ) ^ 19).re = z.re * r ^ 19 := by
+    rw [← Complex.ofReal_pow]
+    simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero, sub_zero]
+  rw [hr]
   calc
     _ = Real.sinc (t / 2000) ^ 19 *
         ((-1 : ℝ) ^ (j.val / 2) *
@@ -232,7 +235,7 @@ theorem correctionSymbol_eq_columns : correctionSymbol = fun t : ℝ =>
 private theorem columns_contDiff {ι : Type*} [Fintype ι]
     (f : ι → ℝ → ℝ) (a : ι → ℝ) (hc : ∀ i, ContDiff ℝ 8 (f i)) :
     ContDiff ℝ 8 (fun t => ∑ i, a i * f i t) :=
-  contDiff_sum (fun i _ => contDiff_const.mul (hc i))
+  ContDiff.sum (fun i _ => contDiff_const.mul (hc i))
 
 private theorem column_sum_eighth_bound {ι : Type*} [Fintype ι]
     (f : ι → ℝ → ℝ) (a B : ι → ℝ) (hc : ∀ i, ContDiff ℝ 8 (f i))
@@ -289,15 +292,12 @@ theorem correctionSymbol_eighth_derivative_le (t : ℝ) :
 theorem m8Real_eq_certificateM8Q : m8Real = (certificateM8Q : ℝ) := by
   unfold m8Real certificateM8Q hatCenter hatCenterQ
   push_cast
-  congr 1
+  apply congrArg₂ (fun x y : ℝ => x + y)
+  · rfl
   · apply Finset.sum_congr rfl
     intro j _
-    ring
-  · apply Finset.sum_congr rfl
-    intro j _
-    rw [← div_pow]
+    rw [mul_div_assoc, ← div_pow]
     norm_num
-    ring
 
 /-- The serialized rational M8 is an unconditional bound at every real frequency.
 No finite-cell lower endpoint is used as a premise. -/
