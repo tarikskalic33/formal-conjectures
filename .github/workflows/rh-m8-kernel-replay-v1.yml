@@ -1,0 +1,92 @@
+name: RH M8 kernel replay v1
+on:
+  pull_request:
+    paths:
+      - 'scripts/replay_rh_m8_kernel_v1.py'
+      - 'scripts/test_rh_m8_kernel_replay_v1.py'
+      - 'AEGISOverlay/RHKreinM8AnalyticV1.lean'
+      - '.github/workflows/rh-m8-kernel-replay-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rh-m8-kernel-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  AEGIS_SHA: 2c3d041b633147ec97c7ef753aa9d157a47bb9f5
+  LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
+jobs:
+  m8-kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact verifier and theorem candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Run fail-closed harness tests
+        run: python3 -m unittest discover -s scripts -p 'test_rh_m8_kernel_replay_v1.py' -v
+      - name: Checkout pinned baseline AEGIS
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          persist-credentials: false
+      - name: Checkout pinned Li-criterion provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore exact provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Reuse byte-pinned build setup only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+          python3 - <<'PY'
+          import hashlib, os, pathlib, subprocess, yaml
+          p=pathlib.Path('.github/workflows/rh-snowflake-log23-globalization-v1.yml')
+          b=p.read_bytes()
+          actual=hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+          if actual!='c29025bd1fcc7f6c851e04b079fadae16b70d1ec':
+              raise SystemExit('build setup source changed')
+          steps=yaml.safe_load(b)['jobs']['krein-critical-line']['steps']
+          names=['Install pinned Lean and Mathlib cache','Build exact LiCriterion provider for Krein closure']
+          env=dict(os.environ)
+          env['PATH']=str(pathlib.Path.home()/'.elan/bin')+':'+env['PATH']
+          evidence=pathlib.Path('evidence-m8-kernel'); evidence.mkdir(exist_ok=True)
+          for i,name in enumerate(names):
+              found=[s for s in steps if s.get('name')==name]
+              if len(found)!=1: raise SystemExit('ambiguous setup step '+name)
+              script=found[0]['run']
+              (evidence/f'setup-{i}.sh').write_text(script)
+              with (evidence/f'setup-{i}.log').open('w') as log:
+                  rc=subprocess.run(['bash','-e','-o','pipefail','-c',script],env=env,stdout=log,stderr=subprocess.STDOUT).returncode
+              if rc: raise SystemExit(f'setup failed: {name}, exit={rc}')
+          PY
+      - name: Compile selected full local closure and audit every printed endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          python3 scripts/replay_rh_m8_kernel_v1.py 2>&1 | tee evidence-m8-kernel/replay.log
+      - name: Upload exact source, oleans, dependency and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-m8-kernel-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-m8-kernel/
+          retention-days: 30
+          if-no-files-found: error
