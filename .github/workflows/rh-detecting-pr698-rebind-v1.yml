@@ -1,0 +1,133 @@
+name: RH detecting packet exact-source replay
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/rh_detecting_rebind_v1.py'
+      - 'scripts/test_rh_detecting_rebind_v1.py'
+      - '.github/workflows/rh-detecting-pr698-rebind-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: detecting-replay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERIFIER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  AEGIS_SHA: b6ec25c76f0c92b1fd52371b46311e3762866ec7
+  BASELINE_SHA: 2c3d041b633147ec97c7ef753aa9d157a47bb9f5
+  OVERLAY_SHA: e0ebc9920a3688aaff9bbd24c9167f92734dcf96
+  PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  OLD_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+
+jobs:
+  detecting-chain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact verifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.VERIFIER_SHA }}
+          path: .verifier
+          persist-credentials: false
+      - name: Run fail-closed harness tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-detecting
+          python3 -m unittest discover -s .verifier/scripts -p 'test_rh_detecting_rebind_v1.py' -v 2>&1 | tee evidence-detecting/harness-tests.log
+      - name: Checkout exact AEGIS proof payload
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SHA }}
+          path: .aegis
+          persist-credentials: false
+      - name: Checkout old source for complete correspondence and explicit supplement
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.BASELINE_SHA }}
+          path: .aegis-baseline
+          persist-credentials: false
+      - name: Checkout unchanged detecting-packet producers
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: tarikskalic33/formal-conjectures
+          ref: ${{ env.OVERLAY_SHA }}
+          path: .overlay
+          persist-credentials: false
+      - name: Checkout pinned external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.PROVIDER_SHA }}
+          path: .provider
+          persist-credentials: false
+      - name: Apply exact previously audited provider compatibility overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .provider rev-parse HEAD)" = "$PROVIDER_SHA"
+          test "$(git -C .provider hash-object Hadamard/General/Factorization.lean)" = 10d38a54580ff72d698a30be64fe1c3c44f862a2
+          printf '%s\n' "$LEAN_TOOLCHAIN" > .provider/lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path('.provider/lakefile.lean')
+          s = p.read_text()
+          assert s.count(os.environ['OLD_MATHLIB_SHA']) == 1
+          p.write_text(s.replace(os.environ['OLD_MATHLIB_SHA'], os.environ['MATHLIB_SHA']))
+          p = Path('.provider/Hadamard/General/Factorization.lean')
+          s = p.read_text()
+          pairs = [
+            ('eventually_nhdsWithin_of_forall fun w hw => ite_eq_right hw',
+             'eventually_nhdsWithin_of_forall fun w hw => if_neg hw'),
+            ('have hgz : g z = Q z := ite_eq_left rfl', 'have hgz : g z = Q z := by simp [g]'),
+            ('rw [ite_eq_right heq, hQ_eq_div z (hz heq)]', 'rw [if_neg heq, hQ_eq_div z (hz heq)]'),
+          ]
+          for before, after in pairs:
+              assert s.count(before) == 1
+              s = s.replace(before, after)
+          p.write_text(s)
+          PY
+          rm -f .provider/lake-manifest.json
+          git -C .provider diff --check
+      - name: Install pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          cd .provider
+          lake update mathlib
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
+          lake exe cache get
+          lean --version
+      - name: Build pinned external providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .provider
+          lake build Hadamard.OrderOne.LogDeriv Hadamard.OrderOne.LogDerivMultiplicity Hadamard.OrderOne.TailEstimates Lc.LiCriterion.Basic Lc.LiCriterion.HadamardBridge Lc.LiCriterion.HadamardSummabilityBridge Lc.LiCriterion.XiGrowth 2>&1 | tee ../evidence-detecting/provider-build.log
+      - name: Manifest full closure, compile unchanged producers and audit all 23 endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 1200s python3 -u .verifier/scripts/rh_detecting_rebind_v1.py 2>&1 | tee evidence-detecting/replay-driver.log
+      - name: Upload evidence including fail-closed disposition
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-detecting-pr698-${{ env.VERIFIER_SHA }}-${{ github.run_id }}
+          path: evidence-detecting/
+          if-no-files-found: error
+          retention-days: 30
