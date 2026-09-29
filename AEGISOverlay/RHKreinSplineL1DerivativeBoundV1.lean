@@ -64,13 +64,13 @@ theorem deriv_convolution_normalizedBox
   have hp :
       HasDerivAt (fun y : ℝ => ∫ u in (0 : ℝ)..(y + h / 2), f u)
         (f (x + h / 2)) x := by
-    simpa only [Function.comp_def, one_mul] using
-      hp0.comp x ((hasDerivAt_id' x).add_const (h / 2))
+    simpa only [Function.comp_def, one_smul] using
+      hp0.scomp x ((hasDerivAt_id' x).add_const (h / 2))
   have hm :
       HasDerivAt (fun y : ℝ => ∫ u in (0 : ℝ)..(y - h / 2), f u)
         (f (x - h / 2)) x := by
-    simpa only [Function.comp_def, one_mul] using
-      hm0.comp x ((hasDerivAt_id' x).sub_const (h / 2))
+    simpa only [Function.comp_def, one_smul] using
+      hm0.scomp x ((hasDerivAt_id' x).sub_const (h / 2))
   rw [hfun]
   exact ((hp.sub hm).const_mul ((h : ℂ)⁻¹)).deriv
 
