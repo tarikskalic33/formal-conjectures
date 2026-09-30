@@ -37,6 +37,7 @@ jobs:
           python3 research/rh/m8_kernel_v1/test_replay.py -v 2>&1 | tee evidence-m8-kernel/harness-tests.log
           python3 research/rh/m8_kernel_v1/test_binding.py -v 2>&1 | tee evidence-m8-kernel/binding-tests.log
           python3 research/rh/m8_kernel_v1/test_private_axioms.py -v 2>&1 | tee evidence-m8-kernel/private-axiom-tests.log
+          python3 research/rh/m8_kernel_v1/test_namespace_axioms.py -v 2>&1 | tee evidence-m8-kernel/namespace-axiom-tests.log
       - name: Install pinned Lean and Mathlib
         run: |
           set -euo pipefail

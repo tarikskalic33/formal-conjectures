@@ -24,7 +24,7 @@ def blob(b: bytes) -> str:
 def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
-def imports(text: str) -> list[str]:
+def source_code(text: str) -> str:
     out=[]; i=0; depth=0; string=False
     while i<len(text):
         pair=text[i:i+2]; c=text[i]
@@ -42,8 +42,11 @@ def imports(text: str) -> list[str]:
         if c=='"': string=True; out.append(' '); i+=1; continue
         out.append(c); i+=1
     if depth or string: raise ValueError('unterminated source comment/string')
+    return ''.join(out)
+
+def imports(text: str) -> list[str]:
     result=[]
-    for line in ''.join(out).splitlines():
+    for line in source_code(text).splitlines():
         m=re.match(r'^[ \t]*(?:(?:public|private|meta)[ \t]+)*import[ \t]+(.*)$',line)
         if m:
             for name in m.group(1).split():
@@ -51,26 +54,56 @@ def imports(text: str) -> list[str]:
                 result.append(name)
     return result
 
+def axiom_probes(source: str) -> list[tuple[str, str]]:
+    # Resolve only explicit namespace/section scopes, never open declarations
+    # or arbitrary suffixes. Unsupported scope syntax fails closed.
+    scopes=[]; probes=[]; namespace=''
+    identifier=r'[A-Za-z_][A-Za-z_0-9.]*'
+    for line in source.splitlines():
+        line=line.strip()
+        scope=re.fullmatch(r'(namespace|(?:noncomputable\s+)?section)(?:\s+('+identifier+r'))?',line)
+        if scope:
+            kind,label=scope.groups()
+            if kind=='namespace' and label is None: raise ValueError('unnamed namespace')
+            scopes.append((label,namespace))
+            if kind=='namespace': namespace='.'.join(x for x in (namespace,label) if x)
+        elif re.match(r'(?:namespace|(?:noncomputable\s+)?section)\b',line):
+            raise ValueError('unsupported namespace/section syntax')
+        elif re.match(r'end\b',line):
+            end=re.fullmatch(r'end(?:\s+('+identifier+r'))?',line)
+            if end is None or not scopes: raise ValueError('unmatched scope end')
+            label,previous=scopes.pop()
+            if end.group(1) is not None and end.group(1)!=label: raise ValueError('scope end mismatch')
+            namespace=previous
+        elif line.startswith('#print axioms'):
+            probe=re.fullmatch(r'#print axioms\s+('+identifier+r')',line)
+            if probe is None: raise ValueError('unsupported axiom probe')
+            name=probe.group(1)
+            resolved=namespace+'.'+name if namespace and '.' not in name else name
+            probes.append((name,resolved))
+    if len(probes)!=len({resolved for _,resolved in probes}): raise ValueError('duplicate source axiom probe')
+    return probes
+
 def audit(source: str, log: str, module_name: str | None = None) -> int:
-    names=re.findall(r'^#print axioms (\S+)[ \t]*$',source,re.M)
-    if len(names)!=len(set(names)): raise ValueError('duplicate source axiom probe')
+    source=source_code(source)
+    probes=axiom_probes(source)
     if re.search(r'sorryAx|\berror(?:\([^)]*\))?:',log): raise ValueError('compiler error or placeholder')
     flat=re.sub(r'\s+',' ',log)
     allowed={'propext','Classical.choice','Quot.sound'}
-    for name in names:
-        patterns=[re.escape(name)]
+    for name,resolved in probes:
+        patterns=[re.escape(spelling) for spelling in dict.fromkeys((name,resolved))]
         leaf=name.rsplit('.',1)[-1]
         private=re.search(r'\bprivate\s+(?:noncomputable\s+)?(?:theorem|lemma|def|opaque)\s+'
                           +re.escape(leaf)+r'\b',source)
         if module_name is not None and private:
-            patterns.append(re.escape('_private.'+module_name)+r'\.[0-9]+\.'+re.escape(name))
+            patterns.append(re.escape('_private.'+module_name)+r'\.[0-9]+\.'+re.escape(resolved))
         spelling='(?:'+'|'.join(patterns)+')'
         matches=re.findall("'"+spelling+r"' depends on axioms: \[([^\]]*)\]",flat)
         zero=len(re.findall("'"+spelling+"' does not depend on any axioms",flat))
         if len(matches)+zero!=1: raise ValueError('missing/duplicate probe '+name)
         if matches and not {x.strip() for x in matches[0].split(',') if x.strip()}<=allowed:
             raise ValueError('nonstandard axiom '+name)
-    return len(names)
+    return len(probes)
 
 def patched_correction(b: bytes) -> bytes:
     if blob(b)!=ORIGINAL_BLOB: raise ValueError('correction source pin mismatch')
