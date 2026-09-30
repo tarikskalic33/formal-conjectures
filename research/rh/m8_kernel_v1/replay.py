@@ -81,7 +81,9 @@ def axiom_probes(source: str) -> list[tuple[str, str]]:
             name=probe.group(1)
             resolved=namespace+'.'+name if namespace and '.' not in name else name
             probes.append((name,resolved))
-    if len(probes)!=len({resolved for _,resolved in probes}): raise ValueError('duplicate source axiom probe')
+    if (len(probes)!=len({name for name,_ in probes}) or
+            len(probes)!=len({resolved for _,resolved in probes})):
+        raise ValueError('duplicate source axiom probe')
     return probes
 
 def audit(source: str, log: str, module_name: str | None = None) -> int:

@@ -47,6 +47,9 @@ class NamespaceAxiomTests(unittest.TestCase):
     def test_reject_alias_probes(self):
         with self.assertRaises(ValueError):
             r.audit('namespace N\n#print axioms f\n#print axioms N.f\nend N\n', "'N.f' depends on axioms: []")
+        with self.assertRaises(ValueError):
+            r.audit('namespace N\n#print axioms f\nend N\nnamespace M\n#print axioms f\nend M\n',
+                    "'N.f' depends on axioms: []\n'M.f' depends on axioms: []")
 
 if __name__ == '__main__':
     unittest.main()
