@@ -100,9 +100,7 @@ theorem weighted_integral_deriv_v2
       convert hlin.cexp using 1 <;> ring
     have hFu := (hF.differentiable (by simp) u).hasDerivAt
     have hp := hw.mul hFu
-    dsimp [G]
-    rw [hp.deriv]
-    ring
+    simpa [G] using hp.deriv
   have hz : ∫ u : ℝ, deriv G u = 0 :=
     integral_deriv_eq_zero_complex_v2 hG hGc
   rw [hder] at hz
@@ -113,7 +111,9 @@ theorem weighted_integral_deriv_v2
   have hFd : ContDiff ℝ ∞ (deriv F) := contDiff_deriv_complex_v2 hF
   have hB : Integrable (fun u : ℝ => weightV2 s u * deriv F u) :=
     ((weight_contDiff_v2 s).mul hFd).continuous.integrable_of_hasCompactSupport hFc.deriv.mul_left
-  rw [integral_add hA hB, integral_const_mul] at hz
+  rw [integral_add hA hB] at hz
+  simpa only [mul_assoc] at hz
+  rw [integral_const_mul] at hz
   linear_combination hz
 
 /-- The second weighted derivative contributes `s^2`. -/
@@ -164,17 +164,20 @@ theorem weighted_targetPsi_eq_seed_v2 (alpha s : ℂ) :
   apply integral_congr_ae
   exact Filter.Eventually.of_forall (fun u => by
     unfold weightV2 TargetPsiV11
+    change Complex.exp (u • s) * ((psi0 u : ℂ) * Complex.exp (-(u • alpha))) =
+      Complex.exp (u • (s - alpha)) * (psi0 u : ℂ)
     have hexp :
         Complex.exp (u • s) * Complex.exp (-(u • alpha)) =
           Complex.exp (u • (s - alpha)) := by
       rw [← Complex.exp_add]
       congr 1
-      simp only [smul_eq_mul]
-      ring
-    rw [show Complex.exp (u • s) * ((psi0 u : ℂ) * Complex.exp (-(u • alpha))) =
-        (psi0 u : ℂ) * (Complex.exp (u • s) * Complex.exp (-(u • alpha))) by ring,
-      hexp]
-    ring)
+      simp [smul_sub, sub_eq_add_neg]
+    calc
+      Complex.exp (u • s) * ((psi0 u : ℂ) * Complex.exp (-(u • alpha))) =
+          (psi0 u : ℂ) *
+            (Complex.exp (u • s) * Complex.exp (-(u • alpha))) := by ring
+      _ = (psi0 u : ℂ) * Complex.exp (u • (s - alpha)) := by rw [hexp]
+      _ = Complex.exp (u • (s - alpha)) * (psi0 u : ℂ) := by ring)
 
 /-- General Mellin identity for every target parameter and every Mellin argument. -/
 theorem targetPacket_mellin_general_v2 (alpha s : ℂ) :
