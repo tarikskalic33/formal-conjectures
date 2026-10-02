@@ -81,8 +81,7 @@ theorem phi_pareto_complement_v1 :
   have hden : 1 + Real.goldenRatio ^ 3 ≠ 0 := by
     positivity
   rw [← h]
-  field_simp [hden]
-  ring
+  field_simp [hden] <;> ring
 
 /-- Ratio of the moduli at opposite translation parameters. -/
 def ZeroTranslationOddsV1
