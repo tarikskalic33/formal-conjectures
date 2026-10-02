@@ -80,8 +80,9 @@ theorem phi_pareto_complement_v1 :
   have h := phi_pareto_share_v1
   have hden : 1 + Real.goldenRatio ^ 3 ≠ 0 := by
     positivity
-  field_simp [hden] at h ⊢
-  nlinarith
+  rw [← h]
+  field_simp [hden]
+  ring
 
 /-- Ratio of the moduli at opposite translation parameters. -/
 def ZeroTranslationOddsV1
@@ -130,7 +131,6 @@ theorem exists_phi_pareto_translation_of_defect_ne_zero_v1
         3 * Real.log Real.goldenRatio := by
     dsimp [d]
     field_simp [hre]
-    ring
   rw [harg]
   have hpos : 0 < Real.goldenRatio := Real.goldenRatio_pos
   calc
