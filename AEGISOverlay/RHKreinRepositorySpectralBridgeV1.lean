@@ -192,6 +192,11 @@ theorem repository_arithmetic_rhs_krein_factorized_v1
       ring
     rw [hwgt] at hminus
     rw [hwgt'] at hplus
+    change mathlibSymbol xi *
+        (Complex.normSq (𝓕 (logLift g.1) (-xi)) +
+          Complex.normSq (𝓕 (logLift g.1) xi)) =
+      mathlibSymbol xi * mathlibWeight xi *
+        (Complex.normSq (𝓕 chi (-xi)) + Complex.normSq (𝓕 chi xi))
     rw [hminus, hplus]
     ring)
 
