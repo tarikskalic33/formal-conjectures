@@ -15,7 +15,6 @@ limitations under the License.
 -/
 
 import FormalConjecturesUtil
-import RHDeepMindTerminalV1
 
 /-!
 # Riemann Hypothesis and its generalizations
@@ -57,7 +56,7 @@ This uses the `RiemannHypothesis` type from Mathlib, which is defined as
 `∀ (s : ℂ), riemannZeta s = 0 → (¬∃ n : ℕ, s = -2 * (n + 1)) → s ≠ 1 → s.re = 1 / 2`. -/
 @[category research open, AMS 11]
 theorem riemannHypothesis : RiemannHypothesis := by
-  apply AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1
+  sorry
 
 end RiemannHypothesis
 

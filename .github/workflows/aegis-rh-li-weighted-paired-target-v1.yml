@@ -34,6 +34,7 @@ jobs:
       - name: Checkout exact fork head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -45,6 +46,16 @@ jobs:
           path: .li
           fetch-depth: 1
           persist-credentials: false
+
+      - name: Reconstruct exact native negative probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s AegisRH/Li -p test_prepare_native_probe.py
+          python3 -O -m unittest discover -s AegisRH/Li -p test_prepare_native_probe.py
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/fork-checkout-sha.txt
+          python3 AegisRH/Li/prepare_native_probe.py | tee evidence/native-probe-binding.log
 
       - name: Verify pins and target source
         shell: bash
@@ -145,7 +156,7 @@ jobs:
           lake env lean -o "$GITHUB_WORKSPACE/.lake/li-target/RHLiWeightedPairedTargetV1.olean"             AegisRH/Li/RHLiWeightedPairedTargetV1.lean             2>&1 | tee evidence/aegis-li-weighted-paired.log
 
           cat > LiTerminalAudit.lean <<'LEAN'
-          import RHDeepMindTerminalV1
+          import RHLiWeightedPairedTargetV1
           #check AEGIS.RHDeepMindTerminalV1.LiNonnegativityV1
           #check AEGIS.RHDeepMindTerminalV1.li_nonnegativity_closes_rh_v1
           #print axioms AegisRhLiBridge.aegis_li_criterion_rh_iff_v1
