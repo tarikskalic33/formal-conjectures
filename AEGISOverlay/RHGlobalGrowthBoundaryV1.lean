@@ -79,9 +79,11 @@ theorem actual_kernel_endpoint_decay (g : WeilCompactSmoothGV1) :
     have hexp : Tendsto (fun t : ℝ => Complex.exp ((rho.1 - 1) * (t : ℂ)))
         atTop (𝓝 (0 : ℂ)) := by
       apply Complex.tendsto_exp_nhds_zero_iff.mpr
-      have hlin := tendsto_neg_atTop_atBot.comp
+      have hlin0 := tendsto_neg_atTop_atBot.comp
         ((tendsto_id : Tendsto (fun t : ℝ => t) atTop atTop).const_mul_atTop
           (sub_pos.mpr hs.2))
+      have hlin : Tendsto (fun t : ℝ => -((1 - rho.1.re) * t)) atTop atBot := by
+        simpa [Function.comp_def] using hlin0
       convert hlin using 1
       funext t
       simp only [Complex.mul_re, Complex.sub_re, Complex.one_re,
@@ -157,11 +159,22 @@ theorem symmetric_model_exceeds_every_eighth_rate (C : ℝ) :
     linarith
   have hp := Real.exp_pos u
   have hn := Real.exp_pos (-2 * u)
+  have hmul : (2 * C) * Real.exp u < Real.exp u * Real.exp u :=
+    mul_lt_mul_of_pos_right he hp
+  have hhalf : C * Real.exp u < (Real.exp u * Real.exp u) / 2 := by
+    nlinarith only [hmul]
+  have heq : Real.exp u * Real.exp u = Real.exp (u + u) := by
+    rw [← Real.exp_add]
+  rw [heq] at hhalf
+  have hmain :
+      C * Real.exp u <
+        (Real.exp (u + u) + Real.exp (-2 * u)) / 2 := by
+    nlinarith only [hhalf, hn]
   have h2 : (8 * u) / 4 = u + u := by ring
   have h8 : (8 * u) / 8 = u := by ring
   have hn2 : -(8 * u) / 4 = -2 * u := by ring
-  rw [symmetricModelKernel, h8, h2, hn2, Real.exp_add]
-  nlinarith
+  rw [symmetricModelKernel, h8, h2, hn2]
+  exact hmain
 
 end AEGIS.RHGlobalGrowthBoundaryV1
 
