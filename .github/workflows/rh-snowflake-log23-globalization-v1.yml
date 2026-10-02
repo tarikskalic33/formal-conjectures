@@ -15,7 +15,7 @@ permissions:
 env:
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
-  AEGIS_SHA: 2c3d041b633147ec97c7ef753aa9d157a47bb9f5
+  AEGIS_SHA: 5e450d7fbb8c45ce652e458f43d2c5f33ab99832
   LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
   LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
   FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
@@ -402,7 +402,7 @@ jobs:
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHKreinExplicitCorrectionV1 RHKreinRationalCertificateV1 RHGlobalGrowthBoundaryV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1 RHFixedPacketDenseShiftV1; do
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinRepositorySpectralBridgeV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHKreinExplicitCorrectionV1 RHKreinRationalCertificateV1 RHGlobalGrowthBoundaryV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1 RHFixedPacketDenseShiftV1; do
             cp "AEGISOverlay/$m.lean" "$m.lean"
             if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
