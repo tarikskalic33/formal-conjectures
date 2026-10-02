@@ -100,7 +100,7 @@ theorem weighted_integral_deriv_v2
       convert hlin.cexp using 1 <;> ring
     have hFu := (hF.differentiable (by simp) u).hasDerivAt
     have hp := hw.mul hFu
-    simpa [G] using hp.deriv
+    simpa only [G, Pi.mul_def] using hp.deriv
   have hz : ∫ u : ℝ, deriv G u = 0 :=
     integral_deriv_eq_zero_complex_v2 hG hGc
   rw [hder] at hz
@@ -112,7 +112,7 @@ theorem weighted_integral_deriv_v2
   have hB : Integrable (fun u : ℝ => weightV2 s u * deriv F u) :=
     ((weight_contDiff_v2 s).mul hFd).continuous.integrable_of_hasCompactSupport hFc.deriv.mul_left
   rw [integral_add hA hB] at hz
-  simpa only [mul_assoc] at hz
+  simp only [mul_assoc] at hz
   rw [integral_const_mul] at hz
   linear_combination hz
 
@@ -171,7 +171,7 @@ theorem weighted_targetPsi_eq_seed_v2 (alpha s : ℂ) :
           Complex.exp (u • (s - alpha)) := by
       rw [← Complex.exp_add]
       congr 1
-      simp [smul_sub, sub_eq_add_neg]
+      simp [sub_eq_add_neg]
     calc
       Complex.exp (u • s) * ((psi0 u : ℂ) * Complex.exp (-(u • alpha))) =
           (psi0 u : ℂ) *
