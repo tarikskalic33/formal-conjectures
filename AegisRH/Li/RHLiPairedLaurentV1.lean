@@ -1,3 +1,19 @@
+/-
+Copyright 2026 The Formal Conjectures Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-/
+
 import RHLiWeightedPairedTargetV1
 import Mathlib.Tactic
 
@@ -37,7 +53,7 @@ theorem liMobius_ne_zero_v1 (rho : LiCriterion.NontrivialZero) :
   have hr0 : (rho.val : ℂ) ≠ 0 := LiCriterion.NontrivialZero.ne_zero rho
   have hr1 : (rho.val : ℂ) ≠ 1 := LiCriterion.NontrivialZero.ne_one rho
   unfold liMobiusV1 at h
-  have hdiv : (1 : ℂ) / rho.val = 1 := sub_eq_zero.mp h
+  have hdiv : (1 : ℂ) / rho.val = 1 := (sub_eq_zero.mp h).symm
   have hone : (1 : ℂ) = rho.val := by
     simpa using (div_eq_iff hr0).mp hdiv
   exact hr1 hone.symm
@@ -72,7 +88,8 @@ theorem liPairedSummand_eq_laurent_v1
           (liMobiusV1 rho) ^ (n + 1)
   rw [liMobius_pairedZero_eq_inv_v1]
   rw [inv_zpow']
-  simp only [neg_neg, zpow_natCast]
+  simp only [neg_neg]
+  rw [show (n + 1 : ℤ) = ((n + 1 : ℕ) : ℤ) by simp, zpow_natCast]
   ring
 
 end AEGIS.RHLiPairedLaurentV1
