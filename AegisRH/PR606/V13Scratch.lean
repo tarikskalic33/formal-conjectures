@@ -160,6 +160,7 @@ theorem zero_resolvent_remainder_differentiable_near_pole_v13
     · subst sigma
       simp only [if_pos rfl, norm_zero]
       dsimp [u]
+      simp only [norm_zero]
       exact mul_nonneg (norm_nonneg _)
         (le_of_lt (one_div_pos.mpr hr))
     · simp only [hsigma, if_false]
@@ -222,6 +223,7 @@ private theorem zero_resolvent_remainder_summable_near_pole_v13
   · subst sigma
     simp only [if_pos rfl, norm_zero]
     dsimp [u]
+    simp only [norm_zero]
     exact mul_nonneg (norm_nonneg _)
       (le_of_lt (one_div_pos.mpr hr))
   · simp only [hsigma, if_false]
@@ -647,7 +649,8 @@ theorem no_zero_re_gt_half_of_final_sign_v13
       zero_resolvent_order_eq_neg_one_v13 g rho hcoef11
 
   rw [hResOrder] at hResNonneg
-  norm_num at hResNonneg
+  have hneg : (0 : WithTop ℤ) > (-1 : ℤ) := by norm_num
+  exact (not_le_of_gt hneg) hResNonneg
 
 
 def reflectedNontrivialZeroV13
