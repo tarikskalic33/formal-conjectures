@@ -498,17 +498,8 @@ jobs:
           import sys
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
-          old = """  have h :=
-            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
-          simpa using h"""
-          new = """  have h :=
-            B_translate_eq_of_gap_v10 g d d 0 0 (by ring)
-          have h0 : translatePacket g 0 = g := by
-            apply Subtype.ext
-            funext x
-            simp [translatePacket_apply]
-          rw [h0] at h
-          exact h"""
+          old = '  have h :=\n    B_translate_eq_of_gap_v10 g d d 0 0 (by ring)\n  simpa using h'
+          new = '  have h :=\n    B_translate_eq_of_gap_v10 g d d 0 0 (by ring)\n  have h0 : translatePacket g 0 = g := by\n    apply Subtype.ext\n    funext x\n    simp [translatePacket_apply]\n  rw [h0] at h\n  exact h'
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old, new, 1)
           assert "have h0 : translatePacket g 0 = g := by" in s
