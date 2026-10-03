@@ -1,0 +1,31 @@
+name: Prepare RH compatibility candidate objects
+
+on:
+  push:
+    branches:
+      - 'fix/rh-compat-preparation-20261003'
+    paths:
+      - '.github/workflows/rh-compat-candidate-preparation.yml'
+      - 'AegisRH/prepare_compat_candidates.py'
+
+# Only this isolated preparation branch creates immutable Git objects.
+# The script forbids ref, PR, merge, workflow and administrative writes.
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: github.repository == 'tarikskalic33/formal-conjectures' && github.ref == 'refs/heads/fix/rh-compat-preparation-20261003'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact preparation head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify production patch regressions and construct candidate objects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 AegisRH/prepare_compat_candidates.py
