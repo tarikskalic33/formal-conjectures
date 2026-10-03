@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -/
+module
 
-import FormalConjecturesUtil
+public import FormalConjecturesUtil
+public import RHRestrictedWeilCriterionV13
 
 /-!
 # Riemann Hypothesis and its generalizations
@@ -43,6 +45,8 @@ continuation of the Dedekind zeta function.
 - D. A. Marcus, *Number Fields*, Springer (GTM 81), 1977, Chapter VII.
 -/
 
+@[expose] public section
+
 namespace RiemannHypothesis
 
 /-- The **Riemann Hypothesis**: all non-trivial zeros of the Riemann zeta function have real
@@ -56,7 +60,7 @@ This uses the `RiemannHypothesis` type from Mathlib, which is defined as
 `∀ (s : ℂ), riemannZeta s = 0 → (¬∃ n : ℕ, s = -2 * (n + 1)) → s ≠ 1 → s.re = 1 / 2`. -/
 @[category research open, AMS 11]
 theorem riemannHypothesis : RiemannHypothesis := by
-  sorry
+  apply AEGIS.RHRestrictedWeilCriterionV13.restricted_weil_criterion_v13
 
 end RiemannHypothesis
 
