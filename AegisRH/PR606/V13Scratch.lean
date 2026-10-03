@@ -619,7 +619,8 @@ theorem no_zero_re_gt_half_of_final_sign_v13
       zero_resolvent_order_eq_neg_one_v13 g rho hcoef11
 
   rw [hResOrder] at hResNonneg
-  norm_num at hResNonneg
+  have hneg : (0 : WithTop ℤ) > (-1 : ℤ) := by norm_num
+  exact (not_le_of_gt hneg) hResNonneg
 
 
 def reflectedNontrivialZeroV13
