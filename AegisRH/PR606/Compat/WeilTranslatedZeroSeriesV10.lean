@@ -43,7 +43,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Filter Topology Complex MeasureTheory
-open scoped BigOperators
+open scoped BigOperators ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -51,6 +51,7 @@ noncomputable section
 namespace AEGIS.WeilTranslatedZeroSeriesV10
 
 open AEGIS.WeilAutocorrelationMellinFactorV10
+open AEGIS.WeilLogCoordinateIsometryV21
 open AEGIS.WeilMixedMellinFactorV10
 open AEGIS.WeilMixedClosureV2
 open AEGIS.WeilMixedAlgebraV2
@@ -68,7 +69,9 @@ theorem logLaplace_translatePacket_v10
   let F : ℝ → ℂ := fun w =>
     Complex.exp (z * ((w + d : ℝ) : ℂ)) *
       logLift g.1 w
-  have hshift := integral_add_right_eq_self F (-d)
+  have hshift :
+      (∫ u : ℝ, F (u + (-d))) = ∫ u : ℝ, F u :=
+    integral_add_right_eq_self F (-d)
   have hleft :
       (fun u : ℝ => F (u + (-d))) =
         (fun u : ℝ =>
@@ -87,8 +90,9 @@ theorem logLaplace_translatePacket_v10
               logLift g.1 w)) := by
     funext w
     dsimp [F]
-    rw [← Complex.exp_add]
-    congr 2
+    rw [← mul_assoc, ← Complex.exp_add]
+    congr 1
+    push_cast
     ring
   rw [hleft, hright] at hshift
   rw [integral_const_mul] at hshift
@@ -128,8 +132,8 @@ theorem zeroPairCoeff_eq_actual_zero_summand_v10
         (WeilAutocorrelationV1 g) rho := by
   symm
   exact
-    AEGIS.WeilActualZeroSummandWitnessV10
-      .actual_zero_summand_eq_paired_mellin_v10 g rho
+    AEGIS.WeilActualZeroSummandWitnessV10.actual_zero_summand_eq_paired_mellin_v10
+      g rho
 
 private theorem moment_mellin_endpoints_v10
     (g : WeilCompactSmoothGV1)
@@ -171,7 +175,8 @@ theorem B_eq_neg_mixed_zero_tsum_v10
       mellin (mixed a b) 0 + mellin (mixed a b) 1 -
         B a b at hEF
   rw [hends.1, hends.2, zero_add, zero_sub] at hEF
-  exact neg_eq_iff_eq_neg.mpr hEF.symm
+  have hneg := congrArg Neg.neg hEF
+  simpa using hneg.symm
 
 /-- Pointwise translated mixed zero summand. -/
 theorem translated_mixed_zero_summand_v10
@@ -190,7 +195,17 @@ theorem translated_mixed_zero_summand_v10
       conj
         (((1 - conj rho.1) - 1 / 2) * (d : ℂ)) =
         ((1 / 2 : ℂ) - rho.1) * (d : ℂ) := by
-    apply Complex.ext <;> simp <;> ring
+    rw [map_mul]
+    simp only [map_sub, map_one]
+    rw [Complex.conj_conj]
+    have hd : conj (d : ℂ) = (d : ℂ) := by
+      simpa using (Complex.conj_ofReal d)
+    have htwo : conj (2 : ℂ) = (2 : ℂ) := by
+      simp only [map_ofNat]
+    have hhalf : conj (1 / 2 : ℂ) = (1 / 2 : ℂ) := by
+      rw [map_div₀, map_one, htwo]
+    rw [hd, hhalf]
+    ring
   rw [hexp]
   ring
 
