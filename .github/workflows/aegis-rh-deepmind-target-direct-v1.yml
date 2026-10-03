@@ -233,7 +233,8 @@ jobs:
           export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
 
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
-          lean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
 
           cat >/tmp/DeepMindRHTargetAudit.lean <<'LEAN'
           import FormalConjectures.Millennium.RiemannHypothesis
