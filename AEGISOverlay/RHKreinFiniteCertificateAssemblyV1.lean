@@ -91,8 +91,8 @@ theorem digamma_quarter_even_v1 (t : ℝ) :
     (Complex.digamma ((1 / 4 : ℂ) + ((-t : ℝ) : ℂ) * I / 2)).re =
       (Complex.digamma ((1 / 4 : ℂ) + (t : ℂ) * I / 2)).re := by
   apply le_antisymm
-  · exact digamma_quarter_mono_of_sq_le (-t) t le_rfl
-  · exact digamma_quarter_mono_of_sq_le t (-t) le_rfl
+  · exact digamma_quarter_mono_of_sq_le (-t) t (by simp)
+  · exact digamma_quarter_mono_of_sq_le t (-t) (by simp)
 
 /-- The full first-post-log2 Weil symbol is even. -/
 theorem symbol_even_v1 (t : ℝ) :
@@ -118,7 +118,6 @@ private theorem hat_sum_even_v1 (t : ℝ) :
 /-- The five derivative columns have the parity encoded by the certificate:
 odd powers are paired with sine and even powers with cosine, so the whole
 spline correction is even. -/
-set_option linter.unusedSimpArgs false in
 private theorem spline_sum_even_v1 (t : ℝ) :
     (∑ j : Fin 5, (splineCoefficient j : ℝ) * (-t) ^ j.val *
       (if j.val % 2 = 0 then Real.cos ((-t) * (1619 / 2000))
@@ -128,10 +127,9 @@ private theorem spline_sum_even_v1 (t : ℝ) :
        else Real.sin (t * (1619 / 2000))) := by
   apply Finset.sum_congr rfl
   intro j _hj
-  fin_cases j <;>
-    norm_num <;>
-    simp only [Real.cos_neg, Real.sin_neg] <;>
-    ring
+  fin_cases j
+  all_goals norm_num
+  all_goals ring
 
 /-- The exact genuine-function correction symbol is even. -/
 theorem correctionSymbol_even_v1 (t : ℝ) :
