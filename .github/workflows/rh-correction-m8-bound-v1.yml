@@ -1,0 +1,160 @@
+name: RH correction M8 bound v1
+
+on:
+  pull_request:
+    paths:
+      - 'AEGISOverlay/RHKreinCorrectionSymbolV1.lean'
+      - 'AEGISOverlay/RHKreinCorrectionM8BoundV1.lean'
+      - 'AEGISOverlay/RHKreinM8CertificateV1.lean'
+      - '.github/workflows/rh-correction-m8-bound-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rh-correction-m8-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  BASELINE_SHA: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+
+jobs:
+  correction-m8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Install pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(cat lean-toolchain)" = "$LEAN_TOOLCHAIN"
+          test "$(git hash-object scripts/verify_rh_overlay_axioms.py)" = 77be75a3bb9f4e155e2b3ba71295d6a5f36ce907
+          mkdir -p evidence-m8/sources evidence-m8/oleans evidence-m8/context
+          git fetch --no-tags --depth=1 origin "$BASELINE_SHA"
+          for p in AEGISOverlay/RHKreinExplicitCorrectionV1.lean AEGISOverlay/RHKreinM8CertificateV1.lean .github/workflows/rh-snowflake-log23-globalization-v1.yml research/rh/krein_order19_v1/certificate.json; do
+            mkdir -p "evidence-m8/context/$(dirname "$p")"
+            git show "$BASELINE_SHA:$p" > "evidence-m8/context/$p"
+          done
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake update
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
+          lean --version | tee evidence-m8/lean-version.txt
+          for p in Mathlib/Analysis/Calculus/ContDiff/Basic.lean Mathlib/Analysis/Calculus/IteratedDeriv/Defs.lean Mathlib/Analysis/Calculus/Deriv/Linear.lean Mathlib/MeasureTheory/Integral/Bochner/Basic.lean; do
+            mkdir -p "evidence-m8/context/$(dirname "$p")"
+            cp ".lake/packages/mathlib/$p" "evidence-m8/context/$p"
+          done
+
+      - name: Freshly compile unchanged analytic prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          modules=(FormalConjectures/Millennium/RHSnowflakeLog23 AEGISOverlay/RHMultiGeneratorComplementarityV1 AEGISOverlay/RHBoxFourierComplementarityV1 AEGISOverlay/RHKreinSplineSupportV1 AEGISOverlay/RHKreinSplineContinuityV1 AEGISOverlay/RHKreinSplineL1DerivativeBoundV1 AEGISOverlay/RHKreinSplineL1NormV1 AEGISOverlay/RHKreinSplineFourierIntegrableV1 AEGISOverlay/RHKreinSplineDerivativesV1 AEGISOverlay/RHKreinFiniteIntervalKernelV1 AEGISOverlay/RHKreinFourierTaylorBoundV1)
+          for m in "${modules[@]}"; do
+            test "$(git rev-parse "$BASELINE_SHA:$m.lean")" = "$(git hash-object "$m.lean")"
+            mkdir -p ".lake/build/lib/lean/$(dirname "$m")" "evidence-m8/sources/$(dirname "$m")" "evidence-m8/oleans/$(dirname "$m")"
+            cp "$m.lean" "evidence-m8/sources/$m.lean"
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-m8/$(basename "$m").log"
+            ! grep -E 'sorryAx|error:' "evidence-m8/$(basename "$m").log"
+            cp ".lake/build/lib/lean/$m.olean" "evidence-m8/oleans/$m.olean"
+            lake env lean --deps "$m.lean" > "evidence-m8/$(basename "$m").deps"
+          done
+
+      - name: Check absent-M8 red baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > M8Before.lean <<'LEAN'
+          import AEGISOverlay.RHKreinSplineL1NormV1
+          import AEGISOverlay.RHKreinFourierTaylorBoundV1
+          #check AEGIS.RHKreinCorrectionM8BoundV1.correctionSymbol_eighth_derivative_le_serialized
+          LEAN
+          if lake env lean M8Before.lean > evidence-m8/red-baseline.log 2>&1; then
+            echo 'Unexpected pre-existing M8 endpoint' >&2
+            exit 1
+          fi
+          cat evidence-m8/red-baseline.log
+          grep -Ei 'unknown (identifier|constant)' evidence-m8/red-baseline.log
+          grep -F 'AEGIS.RHKreinCorrectionM8BoundV1.correctionSymbol_eighth_derivative_le_serialized' evidence-m8/red-baseline.log
+
+      - name: Compile exact symbol data and M8 producers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for m in RHKreinCorrectionSymbolV1 RHKreinM8CertificateV1 RHKreinCorrectionM8BoundV1; do
+            p="AEGISOverlay/$m"
+            cp "$p.lean" "evidence-m8/sources/$p.lean"
+            lake env lean -o ".lake/build/lib/lean/$p.olean" "$p.lean" 2>&1 | tee "evidence-m8/$m.log"
+            ! grep -E 'sorryAx|error:' "evidence-m8/$m.log"
+            if grep -q '^#print axioms ' "$p.lean"; then
+              python3 scripts/verify_rh_overlay_axioms.py "$p.lean" "evidence-m8/$m.log" | tee "evidence-m8/$m.audit"
+            fi
+            cp ".lake/build/lib/lean/$p.olean" "evidence-m8/oleans/$p.olean"
+            lake env lean --deps "$p.lean" > "evidence-m8/$m.deps"
+          done
+
+      - name: Emit exact-source success receipt
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, subprocess
+          from pathlib import Path
+          root = Path('evidence-m8')
+          old = (root/'context/AEGISOverlay/RHKreinExplicitCorrectionV1.lean').read_text()
+          data = Path('AEGISOverlay/RHKreinCorrectionSymbolV1.lean').read_text()
+          start = old.index('/-- Exact rational hat coefficients')
+          end = old.index('private def reflected')
+          block = old[start:end]
+          if block not in data:
+              raise SystemExit('Coefficient/symbol declaration block drift')
+          producer = Path('AEGISOverlay/RHKreinCorrectionM8BoundV1.lean')
+          names = re.findall(r'^#print axioms (\S+)$', producer.read_text(), re.M)
+          required = 'AEGIS.RHKreinCorrectionM8BoundV1.correctionSymbol_eighth_derivative_le_serialized'
+          if required not in names or len(names) != len(set(names)):
+              raise SystemExit('Missing or duplicate M8 endpoint')
+          files = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(root.rglob('*')) if p.is_file()}
+          receipt = {
+              'schema':'aegis.rh.correction-m8.v1', 'status':'PASS',
+              'rh_proven':False, 'authority_effect':'NONE',
+              'source_sha':os.environ['SOURCE_SHA'], 'baseline_sha':os.environ['BASELINE_SHA'],
+              'actual_checkout':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'mathlib_sha':os.environ['MATHLIB_SHA'], 'lean_toolchain':os.environ['LEAN_TOOLCHAIN'],
+              'unchanged_prerequisite_count':11, 'moved_declaration_block_byte_identical':True,
+              'moved_declaration_block_sha256':hashlib.sha256(block.encode()).hexdigest(),
+              'producer_git_blob':subprocess.check_output(['git','hash-object',str(producer)],text=True).strip(),
+              'endpoint_count':len(names), 'endpoints':names,
+              'run_id':os.environ['GITHUB_RUN_ID'], 'run_attempt':os.environ['GITHUB_RUN_ATTEMPT'],
+              'files_sha256':files,
+              'limitations':['Eighth-derivative majorant only; no analytic soundness of finite cells or RH.',
+                             'Pinned Mathlib cache and Lean toolchain are the build dependency trust boundary.']}
+          if receipt['actual_checkout'] != receipt['source_sha']:
+              raise SystemExit('Wrong checkout')
+          (root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in receipt.items() if k!='files_sha256'},indent=2))
+          PY
+
+      - name: Upload proof evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-correction-m8-${{ env.SOURCE_SHA }}-${{ github.run_id }}
+          path: evidence-m8/
+          if-no-files-found: error
+          retention-days: 30
