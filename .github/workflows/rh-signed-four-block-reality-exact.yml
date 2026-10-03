@@ -6,9 +6,11 @@ on:
       - 'evidence/rh-signed-four-block-reality-360875-v1'
     paths:
       - '.github/workflows/rh-signed-four-block-reality-exact.yml'
+      - 'AegisRH/SignedFour/**'
   pull_request:
     paths:
       - '.github/workflows/rh-signed-four-block-reality-exact.yml'
+      - 'AegisRH/SignedFour/**'
   workflow_dispatch:
 
 permissions:
@@ -32,6 +34,13 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      - name: Checkout candidate compatibility overlay
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: .fork-compat
+          persist-credentials: false
+
       - name: Checkout exact Mathlib
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -136,6 +145,19 @@ jobs:
           print("\n".join(order))
           PY
 
+      - name: Bind and apply packet compatibility overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          FILE="$ROOT/RHFineMomentPacketV3.lean"
+          test "$(git -C .aegis hash-object sovereign-omega-v2/formal/bridges/lean/RHFineMomentPacketV3.lean)" = "27de7445fa119b5616acff8bfca00689a8bf3f10"
+          mkdir -p evidence
+          sha256sum "$FILE" > evidence/packet-original-sha256.txt
+          cp .fork-compat/AegisRH/SignedFour/Compat/RHFineMomentPacketV3.lean "$FILE"
+          sha256sum "$FILE" > evidence/packet-compiled-sha256.txt
+          git -C .fork-compat rev-parse HEAD > evidence/compat-head.txt
+
       - name: Compile exact target closure
         shell: bash
         run: |
@@ -182,6 +204,8 @@ jobs:
           SOURCE_SHA=$SOURCE_SHA
           PARENT_SHA=$PARENT_SHA
           TARGET_MODULE=$TARGET_MODULE
+          SOURCE_BYTES_PRESERVED=FALSE
+          COMPATIBILITY_OVERLAY=SOURCE_BOUND_RHFineMomentPacketV3
           CLAIM=REAL_SYMMETRIC_TOEPLITZ_REDUCTION_FOR_GFINE_DYADIC_B
           COMPARISON_SCHUR_INERTIA=EXACT_RATIONAL_RECEIPT
           GLOBAL_WEIL_SIGN=NOT_CLAIMED
