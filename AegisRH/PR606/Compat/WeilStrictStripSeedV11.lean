@@ -141,14 +141,14 @@ theorem exists_compact_smooth_seed_two_mellin_ne_zero_v11
           have hpos := (hηsupp hxt).1
           exact (not_lt_of_ge (le_of_not_gt hx)) hpos
         have hopen : (tsupport η)ᶜ ∈ 𝓝 x :=
-          isOpen_compl_iff.mpr (isClosed_tsupport r) |>.mem_nhds hxnot
+          isOpen_compl_iff.mpr (isClosed_tsupport η) |>.mem_nhds hxnot
         have heq :
             r =ᶠ[𝓝 x] (fun _ : ℝ => 0) :=
           eventually_of_mem hopen (fun y hy => by
             have hη0 : η y = 0 :=
               image_eq_zero_of_notMem_tsupport hy
             simp [r, hη0])
-        exact ContinuousAt.congr_of_eventuallyEq continuousAt_const heq.symm
+        exact ContinuousAt.congr_of_eventuallyEq continuousAt_const heq
 
     have hr_comp : HasCompactSupport r := by
       dsimp [r]
