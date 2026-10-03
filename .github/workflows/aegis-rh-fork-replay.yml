@@ -1,0 +1,70 @@
+name: AEGIS RH fork replay
+
+on:
+  push:
+    branches:
+      - proof/riemann-hypothesis-aegis-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout formal-conjectures fork
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install elan
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout exact AEGIS RH source head
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/Aegis-Omega/AEGIS-OMEGA.git aegis
+          git -C aegis checkout 1bdc7abc06d44f39f1379503caabf7e66a708956
+          test "$(git -C aegis rev-parse HEAD)" = "1bdc7abc06d44f39f1379503caabf7e66a708956"
+
+      - name: Materialize temporary Lake package
+        working-directory: aegis/sovereign-omega-v2/formal/bridges/lean
+        run: |
+          set -euo pipefail
+          printf '%s\n' 'leanprover/lean4:v4.33.1' > lean-toolchain
+          python3 - <<'PY'
+          from pathlib import Path
+          mods = sorted(p.stem for p in Path(".").glob("*.lean"))
+          globs = ",\n  ".join(f'"{m}"' for m in mods)
+          Path("lakefile.toml").write_text(f'''name = "aegis_rh_replay"
+          defaultTargets = ["AegisRH"]
+
+          [[require]]
+          name = "mathlib"
+          scope = "leanprover-community"
+          rev = "v4.33.1"
+
+          [[lean_lib]]
+          name = "AegisRH"
+          srcDir = "."
+          globs = [
+            {globs}
+          ]
+          ''')
+          PY
+          lake update
+          lake exe cache get
+
+      - name: Compile terminal RH modules
+        working-directory: aegis/sovereign-omega-v2/formal/bridges/lean
+        run: |
+          set -euo pipefail
+          lake env lean RHZeroKernelLaplaceAnalyticV12.lean
+          lake env lean RestrictedWeilCriterionResidueCoefficientV11.lean
+          lake env lean RestrictedWeilCriterionPoleIsolationV10.lean
+          lake env lean WeilRHImpliesFinalSignV11.lean
