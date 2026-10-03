@@ -515,89 +515,89 @@ jobs:
           python3 - "$F11" <<'PY'
           from pathlib import Path
           import sys
-          
+
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
           original = s
-          
+
           def rep(old: str, new: str, label: str) -> None:
               global s
               n = s.count(old)
               assert n == 1, f"{label}: expected 1 occurrence, found {n}"
               s = s.replace(old, new, 1)
-          
+
           rep(
               '    have hpos : 0 < x * a := f.2.2.2 hxa\n    nlinarith',
               '    have hpos : 0 < x * a := f.2.2.2 hxa\n    rcases mul_pos_iff.mp hpos with h | h\n    · exact h.1\n    · exfalso\n      linarith [ha, h.2]',
               "dilate positivity",
           )
-          
+
           rep(
               '  simp [FiniteDilationFilterV11, AEGIS.WeilMixedAlgebraV2.combo]\n  ring',
               '  change\n    (1 : ℂ) * f.1 x +\n        (-3 : ℂ) * f.1 (x * 2) +\n        (2 : ℂ) * f.1 (x * 4) =\n      f.1 x - 3 * f.1 (x * 2) + 2 * f.1 (x * 4)\n  ring',
               "pointwise filter",
           )
-          
+
           rep(
               '  have hlin := hall.2\n  rw [mellin_const_smul, mellin_const_smul] at hlin\n\n  change\n    mellin (FiniteDilationFilterV11 f).1 s =\n      FiniteDilationFactorV11 s * mellin f.1 s\n  have hfun :\n      (FiniteDilationFilterV11 f).1 =\n        fun x : ℝ =>\n          (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by\n    funext x\n    simp [FiniteDilationFilterV11, f2, f4,\n      AEGIS.WeilMixedAlgebraV2.combo]\n    ring\n  rw [hfun, hlin, h2, h4]\n  unfold FiniteDilationFactorV11\n  ring',
               '  have hneg3M :\n      mellin (fun x : ℝ => (-3 : ℂ) * f2.1 x) s =\n        (-3 : ℂ) * mellin f2.1 s := by\n    simpa [smul_eq_mul] using\n      (mellin_const_smul f2.1 s (-3 : ℂ))\n  have htwoM :\n      mellin (fun x : ℝ => (2 : ℂ) * f4.1 x) s =\n        (2 : ℂ) * mellin f4.1 s := by\n    simpa [smul_eq_mul] using\n      (mellin_const_smul f4.1 s (2 : ℂ))\n  have hfirstEq := hfirst.2\n  rw [hneg3M] at hfirstEq\n  have hlin := hall.2\n  rw [htwoM] at hlin\n\n  change\n    mellin (FiniteDilationFilterV11 f).1 s =\n      FiniteDilationFactorV11 s * mellin f.1 s\n  have hfun :\n      (FiniteDilationFilterV11 f).1 =\n        fun x : ℝ =>\n          (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x := by\n    funext x\n    change\n      (1 : ℂ) * f.1 x +\n          (-3 : ℂ) * f2.1 x +\n          (2 : ℂ) * f4.1 x =\n        (f.1 x + (-3 : ℂ) * f2.1 x) + (2 : ℂ) * f4.1 x\n    ring\n  rw [hfun, hlin, hfirstEq, h2, h4]\n  unfold FiniteDilationFactorV11\n  ring',
               "Mellin linearity",
           )
-          
+
           rep(
               """@[simp] theorem finiteDilationFactor_zero_v11 :
               FiniteDilationFactorV11 0 = 0 := by
             simp [FiniteDilationFactorV11]
-          
+
           @[simp] theorem finiteDilationFactor_one_v11 :
               FiniteDilationFactorV11 1 = 0 := by
             simp [FiniteDilationFactorV11, Complex.cpow_neg_one]
             norm_num
-          
-          
+
+
           """,
               "",
               "old endpoints",
           )
-          
+
           rep(
               """  rw [FiniteDilationFactorV11, h4, h2]
             ring
-          
+
           /-- NEW LOAD-BEARING PRODUCER:""",
               """  rw [FiniteDilationFactorV11, h4, h2]
             ring
-          
+
           @[simp] theorem finiteDilationFactor_zero_v11 :
               FiniteDilationFactorV11 0 = 0 := by
             rw [finiteDilationFactor_factor_v11]
             apply mul_eq_zero.mpr
             left
             norm_num
-          
+
           @[simp] theorem finiteDilationFactor_one_v11 :
               FiniteDilationFactorV11 1 = 0 := by
             rw [finiteDilationFactor_factor_v11]
             apply mul_eq_zero.mpr
             right
             norm_num [Complex.cpow_neg_one]
-          
+
           /-- NEW LOAD-BEARING PRODUCER:""",
               "factored endpoints",
           )
-          
+
           rep(
               '    have hnorm :\n        ‖(2 : ℂ) ^ (-s)‖ < 1 := by\n      rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]\n      simp only [neg_re]\n      exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)',
               '    have hnormEq :\n        ‖(2 : ℂ) ^ (-s)‖ = (2 : ℝ) ^ (-s.re) := by\n      simpa using\n        (Complex.norm_cpow_eq_rpow_re_of_pos\n          (x := (2 : ℝ))\n          (by norm_num : (0 : ℝ) < 2)\n          (-s))\n    have hnorm :\n        ‖(2 : ℂ) ^ (-s)‖ < 1 := by\n      rw [hnormEq]\n      exact Real.rpow_lt_one_of_one_lt_of_neg (by norm_num) (by linarith)',
               "negative cpow norm",
           )
-          
+
           rep(
               '    have hnorm :\n        1 < ‖(2 : ℂ) ^ (1 - s)‖ := by\n      rw [Complex.norm_cpow_eq_rpow_re_of_pos (by norm_num : (0 : ℝ) < 2)]\n      apply Real.one_lt_rpow (by norm_num)\n      simp only [sub_re, one_re]\n      linarith',
               '    have hnormEq :\n        ‖(2 : ℂ) ^ (1 - s)‖ = (2 : ℝ) ^ ((1 - s).re) := by\n      simpa using\n        (Complex.norm_cpow_eq_rpow_re_of_pos\n          (x := (2 : ℝ))\n          (by norm_num : (0 : ℝ) < 2)\n          (1 - s))\n    have hnorm :\n        1 < ‖(2 : ℂ) ^ (1 - s)‖ := by\n      rw [hnormEq]\n      apply Real.one_lt_rpow (by norm_num)\n      simp only [sub_re, one_re]\n      linarith',
               "positive cpow norm",
           )
-          
+
           assert s != original
           assert "have hneg3M :" in s
           assert "finiteDilationFactor_factor_v11" in s
@@ -614,23 +614,23 @@ jobs:
           python3 - "$MIX" <<'PY'
           from pathlib import Path
           import sys
-          
+
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
           original = s
-          
+
           def rep(old: str, new: str, label: str) -> None:
               global s
               n = s.count(old)
               assert n == 1, f"{label}: expected 1 occurrence, found {n}"
               s = s.replace(old, new, 1)
-          
+
           rep(
               "open scoped BigOperators Topology",
               "open scoped BigOperators Topology ComplexConjugate",
               "conjugation scope",
           )
-          
+
           rep(
               """theorem logCrossJoint_hasCompactSupport_v10
               (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -649,7 +649,7 @@ jobs:
             exact logCrossJoint_support_subset_v10 a b z hne""",
               "compact support adapter",
           )
-          
+
           rep(
               """theorem logCrossJoint_fubini_v10
               (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -677,13 +677,13 @@ jobs:
               (integral_integral_swap_of_hasCompactSupport hcont hcompact)""",
               "Fubini adapter",
           )
-          
+
           rep(
               '      change\n        Complex.exp (s * (v : ℂ)) *\n          mixed a b (Real.exp v) = _\n      have hcross := logCross_eq_mixed_v28 a b v\n      rw [hcross]\n      rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]\n      rw [← mul_assoc, ← Complex.exp_add]\n      congr 2\n      push_cast\n      ring)',
               '      change\n        Complex.exp (s * (v : ℂ)) *\n            mixed a b (Real.exp v) =\n          Complex.exp ((s - 1 / 2) * (v : ℂ)) *\n            logCrossV28 a b v\n      have hcross := logCross_eq_mixed_v28 a b v\n      rw [hcross]\n      rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]\n      rw [← mul_assoc, ← Complex.exp_add]\n      congr 2 <;> push_cast <;> ring)',
               "log-cross coordinate identity",
           )
-          
+
           assert s != original
           assert "open scoped BigOperators Topology ComplexConjugate" in s
           assert "let F : ℝ → ℝ → ℂ" in s
@@ -700,17 +700,17 @@ jobs:
           python3 - "$MIX" <<'PY'
           from pathlib import Path
           import sys
-          
+
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
           original = s
-          
+
           def rep(old: str, new: str, label: str) -> None:
               global s
               n = s.count(old)
               assert n == 1, f"{label}: expected 1 occurrence, found {n}"
               s = s.replace(old, new, 1)
-          
+
           rep(
               """theorem logCrossJoint_support_subset_v10
               (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -753,7 +753,7 @@ jobs:
             apply Prod.ext <;> simp <;> ring""",
               "support proof",
           )
-          
+
           rep(
               """theorem logCrossJoint_fubini_v10
               (a b : WeilCompactSmoothGV1) (z : ℂ) :
@@ -787,7 +787,7 @@ jobs:
               (by simpa [Function.uncurry_def] using hprod)""",
               "Fubini proof",
           )
-          
+
           start = s.index("theorem logCross_transform_factor_v10")
           end = s.index("\n/-- Exact mixed Mellin factorization. -/", start)
           replacement = """theorem logCross_transform_factor_v10
@@ -852,13 +852,13 @@ jobs:
                         rw [reflected_logLaplace_integral_v10]
           """
           s = s[:start] + replacement + s[end:]
-          
+
           rep(
               '      rw [hcross]\n      rw [← Complex.ofReal_exp, ← Complex.exp_ofReal]\n      rw [← mul_assoc, ← Complex.exp_add]\n      congr 2 <;> push_cast <;> ring)',
               '      rw [hcross, Complex.ofReal_exp]\n      rw [← mul_assoc, ← Complex.exp_add]\n      congr 2 <;> push_cast <;> ring)',
               "coordinate exponential",
           )
-          
+
           assert s != original
           assert "Integrable (logCrossJointV10 a b z)" in s
           assert "integral_integral_swap" in s
@@ -877,16 +877,16 @@ jobs:
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
           original = s
-          
+
           old = "open scoped BigOperators\n"
           new = 'open scoped BigOperators ComplexConjugate\n'
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old, new, 1)
-          
+
           old = '  simp\n  ring'
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old, "  simp", 1)
-          
+
           assert "open scoped BigOperators ComplexConjugate" in s
           assert s != original
           p.write_text(s, encoding="utf-8")
@@ -903,17 +903,17 @@ jobs:
           import sys
           p = Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
-          
+
           old = '    rw [map_mul, Complex.conj_ofReal]\n    push_cast\n    rw [← mul_assoc]\n    have hcC :\n        (Real.exp (-d / 2) : ℂ) *\n          (Real.exp (-d / 2) : ℂ) =\n          (Real.exp (-d) : ℂ) := by\n      exact_mod_cast hc\n    rw [hcC]\n    congr 2\n    · congr 1\n      ring\n    · rfl'
           new = '    rw [map_mul, Complex.conj_ofReal]\n    push_cast\n    rw [Complex.ofReal_exp, Complex.ofReal_exp, Complex.ofReal_exp]\n    have hcC :\n        Complex.exp ((-d / 2 : ℝ) : ℂ) *\n          Complex.exp ((-d / 2 : ℝ) : ℂ) =\n          Complex.exp ((-d : ℝ) : ℂ) := by\n      rw [← Complex.exp_add]\n      congr 1\n      push_cast\n      ring\n    calc\n      Complex.exp ((-d / 2 : ℝ) : ℂ) *\n            g.1 (Real.exp (-d) * (x * y)) *\n            Complex.exp ((-d / 2 : ℝ) : ℂ) *\n            conj (g.1 (Real.exp (-d) * y))\n          =\n          (Complex.exp ((-d / 2 : ℝ) : ℂ) *\n            Complex.exp ((-d / 2 : ℝ) : ℂ)) *\n            (g.1 (Real.exp (-d) * (x * y)) *\n              conj (g.1 (Real.exp (-d) * y))) := by ring\n      _ =\n          Complex.exp ((-d : ℝ) : ℂ) *\n            (g.1 (Real.exp (-d) * (x * y)) *\n              conj (g.1 (Real.exp (-d) * y))) := by rw [hcC]\n      _ =\n          Complex.exp ((-d : ℝ) : ℂ) *\n            (g.1 (x * (Real.exp (-d) * y)) *\n              conj (g.1 (Real.exp (-d) * y))) := by\n            congr 2\n            congr 1\n            ring'
           assert s.count(old) == 1, s.count(old)
           s = s.replace(old, new, 1)
-          
+
           old2 = '  have hsmul :\n      (∫ y in Ioi (0 : ℝ), (b : ℂ) * F (b * y)) =\n        b • (∫ y in Ioi (0 : ℝ), F (b * y)) := by\n    rw [← integral_const_mul]\n    simp [Complex.real_smul]'
           new2 = '  have hsmul :\n      (∫ y in Ioi (0 : ℝ), (b : ℂ) * F (b * y)) =\n        b • (∫ y in Ioi (0 : ℝ), F (b * y)) := by\n    rw [integral_const_mul]\n    simp [Complex.real_smul]'
           assert s.count(old2) == 1, s.count(old2)
           s = s.replace(old2, new2, 1)
-          
+
           p.write_text(s, encoding="utf-8")
           print("TRANSLATED_KERNEL_SCALAR_COMPAT=PASS")
           PY
