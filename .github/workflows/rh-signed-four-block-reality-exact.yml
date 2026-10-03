@@ -34,18 +34,18 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - name: Checkout candidate compatibility overlay
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          path: .fork-compat
-          persist-credentials: false
-
       - name: Checkout exact Mathlib
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: leanprover-community/mathlib4
           ref: ${{ env.MATHLIB_SHA }}
+          persist-credentials: false
+
+      - name: Checkout candidate compatibility overlay
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: .fork-compat
           persist-credentials: false
 
       - name: Checkout exact AEGIS source
