@@ -1,0 +1,125 @@
+name: RH M8 finite-window kernel replay v1
+on:
+  pull_request:
+    paths:
+      - 'research/rh/finite_m8_v1/**'
+      - '.github/workflows/rh-m8-kernel-replay-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rh-m8-kernel-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  SOURCE_SHA: f352135eef3575364922f9fa428fb0af0750185b
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  BASELINE_SHA: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+jobs:
+  finite-m8:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact finite-window verifier
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+      - name: Checkout unchanged verified PR52 analytic source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          path: .m8-base
+          persist-credentials: false
+      - name: Replay byte-pinned analytic predecessor build
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+          python3 - <<'PY'
+          import hashlib, os, pathlib, subprocess, yaml
+          root=pathlib.Path('.m8-base')
+          p=root/'.github/workflows/rh-correction-m8-bound-v1.yml'
+          b=p.read_bytes()
+          actual=hashlib.sha1(b'blob '+str(len(b)).encode()+b'\0'+b).hexdigest()
+          if actual!='9491c68e11fb6bdd10c8f5342980eff31eb3d8eb':
+              raise SystemExit('PR52 build source changed')
+          steps=yaml.safe_load(b)['jobs']['correction-m8']['steps']
+          names=['Install pinned Lean and Mathlib','Freshly compile unchanged analytic prerequisites','Compile exact symbol data and M8 producers']
+          env=dict(os.environ); env['PATH']=str(pathlib.Path.home()/'.elan/bin')+':'+env['PATH']
+          evidence=root/'evidence-m8'; evidence.mkdir(exist_ok=True)
+          for i,name in enumerate(names):
+              found=[s for s in steps if s.get('name')==name]
+              if len(found)!=1: raise SystemExit('ambiguous build step '+name)
+              script=found[0]['run']; (evidence/f'base-step-{i}.sh').write_text(script)
+              with (evidence/f'base-step-{i}.log').open('w') as log:
+                  rc=subprocess.run(['bash','-e','-o','pipefail','-c',script],cwd=root,env=env,stdout=log,stderr=subprocess.STDOUT).returncode
+              if rc: raise SystemExit(f'base build failed: {name}, exit={rc}')
+          PY
+      - name: Establish absent finite-window endpoint baseline
+        working-directory: .m8-base
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          printf '%s\n' 'import AEGISOverlay.RHKreinCorrectionM8BoundV1' '#check AEGIS.RHKreinM8FiniteWindowV1.correctionSymbol_eighth_le_finiteWindow' > BeforeFinite.lean
+          if lake env lean BeforeFinite.lean > evidence-m8/finite-red-baseline.log 2>&1; then
+            echo 'finite-window endpoint unexpectedly already exists' >&2
+            exit 1
+          fi
+          grep -Ei 'unknown (identifier|constant)' evidence-m8/finite-red-baseline.log
+      - name: Compile finite-window theorem and strict axiom audit
+        working-directory: .m8-base
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          p=AEGISOverlay/RHKreinM8FiniteWindowV1
+          cp "../research/rh/finite_m8_v1/RHKreinM8FiniteWindowV1.lean" "$p.lean"
+          cp "$p.lean" "evidence-m8/sources/$p.lean"
+          lake env lean --deps "$p.lean" > evidence-m8/finite-window.deps
+          lake env lean -o ".lake/build/lib/lean/$p.olean" "$p.lean" 2>&1 | tee evidence-m8/finite-window.log
+          python3 scripts/verify_rh_overlay_axioms.py "$p.lean" evidence-m8/finite-window.log | tee evidence-m8/finite-window.audit
+          cp ".lake/build/lib/lean/$p.olean" "evidence-m8/oleans/$p.olean"
+      - name: Emit complete source and endpoint receipt
+        working-directory: .m8-base
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,subprocess
+          root=pathlib.Path('evidence-m8')
+          producer=pathlib.Path('AEGISOverlay/RHKreinM8FiniteWindowV1.lean')
+          code=producer.read_text(); log=(root/'finite-window.log').read_text()
+          probes=re.findall(r'^#print axioms (\S+)$',code,re.M)
+          required='AEGIS.RHKreinM8FiniteWindowV1.correctionSymbol_eighth_le_finiteWindow'
+          if required not in probes or len(probes)!=len(set(probes)): raise SystemExit('missing/duplicate finite target')
+          old=(root/'context/AEGISOverlay/RHKreinExplicitCorrectionV1.lean').read_text()
+          block=old[old.index('/-- Exact rational hat coefficients'):old.index('private def reflected')]
+          if block not in pathlib.Path('AEGISOverlay/RHKreinCorrectionSymbolV1.lean').read_text():
+              raise SystemExit('symbol declaration drift')
+          actual=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          verifier=subprocess.check_output(['git','-C','..','rev-parse','HEAD'],text=True).strip()
+          if actual!=os.environ['SOURCE_SHA'] or verifier!=os.environ['CANDIDATE_SHA']: raise SystemExit('wrong checkout')
+          files={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob('*')) if p.is_file()}
+          receipt=dict(schema='aegis.rh.finite-m8-kernel.v1',status='PASS',rh_proven=False,authority_effect='NONE',
+              source_sha=actual,verifier_sha=verifier,mathlib=os.environ['MATHLIB_SHA'],lean=os.environ['LEAN_TOOLCHAIN'],
+              producer_git_blob=subprocess.check_output(['git','hash-object',str(producer)],text=True).strip(),
+              endpoint_count=len(probes),endpoints=probes,run_id=os.environ['GITHUB_RUN_ID'],
+              declaration_block_sha256=hashlib.sha256(block.encode()).hexdigest(),files_sha256=files,
+              limitations=['Finite-window derivative majorant, not finite-cell soundness or RH.',
+              'Uses byte-identical extracted symbol declarations and PR52 analytic closure; not a replay of the full Weil consumer.',
+              'Pinned Lean toolchain and Mathlib cache are the external build boundary.'])
+          (root/'finite-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print('PASS',len(probes),'finite-window endpoints',len(files),'bound files')
+          PY
+      - name: Upload full proof evidence including hidden contextual files
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-finite-m8-${{ env.CANDIDATE_SHA }}-${{ github.run_id }}
+          path: .m8-base/evidence-m8/
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error
