@@ -90,6 +90,17 @@ theorem splineCore_support (h : ℝ) (n : ℕ) (x : ℝ) (hx : splineCore h n x 
     simp only [Nat.cast_add, Nat.cast_one]
     constructor <;> nlinarith [hy'.1, hy'.2, hz'.1, hz'.2]
 
+/-- Every finite normalized-box convolution has compact support in its
+explicit interval enclosure. -/
+theorem splineCore_hasCompactSupport (h : ℝ) (n : ℕ) :
+    HasCompactSupport (splineCore h n) := by
+  apply HasCompactSupport.intro
+    (K := Icc (-((n : ℝ) + 1) * h / 2) (((n : ℝ) + 1) * h / 2))
+    isCompact_Icc
+  intro x hx
+  by_contra hn
+  exact hx (splineCore_support h n x hn)
+
 theorem spline19_support (L h x : ℝ) (hx : spline19 L h x ≠ 0) :
     x ∈ Icc L (L + 19 * h) := by
   have hs := splineCore_support h 18 (x - (L + 19 * h / 2)) hx
@@ -203,6 +214,7 @@ theorem certificate_reflected_derivative_parity (j : Fin 5) (c t : ℝ) :
 
 end AEGIS.RHKreinSplineSupportV1
 
+#print axioms AEGIS.RHKreinSplineSupportV1.splineCore_hasCompactSupport
 #print axioms AEGIS.RHKreinSplineSupportV1.spline19_integrable
 #print axioms AEGIS.RHKreinSplineSupportV1.spline19_support
 #print axioms AEGIS.RHKreinSplineSupportV1.spline19_hasCompactSupport
