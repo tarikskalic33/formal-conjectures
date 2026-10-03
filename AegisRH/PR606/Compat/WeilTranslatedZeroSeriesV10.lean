@@ -201,7 +201,7 @@ theorem translated_mixed_zero_summand_v10
     have hd : conj (d : ℂ) = (d : ℂ) := by
       simpa using (Complex.conj_ofReal d)
     have htwo : conj (2 : ℂ) = (2 : ℂ) := by
-      simp
+      simp only [map_ofNat]
     have hhalf : conj (1 / 2 : ℂ) = (1 / 2 : ℂ) := by
       rw [map_div₀, map_one, htwo]
     rw [hd, hhalf]
