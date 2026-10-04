@@ -1307,7 +1307,7 @@ jobs:
           export LEAN_PATH="$OVERLAY_OUT:$OUT:$SRC:$BASE_LEAN_PATH"
           while IFS= read -r MOD; do
             [ -z "$MOD" ] && continue
-            if [ "$MOD" = "WeilZeroTranslationV11" ] || [ "$MOD" = "WeilZeroTwoPointV11" ] || [ "$MOD" = "WeilZeroKernelHermitianV11" ] || [ "$MOD" = "RHZeroKernelLaplaceV12" ]; then
+            if [ -f "$GITHUB_WORKSPACE/AegisRH/Overlay/$MOD.lean" ]; then
               echo "=== USE FORK OVERLAY $MOD ==="
               test -f "$OVERLAY_OUT/$MOD.olean"
               continue
