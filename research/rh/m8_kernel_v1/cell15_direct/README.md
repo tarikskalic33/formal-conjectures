@@ -64,7 +64,10 @@ EXPLICIT_CORRECTION=path/to/AEGISOverlay/RHKreinExplicitCorrectionV1.lean \
   python3 gen.py RHKreinFifteenthCellDirectCorrectionV1.lean
 ```
 
-reproduces the module byte-for-byte. `model.py` holds the exact-rational model
+reproduces the module byte-for-byte (SHA-256 above). The generated
+`RHKreinFifteenthCellDirectCorrectionV1.lean` (66 KB, mostly rounded tables) is
+not committed by hand; generate it into `research/rh/m8_kernel_v1/` before
+building `RHKreinFifteenthCellDirectV1`. `model.py` holds the exact-rational model
 (tables, polynomial coefficients, error budget) and is the input to `gen.py`.
 
 ## Scope
