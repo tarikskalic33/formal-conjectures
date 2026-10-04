@@ -118,3 +118,16 @@ arithmetic-form values. Its closure theorem uses the existing dyadic
 nonpositivity producers and the closedness of the nonpositive real
 half-line, then the verified equivalence with zero-quadratic
 nonnegativity. This note supplies no proof of that obligation.
+
+## The scalar obligation is the target
+
+`RHCertifiedApproximationTrivialityV1.lean` proves that, given one certified
+tower packet with a strictly negative value, `DyadicArithmeticApproximationV1`
+is equivalent to nonpositivity of the arithmetic form on every moment-zero
+packet (`approximation_iff_arithmetic_nonpositive`), hence to
+`UniversalZeroQuadraticNonnegativeV10` (`approximation_iff_universal`).
+The reason is scaling: rescaling the tower coefficients by a real `t` multiplies
+the value by `t ^ 2` (`arithmeticValue_tower_smul`), so certified values fill
+the whole nonpositive half-line and the convergence condition carries no
+information about how `p n` relates to `g`. A non-circular obligation must ask
+for `p n → g` in a topology in which the actual Weil form is continuous.
