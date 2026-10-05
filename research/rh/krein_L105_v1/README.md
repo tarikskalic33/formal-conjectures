@@ -59,17 +59,19 @@ The bridge requires the PR #693 versions of `WeilFixedLineGammaXSpaceV10`,
   Both take the certificate's finite range (`hfin`) and tail check (`htail`) as hypotheses and
   depend on `[propext, Classical.choice, Quot.sound]`. They were compiled against a tree in which
   the 17 bridge-chain modules were rebuilt on the PR #693 closure.
-- **`RHWindowL105FinalV1`** discharges `hfin` and `htail` with `RHKreinL105AllV1`. It compiles once
-  the batch run is complete.
+- **`RHWindowL105FinalV1`** discharges `hfin` and `htail` with `RHKreinL105AllV1`:
+  - `window_lt_21_40 : 0 ≤ L → L < 21/40 → WindowArithmeticNonpositiveV1 L`, with no hypotheses;
+  - `rh_of_windows_from_21_40 : (∀ L ≥ 21/40, WindowArithmeticNonpositiveV1 L) → RiemannHypothesis`.
 
 ## Status at this commit (2026-10-05)
 
-- All modules above except `RHKreinL105AllV1` and `RHWindowL105FinalV1` compile with the
-  standard three axioms.
-- The kernel batch run is in progress, one batch at a time. Two concurrent batches exceed the
-  memory limit, and cells 12 and 13 (299 and 115 pieces) exceed it alone. `tools/resplit.py`
-  splits such cells at existing breakpoints into sub-cells of at most 25 pieces. Every sub-cell is
-  re-checked in the exact mirror (`tools/split.py`), and the batch theorem is re-assembled with
-  `glue`.
+- Kernel run complete: all 133 batch modules (116 batches; cells 12 and 13 split into 17
+  sub-files by `tools/resplit.py`, every sub-cell re-checked in the exact mirror `tools/split.py`
+  and glued back with `glue`) pass `decide +kernel`, one at a time.
+- `RHKreinL105AllV1.zero_quadratic_nonneg_width_21_20`, `RHWindowConnectedL105V1` and
+  `RHWindowL105FinalV1.{window_lt_21_40, rh_of_windows_from_21_40}` depend on
+  `[propext, Classical.choice, Quot.sound]`. No `sorryAx`.
+- The batch modules are not committed. Regenerate them with `tools/gen105.py` and
+  `tools/resplit.py` from `tools/design105F.json` (see Design).
 
-Not RH. AUTHORITY_EFFECT = NONE.
+The windows `L ≥ 21/40` are not proved. Not RH. AUTHORITY_EFFECT = NONE.

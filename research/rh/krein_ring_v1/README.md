@@ -33,11 +33,9 @@ tree. The tree is `formal-conjectures` `AEGISOverlay` plus the PR #693 versions 
 ## Kernel runs at this checkpoint
 
 - **L = 4/5** (`../krein_reflective_v1`): all 219 batches OK. `RHKreinAllCellsV1` compiles with the standard axioms.
-- **L = 21/20** (`../krein_L105_v1`): all modules, including the bridge theorem
-  `zero_quadratic_nonneg_L105`, compile.
-  - One wide cell (the tightest, `[107/2, 109/2]`) is kernel-checked.
-  - The batch run is in progress, one batch at a time; heavy cells are split (see `../krein_L105_v1/README.md`).
-  - `RHWindowConnectedL105V1` (compiled): RH from the sign on the windows `L ≥ 21/40`.
+- **L = 21/20** (`../krein_L105_v1`): kernel run complete (133 batch modules). `RHWindowL105FinalV1`
+  compiles with the standard axioms: every window `L < 21/40` has the arithmetic sign, and RH
+  follows from the sign on the windows `L ≥ 21/40`.
   - `tools/design105F.json` (209 KB) is not committed. Regenerate it with
     `python3 sweep.py && python3 minN.py && python3 deg16.py`; these are exact Fraction
     computations and deterministic.
