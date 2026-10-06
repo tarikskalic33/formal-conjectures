@@ -14,6 +14,15 @@
   `Λ(1/2 + it) = ∫_1^∞ (θ(x) − 1) x^{−3/4} cos((t/2) log x) dx − 4/(1 + 4t²)`, with no Γ and no ζ;
   numerically it agrees with `π^{−s/2}Γ(s/2)ζ(s)` to 11 digits at t = 0, 5, 14, 14.3, 20.9, 21.1, 25, 25.1.
 
+`RHLambdaLineV1` (imports the two above, standard axioms):
+
+- `Xi_re_eq`: `re Λ(1/2 + it) = re 𝓜A(1/4 + it/2) − 1/(1/4 + t²)` (`A` is real, so the two Mellin
+  terms are conjugate on the line).
+
+Next: `𝓜A(w) = 2 Σ_{n≤3} ∫_1^X e^{−πn²x} x^{w−1} dx` plus explicit tails, a per-cell Taylor model of
+`x^{w−1}` (44 cells of width 1/4, degree 12: remainder ≤ 5·10⁻¹¹ against |Λ(1/2 + 14i)| ≈ 2·10⁻⁶), and a
+rational checker run by the kernel at t = 14 and t = 14.3.
+
 Still open for "every zero with `0 < γ < T` lies on the line":
 
 1. rigorous enclosures of `Λ(1/2 + it)` at sample points (ζ and Γ in interval arithmetic);
