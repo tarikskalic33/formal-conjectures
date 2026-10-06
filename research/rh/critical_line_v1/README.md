@@ -26,6 +26,9 @@ spec for the Lean checker. It certifies `Λ(1/2+14i) < 0 < Λ(1/2+14.3i)`, `Λ(1
 and, with π to 80 digits, `Λ(1/2+24.9i) < 0`. At t ≈ 25 the 20-digit π of Mathlib is too coarse:
 the cancellation amplifies its error about 10¹¹ times.
 
+`RHThetaTailV1` (Mathlib only, standard axioms): `θ(t) − 1 = Σ_{n≥1} 2e^{−πn²t}` and, for `t ≥ 1`,
+`0 ≤ θ(t) − 1 − Σ_{n=1}^{3} 2e^{−πn²t} ≤ 4e^{−16πt}` (`theta_tail_bound`).
+
 Next: `𝓜A(w) = 2 Σ_{n≤3} ∫_1^X e^{−πn²x} x^{w−1} dx` plus explicit tails, a per-cell Taylor model of
 `x^{w−1}` (44 cells of width 1/4, degree 12: remainder ≤ 5·10⁻¹¹ against |Λ(1/2 + 14i)| ≈ 2·10⁻⁶), and a
 rational checker run by the kernel at t = 14 and t = 14.3.
