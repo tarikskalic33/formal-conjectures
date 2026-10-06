@@ -19,6 +19,13 @@
 - `Xi_re_eq`: `re Λ(1/2 + it) = re 𝓜A(1/4 + it/2) − 1/(1/4 + t²)` (`A` is real, so the two Mellin
   terms are conjugate on the line).
 
+`RHFixIntervalV1` (Mathlib only, standard axioms): fixed-point interval arithmetic, integers at
+scale `2^{-p}` with outward rounding (`Iv.mem_add`, `Iv.mem_neg`, `Iv.mem_mul`), so the kernel can
+evaluate enclosures with `decide`. `fixmirror.py` is the integer mirror of the full enclosure and the
+spec for the Lean checker. It certifies `Λ(1/2+14i) < 0 < Λ(1/2+14.3i)`, `Λ(1/2+20.9i) > 0 > Λ(1/2+21.1i)`
+and, with π to 80 digits, `Λ(1/2+24.9i) < 0`. At t ≈ 25 the 20-digit π of Mathlib is too coarse:
+the cancellation amplifies its error about 10¹¹ times.
+
 Next: `𝓜A(w) = 2 Σ_{n≤3} ∫_1^X e^{−πn²x} x^{w−1} dx` plus explicit tails, a per-cell Taylor model of
 `x^{w−1}` (44 cells of width 1/4, degree 12: remainder ≤ 5·10⁻¹¹ against |Λ(1/2 + 14i)| ≈ 2·10⁻⁶), and a
 rational checker run by the kernel at t = 14 and t = 14.3.
