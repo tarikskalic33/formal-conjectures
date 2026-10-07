@@ -63,8 +63,8 @@ theorem subexponential_of_bounded_difference_v1
           simpa only [sub_add_cancel] using norm_add_le (F t - G t) (G t)
     _ ≤ D + C * Real.exp (ε * t) :=
       add_le_add (hD t ht) (hC t ht)
-    _ ≤ D * Real.exp (ε * t) + C * Real.exp (ε * t) :=
-      add_le_add_right hDE _
+    _ ≤ D * Real.exp (ε * t) + C * Real.exp (ε * t) := by
+      linarith [hDE]
     _ = (C + D) * Real.exp (ε * t) := by ring
 
 theorem boundedDifference_symm_v1
