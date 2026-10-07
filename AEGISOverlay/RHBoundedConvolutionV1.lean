@@ -42,12 +42,12 @@ noncomputable section
 namespace AEGIS.RHBoundedConvolutionV1
 
 theorem norm_integral_mul_shift_le_v1
-    (k P : ℝ → ℂ) (B d : ℝ)
-    (hk : Integrable k volume)
+    (μ : Measure ℝ) (k P : ℝ → ℂ) (B d : ℝ)
+    (hk : Integrable k μ)
     (hP : ∀ x : ℝ, ‖P x‖ ≤ B) :
-    ‖∫ u : ℝ, k u * P (d - u) ∂volume‖ ≤
-      B * ∫ u : ℝ, ‖k u‖ ∂volume := by
-  have hmajor : Integrable (fun u : ℝ => B * ‖k u‖) volume :=
+    ‖∫ u : ℝ, k u * P (d - u) ∂μ‖ ≤
+      B * ∫ u : ℝ, ‖k u‖ ∂μ := by
+  have hmajor : Integrable (fun u : ℝ => B * ‖k u‖) μ :=
     hk.norm.const_mul B
   refine (norm_integral_le_of_norm_le hmajor ?_).trans_eq ?_
   · exact Filter.Eventually.of_forall (fun u => by
