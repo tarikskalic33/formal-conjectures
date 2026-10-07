@@ -305,18 +305,41 @@ jobs:
             AegisRH/PR606/RHRestrictedWeilCriterionV13.lean 2>&1 | tee /tmp/pr606-rh-terminal.log
           ! grep -F 'sorryAx' /tmp/pr606-rh-terminal.log
 
+          python3 -m unittest discover -s scripts -p test_rh_official_target_gate.py -v
+          EVIDENCE="$GITHUB_WORKSPACE/evidence-rh-official"
+          mkdir -p "$EVIDENCE"
+          export RH_EXACT_HEAD="$(git rev-parse HEAD)"
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
           test -f "$TARGET"
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' "$TARGET" | grep -F 'sorry'
           mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
-          lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
+          set +e
+          lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean "$TARGET" > "$EVIDENCE/target-compile.log" 2>&1
+          lean_rc=$?
+          set -e
+          cat "$EVIDENCE/target-compile.log"
+          python3 scripts/rh_official_target_gate.py \
+            --source "$TARGET" --log "$EVIDENCE/target-compile.log" \
+            --lean-exit "$lean_rc" --receipt "$EVIDENCE/receipt.json"
 
           cat >/tmp/DeepMindRHTargetAudit.lean <<'LEAN'
           import FormalConjectures.Millennium.RiemannHypothesis
           #print axioms RiemannHypothesis.riemannHypothesis
           LEAN
-          lean /tmp/DeepMindRHTargetAudit.lean 2>&1 | tee /tmp/deepmind-rh-target-axioms.log
-          ! grep -F 'sorryAx' /tmp/deepmind-rh-target-axioms.log
+          lean /tmp/DeepMindRHTargetAudit.lean 2>&1 | tee "$EVIDENCE/target-axioms.log"
+          python3 scripts/rh_official_target_gate.py \
+            --source "$TARGET" --log "$EVIDENCE/target-compile.log" \
+            --lean-exit 0 --axioms-log "$EVIDENCE/target-axioms.log" \
+            --receipt "$EVIDENCE/receipt.json"
+
+      - name: Upload exact RH target evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-official-target-${{ github.run_id }}
+          path: evidence-rh-official/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Emit exact port disposition
         if: always()
