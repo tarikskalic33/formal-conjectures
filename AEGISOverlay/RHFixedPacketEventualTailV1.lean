@@ -68,9 +68,6 @@ theorem packetKernelBound_of_eventuallyBounded
     PacketKernelBoundV1 g := by
   obtain ⟨T, C, hC⟩ := h
   let R : ℝ := max 0 T
-  have hR0 : 0 ≤ R := by
-    dsimp [R]
-    exact le_max_left _ _
   have hTR : T ≤ R := by
     dsimp [R]
     exact le_max_right _ _
