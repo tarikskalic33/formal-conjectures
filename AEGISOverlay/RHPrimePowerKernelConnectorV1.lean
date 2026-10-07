@@ -148,7 +148,7 @@ theorem higherPrimePowerContribution_bounded_v1
   have hk := primeDiscrepancyKernel_integrable_v1 g
   have hgeneric :=
     AEGIS.RHBoundedConvolutionV1.norm_integral_mul_shift_le_v1
-      (primeDiscrepancyKernelV1 g)
+      volume (primeDiscrepancyKernelV1 g)
       normalizedPrimePowerCorrectionComplexV1 B d hk hP
   have hswap :
       (∫ y : ℝ,
