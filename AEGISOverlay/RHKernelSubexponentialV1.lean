@@ -1,4 +1,4 @@
-/*
+/-
 Copyright 2026 The Formal Conjectures Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/
+-/
 
 import AEGISOverlay.RHFixedPacketFrontierV1
 
@@ -194,7 +194,7 @@ theorem zero_kernel_laplace_differentiableAt_of_subexponential
     Metric.ball_mem_nhds _ hr
 
   have hFmeas :
-      forallᶠ w in nhds w0,
+      ∀ᶠ w in nhds w0,
         AEStronglyMeasurable (F w)
           (volume.restrict (Ioi (0 : Real))) := by
     exact Filter.Eventually.of_forall (fun w => by
@@ -282,7 +282,7 @@ theorem zero_kernel_laplace_differentiableAt_of_subexponential
 
   have main :=
     hasDerivAt_integral_of_dominated_loc_of_deriv_le
-      (mu := volume.restrict (Ioi (0 : Real)))
+      (μ := volume.restrict (Ioi (0 : Real)))
       (F := F) (F' := F') (bound := bound)
       hs hFmeas hFint hF'meas hbound hboundInt hdiff
 
