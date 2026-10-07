@@ -297,10 +297,13 @@ jobs:
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$GITHUB_WORKSPACE/AegisRH/PR606:$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
 
+          # Build the native fork prerequisite in this isolated replay environment.
+          lake build FormalConjecturesUtil
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
           test -f "$TARGET"
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' "$TARGET" | grep -F 'sorry'
-          lean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
+          mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
+          lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
 
           cat >/tmp/DeepMindRHTargetAudit.lean <<'LEAN'
           import FormalConjectures.Millennium.RiemannHypothesis
