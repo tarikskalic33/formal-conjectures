@@ -93,7 +93,11 @@ theorem packetKernelBound_of_eventuallyBounded
   by_cases ht : t ∈ Icc (-R) R
   · exact (hmid t ht).trans (le_max_right _ _)
   · have hout : t < -R ∨ R < t := by
-      simpa [Set.mem_Icc, not_and_or, not_le] using ht
+      rcases lt_or_ge t (-R) with hneg | hge
+      · exact Or.inl hneg
+      · right
+        by_contra hnot
+        exact ht ⟨hge, le_of_not_gt hnot⟩
     rcases hout with hneg | hpos
     · have hTneg : T ≤ -t := by
         have hRneg : R ≤ -t := by linarith
