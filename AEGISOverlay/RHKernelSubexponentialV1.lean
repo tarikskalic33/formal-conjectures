@@ -71,7 +71,7 @@ open AEGIS.WeilRHImpliesFinalSignV13
 for Laplace domination. -/
 def PacketKernelSubexponentialV1 (g : WeilCompactSmoothGV1) : Prop :=
   forall epsilon : Real, 0 < epsilon ->
-    exists C : Real, 0 <= C / forall t : Real, 0 <= t ->
+    exists C : Real, 0 <= C ∧ forall t : Real, 0 <= t ->
       norm (WeilZeroTranslationKernelV11 g t) <=
         C * Real.exp (epsilon * t)
 
