@@ -376,6 +376,33 @@ jobs:
           PY
           while IFS= read -r m; do
             cp "$ROOT/$m.lean" "$m.lean"
+            if [ "$m" = "RHNarrowMomentPacketV1" ]; then
+              # Exact-source, fail-closed local elaboration repair. Do not mutate AEGIS source.
+              test "$(git hash-object "$ROOT/$m.lean")" = "08ad4e9610a544152a223417eafc28ff3434a678"
+              python3 - "$m.lean" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          source = path.read_text(encoding="utf-8")
+          fixes = [
+              ("tsupport psiNarrow = closedBall (0 : ℝ) (1 / 80)",
+               "tsupport psiNarrow = Metric.closedBall (0 : ℝ) (1 / 80)"),
+              ("inside the later +/-1/64 log packet window.",
+               "inside the later plus/minus 1/64 log packet window."),
+          ]
+          for old, new in fixes:
+              if source.count(old) != 1:
+                  raise SystemExit(f"RH_NARROW_SOURCE_PATCH_ANCHOR_FAIL: {old}")
+              source = source.replace(old, new, 1)
+          if source.count("/-") != source.count("-/"):
+              raise SystemExit("RH_NARROW_SOURCE_PATCH_COMMENT_BALANCE_FAIL")
+          path.write_text(source, encoding="utf-8")
+          PY
+              echo "RH_NARROW_LOCAL_PATCHED_SOURCE_SHA=$(git hash-object "$m.lean")" \
+                | tee evidence-krein/rh-narrow-patch-receipt.txt
+              echo "RH_NARROW_UPSTREAM_BLOB=08ad4e9610a544152a223417eafc28ff3434a678" \
+                >> evidence-krein/rh-narrow-patch-receipt.txt
+            fi
             echo "=== COMPILE $m ==="
             lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"
           done < evidence-krein/modules.txt
