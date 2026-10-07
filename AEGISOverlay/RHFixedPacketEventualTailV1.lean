@@ -50,6 +50,7 @@ open AEGIS.RHFixedPacketFrontierV1
 open AEGIS.RHDetectingPacketCriterionV1
 open AEGIS.RHZeroKernelLaplaceAnalyticV12
 open AEGIS.WeilZeroTranslationV11
+open AEGIS.WeilZeroTwoPointV11
 open AEGIS.WeilZeroKernelHermitianV11
 
 /-- Eventual boundedness on the positive translation tail. -/
