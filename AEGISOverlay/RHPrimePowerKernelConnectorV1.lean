@@ -68,7 +68,7 @@ theorem logCorrelation_contDiff_connector_v1 (g : WeilCompactSmoothGV1) :
   rw [heq]
   exact ((Complex.ofRealCLM.contDiff.comp
     (Real.contDiff_exp.comp (contDiff_id.div_const 2))).mul
-      ((AEGIS.WeilAutocorrelationClosureV1.weil_autocorrelation_contDiff_v1 g).comp
+      ((_root_.weil_autocorrelation_contDiff_v1 g).comp
         Real.contDiff_exp))
 
 /-- The logarithmic autocorrelation has compact support because the actual
@@ -82,10 +82,10 @@ theorem logCorrelation_hasCompactSupport_connector_v1
     have hlog : ContinuousOn Real.log (tsupport (WeilAutocorrelationV1 g)) := by
       intro x hx
       have hxpos : 0 < x :=
-        AEGIS.WeilAutocorrelationClosureV1.weil_autocorrelation_tsupport_positive_v1 g hx
+        _root_.weil_autocorrelation_tsupport_positive_v1 g hx
       exact (Real.continuousAt_log (ne_of_gt hxpos)).continuousWithinAt
     exact
-      (AEGIS.WeilAutocorrelationClosureV1.weil_autocorrelation_hasCompactSupport_v1 g).image_of_continuousOn hlog
+      (_root_.weil_autocorrelation_hasCompactSupport_v1 g).image_of_continuousOn hlog
   apply HasCompactSupport.of_support_subset_isCompact hK
   intro u hu
   have hA : WeilAutocorrelationV1 g (Real.exp u) ≠ 0 := by
@@ -107,7 +107,7 @@ theorem primeDiscrepancyKernel_integrable_v1 (g : WeilCompactSmoothGV1) :
   have hc := logCorrelation_contDiff_connector_v1 g
   have hs := logCorrelation_hasCompactSupport_connector_v1 g
   have hd : Integrable (deriv (logCorrelationV25 g)) volume :=
-    (hc.continuous_deriv le_rfl).integrable_of_hasCompactSupport hs.deriv
+    (hc.continuous_deriv (by simp)).integrable_of_hasCompactSupport hs.deriv
   have hb : Integrable (logCorrelationV25 g) volume :=
     hc.continuous.integrable_of_hasCompactSupport hs
   unfold primeDiscrepancyKernelV1
@@ -127,8 +127,10 @@ theorem normalizedPrimePowerCorrectionComplex_bounded_v1 :
     AEGIS.RHPrimePowerBoundedV1.normalized_prime_power_correction_bounded_v1
   refine ⟨B, hB, ?_⟩
   intro y
-  simpa [normalizedPrimePowerCorrectionComplexV1, Complex.norm_real,
-    Real.norm_eq_abs] using hbound y
+  change ‖((Real.exp (-y / 2) *
+    (Chebyshev.psi (Real.exp y) - Chebyshev.theta (Real.exp y)) : ℝ) : ℂ)‖ ≤ B
+  rw [Complex.norm_real, Real.norm_eq_abs]
+  exact hbound y
 
 /-- Higher prime powers contribute only a uniformly bounded term after
 convolution with the actual AEGIS compact discrepancy kernel. -/
