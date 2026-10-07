@@ -92,8 +92,8 @@ theorem mixed_real_v1
 theorem primeTerm_real_v1
     (f : ℝ → ℂ) (hf : RealValuedFnV1 f) (n : ℕ) :
     conj (WeilPrimeTermV1 f n) = WeilPrimeTermV1 f n := by
-  have hpos := hf (((n + 1 : ℕ) : ℝ))
-  have hinv := hf ((((n + 1 : ℕ) : ℝ)⁻¹))
+  have hpos := hf ((n : ℝ) + 1)
+  have hinv := hf (((n : ℝ) + 1)⁻¹)
   simpa [WeilPrimeTermV1, hpos, hinv]
 
 theorem primeSum_real_v1
@@ -114,7 +114,8 @@ theorem archIntegrand_real_v1
   have hx := hf x
   have hinv := hf x⁻¹
   have hone := hf 1
-  simpa [WeilArchimedeanIntegrandV1, hx, hinv, hone]
+  have htwo : conj (2 : ℂ) = (2 : ℂ) := by norm_num
+  simpa [WeilArchimedeanIntegrandV1, hx, hinv, hone, htwo]
 
 theorem archIntegral_real_v1
     (f : ℝ → ℂ) (hf : RealValuedFnV1 f) :
