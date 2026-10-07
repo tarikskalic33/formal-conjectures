@@ -345,7 +345,7 @@ jobs:
           python3 - "$ROOT" evidence-krein/modules.txt <<'PY'
           import pathlib,sys
           root=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2])
-          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30","RHKreinFactorV13","WeilMomentAnnihilatorV1","WeilRHImpliesFinalSignV13","WeilTwoPointPositivityV1","RHEulerGammaV13"]
+          targets=["WeilAutocorrelationMellinV11","RHKreinPairingV13","RHDyadicTowerV13","RHRestrictedWeilBridgeV13","WeilZeroTranslationV11","RHGramExpansionV13","RestrictedWeilCriterionResidueWitnessV11","WeilThreeBlockPrimeEvaluationV30","RHKreinFactorV13","WeilMomentAnnihilatorV1","WeilRHImpliesFinalSignV13","WeilTwoPointPositivityV1","RHEulerGammaV13","RHNarrowMomentPacketV1","WeilSeparatedArchBridgeV31","WeilThreeBlockCrossAssemblyV30","WeilWindowExhaustionV1","RestrictedWeilCriterionZeroKernelV10"]
           mods={p.stem:p for p in root.glob("*.lean")}
           for target in targets:
               if target not in mods:
@@ -380,6 +380,46 @@ jobs:
             lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"
           done < evidence-krein/modules.txt
 
+      - name: Replay exact archived signed-prime and V14 kernel sources
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-signed-archive .lake/build/lib/lean
+          cat > evidence-signed-archive/source-lock.txt <<'PINS'
+          RHNarrowFourBlockV2 36d07b81dbb67a765b4f3a37c50b16ee87ad1982
+          RHNarrowArchV1 705f5524d644bdbbf8fa777dbf2e8810edd4e883
+          WeilSignedPrimeKernelV1 4ef031bb4ff987de2687964b92649988acbfbc12
+          WeilSignedKernelReductionV1 5c62344e0c659624e30e3843bbda4b4dc5f5a462
+          WeilGeneralSignedKernelBoundV1 3cd1cfd5ea2659452aea4b963824e8b08aff6b88
+          WeilSignedPrimeEventualBridgeV1 e342ba5a694f58dd59e88818f07637f9a1ec53cd
+          RHBoundedKernelLaplaceV14 c1307d86bab3d6a2febcec613a4b00e6a5e03087
+          RHBoundedKernelCriterionV14 476eba8d560fba42bef9bce93efd857a82e7bad8
+          PINS
+          while read -r module blob; do
+            echo "=== ARCHIVED BLOB $module $blob ==="
+            url="https://api.github.com/repos/tarikskalic33/formal-conjectures/git/blobs/$blob"
+            curl -fsSL --retry 3 --retry-delay 2 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" "$url" |
+              python3 -c 'import sys,json,base64; x=json.load(sys.stdin); assert x["encoding"]=="base64"; sys.stdout.buffer.write(base64.b64decode(x["content"]))' > "$module.lean"
+            test "$(git hash-object "$module.lean")" = "$blob"
+            lake env lean -o ".lake/build/lib/lean/$module.olean" "$module.lean" \
+              2>&1 | tee "evidence-signed-archive/$module.log"
+            ! grep -F 'sorryAx' "evidence-signed-archive/$module.log"
+            ! grep -F 'error:' "evidence-signed-archive/$module.log"
+          done < evidence-signed-archive/source-lock.txt
+
+      - name: Upload signed-prime archived proof logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-signed-archive-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-signed-archive/
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Compile critical-line Mellin Fourier bridge
         shell: bash
         run: |
@@ -409,7 +449,7 @@ jobs:
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done
-          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHKreinExplicitCorrectionV1 RHKreinM8CertificateV1 RHKreinCorrectionTaylorBridgeV1 RHKreinRationalCertificateV1 RHKreinFiniteCertificateAssemblyV1 RHGlobalGrowthBoundaryV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1 RHKernelSubexponentialV1 RHSubexpBoundedPerturbationV1 RHFixedPacketEventualTailV1 RHPrimeOnlyGrowthBridgeV1 RHFixedPacketDenseShiftV1 RHPrimeOnlyReflectedBridgeV2 RHPrimeOnlyReflectedTailV3 RHPrimeDiscrepancyLogSubstitutionV4; do
+          for m in RHCertifiedApproximationV1 RHTranslateSpectralObstructionV1 RHMultiGeneratorMellinObstructionV1 RHLocalMomentCorrectionV1 RHLocalKreinPartitionV1 RHKreinSymbolIntegrationV1 RHKreinPrimeSymbolV1 RHKreinFourierFactorV1 RHKreinCertificateTransferV1 RHKreinGenuineCertificateV1 RHKreinExplicitCorrectionV1 RHKreinM8CertificateV1 RHKreinCorrectionTaylorBridgeV1 RHKreinRationalCertificateV1 RHKreinFiniteCertificateAssemblyV1 RHGlobalGrowthBoundaryV1 RHGlobalPrimeArchFrontierV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1 RHFixedPacketFrontierV1 RHKernelSubexponentialV1 RHSubexpBoundedPerturbationV1 RHFixedPacketEventualTailV1 RHPrimeOnlyGrowthBridgeV1 RHFixedPacketDenseShiftV1 RHPrimeOnlyReflectedBridgeV2 RHPrimeOnlyReflectedTailV3 RHPrimeDiscrepancyLogSubstitutionV4 RHSignedPrimeActualKernelTailV5; do
             cp "AEGISOverlay/$m.lean" "$m.lean"
             if ! lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
