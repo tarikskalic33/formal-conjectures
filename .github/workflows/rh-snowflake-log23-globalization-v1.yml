@@ -235,6 +235,13 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
+      - name: Verify local RH proof imports before installing Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_verify_rh_compile_graph_v1.py -v
+          python3 scripts/verify_rh_compile_graph_v1.py
+
       - name: Install pinned Lean and Mathlib cache
         shell: bash
         run: |
