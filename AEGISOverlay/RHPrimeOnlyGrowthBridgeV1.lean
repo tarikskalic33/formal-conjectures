@@ -17,6 +17,7 @@ limitations under the License.
 import AEGISOverlay.RHPrimePowerKernelConnectorV1
 import RHSubexpBoundedPerturbationV1
 import RHKernelSubexponentialV1
+import RHGlobalPrimeArchFrontierV1
 
 /-!
 # Prime-only growth: exact connection between the independent RH lanes
@@ -158,9 +159,31 @@ theorem riemannHypothesis_of_primeOnly_growth_and_kernel_bridge_v1
       hArithmetic hBridge
   exact riemannHypothesis_of_fixed_detecting_packet_subexponential hKernel
 
+/-- The same two analytic premises produce the *exact* universal residual
+consumed by the official RH theorem in PR #13.  This uses the existing
+kernel-checked RH => universal implication; it does not discharge either
+prime-only growth or kernel-arithmetic remainder boundedness. -/
+theorem universal_of_primeOnly_growth_and_kernel_bridge_v1
+    (hPrime : SubexponentialAtTopV1 (primeOnlyOrbitV1 detectingPacket))
+    (hBridge : FixedKernelArithmeticRemainderBoundedV1) :
+    AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10 :=
+  AEGIS.WeilRHImpliesFinalSignV13.rh_implies_universal_v13
+    (riemannHypothesis_of_primeOnly_growth_and_kernel_bridge_v1 hPrime hBridge)
+
+/-- The existing PR #51 global prime/Archimedean criterion is also reached,
+with the *same* two explicit assumptions and no new analytic claim. -/
+theorem globalPrimeArch_of_primeOnly_growth_and_kernel_bridge_v1
+    (hPrime : SubexponentialAtTopV1 (primeOnlyOrbitV1 detectingPacket))
+    (hBridge : FixedKernelArithmeticRemainderBoundedV1) :
+    AEGIS.RHGlobalPrimeArchFrontierV1.GlobalPrimeArchDomination :=
+  (AEGIS.RHGlobalPrimeArchFrontierV1.global_prime_arch_iff_universal).mpr
+    (universal_of_primeOnly_growth_and_kernel_bridge_v1 hPrime hBridge)
+
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.normalizedFull_eq_primeOnly_add_primePowers_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.combinedArithmetic_boundedDifference_primeOnly_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.combinedArithmetic_subexponential_iff_primeOnly_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.riemannHypothesis_of_primeOnly_growth_and_kernel_bridge_v1
+#print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.universal_of_primeOnly_growth_and_kernel_bridge_v1
+#print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.globalPrimeArch_of_primeOnly_growth_and_kernel_bridge_v1
 
 end AEGIS.RHPrimeOnlyGrowthBridgeV1
