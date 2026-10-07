@@ -112,6 +112,9 @@ theorem zero_kernel_laplace_integrable_of_subexponential
       IntegrableOn
         (fun t : Real => C * Real.exp (-(delta * t)))
         (Ioi (0 : Real)) := by
+    change Integrable
+      (fun t : Real => C * Real.exp (-(delta * t)))
+      (volume.restrict (Ioi (0 : Real)))
     simpa [neg_mul] using
       (integrableOn_exp_mul_Ioi (a := -delta) (by linarith) 0).const_mul C
   have hmeas :
@@ -254,7 +257,8 @@ theorem zero_kernel_laplace_differentiableAt_of_subexponential
               ring
         _ <= C * (t * Real.exp (-(r * t))) := by
               gcongr
-              apply Real.exp_le_exp.mpr
+              have hmul : 0 <= (w.re - 2 * r) * t :=
+                mul_nonneg (sub_nonneg.mpr hwre) ht0
               nlinarith)
 
   have hboundInt :
