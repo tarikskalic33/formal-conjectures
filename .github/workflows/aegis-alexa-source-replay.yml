@@ -1,5 +1,5 @@
-# Isolated source-replay witness only. No mathematical files, main branch, authority or deployments are changed.
-name: AEGIS Alexa pinned-source witness
+# Existing isolated source witness; no mathematical source, main branch, deployment or authority changes.
+name: AEGIS static MCP evidence witness
 on:
   push:
     branches: ['ci/aegis-alexa-source-replay-v1']
@@ -11,11 +11,11 @@ concurrency:
   group: aegis-alexa-source-witness
   cancel-in-progress: false
 env:
-  AEGIS_SOURCE_SHA: '897fa55556a639a04a67d25481b7a432af007d04'
+  AEGIS_SOURCE_SHA: 'ac65cc27dba8943de1bc33b6240d202bfd8fd142'
 jobs:
   replay:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -27,17 +27,14 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - name: Install unchanged locked MCP dependencies
-        working-directory: sovereign-omega-v2/mcp-server
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Execute the source-owned verifier without execution credentials
-        working-directory: sovereign-omega-v2/mcp-server
-        run: npm run verify:alexa
+      - name: Replay static evidence page with real desktop/mobile Chromium
+        working-directory: hub
+        run: node test/verify-mcp-public.mjs
       - name: Preserve source-bound observation, not an admission grant
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: aegis-alexa-source-${{ env.AEGIS_SOURCE_SHA }}
-          path: sovereign-omega-v2/mcp-server/evidence/
+          name: aegis-mcp-public-${{ env.AEGIS_SOURCE_SHA }}
+          path: hub/evidence/mcp-public/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
