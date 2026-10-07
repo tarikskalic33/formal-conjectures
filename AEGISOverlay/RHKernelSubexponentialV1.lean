@@ -112,7 +112,7 @@ theorem zero_kernel_laplace_integrable_of_subexponential
       IntegrableOn
         (fun t : Real => C * Real.exp (-(delta * t)))
         (Ioi (0 : Real)) := by
-    exact
+    simpa [neg_mul] using
       (integrableOn_exp_mul_Ioi (a := -delta) (by linarith) 0).const_mul C
   have hmeas :
       AEStronglyMeasurable
@@ -223,7 +223,7 @@ theorem zero_kernel_laplace_differentiableAt_of_subexponential
 
   have hbound :
       ∀ᵐ t ∂(volume.restrict (Ioi (0 : Real))),
-        forall w ∈ Metric.ball w0 r, norm (F' w t) <= bound t := by
+        ∀ w ∈ Metric.ball w0 r, norm (F' w t) <= bound t := by
     rw [ae_restrict_iff' measurableSet_Ioi]
     exact Filter.Eventually.of_forall (fun t ht w hw => by
       have ht0 : 0 <= t := le_of_lt ht
@@ -263,7 +263,7 @@ theorem zero_kernel_laplace_differentiableAt_of_subexponential
 
   have hdiff :
       ∀ᵐ t ∂(volume.restrict (Ioi (0 : Real))),
-        forall w ∈ Metric.ball w0 r,
+        ∀ w ∈ Metric.ball w0 r,
           HasDerivAt (F · t) (F' w t) w := by
     rw [ae_restrict_iff' measurableSet_Ioi]
     exact Filter.Eventually.of_forall (fun t ht w hw => by
@@ -358,7 +358,7 @@ theorem zero_re_le_half_of_detecting_subexponential_kernel
     exact hiso rho hne
   have hLc : ContinuousAt (WeilZeroKernelLaplaceV12 g) z :=
     (zero_kernel_laplace_analyticOnNhd_of_subexponential g hK z hzpos).continuousAt
-  have hsplit : forall w ∈ BridgeDomainV13,
+  have hsplit : ∀ w ∈ BridgeDomainV13,
       WeilZeroResolventV12 g w = a rho0 / (w - z) + ResolventSumV13 b w := by
     intro w hw
     obtain ⟨epsilon, hepsilon, hsep⟩ :=
@@ -385,7 +385,7 @@ theorem zero_re_le_half_of_detecting_subexponential_kernel
     · simp only [b, hr, if_false]
   let delta : Real := min epsilon1 z.re
   have hdelta : 0 < delta := lt_min hepsilon1 hzpos
-  have hnear : forall w ∈ Metric.ball z delta, w ≠ z -> w ∈ BridgeDomainV13 := by
+  have hnear : ∀ w ∈ Metric.ball z delta, w ≠ z -> w ∈ BridgeDomainV13 := by
     intro w hw hne
     have hd : norm (w - z) < delta := by
       simpa [Metric.mem_ball, dist_eq_norm] using hw
