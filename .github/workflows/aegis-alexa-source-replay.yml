@@ -1,0 +1,43 @@
+# Isolated source-replay witness only. No mathematical files, main branch, authority or deployments are changed.
+name: AEGIS Alexa pinned-source witness
+on:
+  push:
+    branches: ['ci/aegis-alexa-source-replay-v1']
+    paths: ['.github/workflows/aegis-alexa-source-replay.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: aegis-alexa-source-witness
+  cancel-in-progress: false
+env:
+  AEGIS_SOURCE_SHA: '897fa55556a639a04a67d25481b7a432af007d04'
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.AEGIS_SOURCE_SHA }}
+          persist-credentials: false
+      - name: Verify the AEGIS source, not this witness repository
+        run: test "$(git rev-parse HEAD)" = "$AEGIS_SOURCE_SHA"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Install unchanged locked MCP dependencies
+        working-directory: sovereign-omega-v2/mcp-server
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Execute the source-owned verifier without execution credentials
+        working-directory: sovereign-omega-v2/mcp-server
+        run: npm run verify:alexa
+      - name: Preserve source-bound observation, not an admission grant
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aegis-alexa-source-${{ env.AEGIS_SOURCE_SHA }}
+          path: sovereign-omega-v2/mcp-server/evidence/
+          if-no-files-found: error
+          retention-days: 7
