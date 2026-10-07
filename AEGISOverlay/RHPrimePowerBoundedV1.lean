@@ -77,7 +77,9 @@ theorem normalized_prime_power_correction_bounded_v1 :
         Real.exp (-y / 2) * (C * Real.exp (y / 2))
             = C * (Real.exp (-y / 2) * Real.exp (y / 2)) := by ring
         _ = C * Real.exp ((-y / 2) + (y / 2)) := by rw [Real.exp_add]
-        _ = C := by simp
+        _ = C := by
+          have hzero : (-y / 2) + (y / 2) = 0 := by ring
+          rw [hzero, Real.exp_zero, mul_one]
     _ ≤ max C 0 := le_max_left _ _
 
 #print axioms AEGIS.RHPrimePowerBoundedV1.sqrt_exp_eq_exp_half_v1
