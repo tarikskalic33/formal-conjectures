@@ -16,6 +16,17 @@ IMPORT = re.compile(r"^(?:public\s+)?import\s+(.+)$")
 MODULE = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 
+def prebuilt_root_verified(workflow: str, name: str) -> bool:
+    """Trust only the named root module built in the earlier exact workflow step."""
+    if name != "RHKreinCriticalLineBridgeV1":
+        return False
+    before = workflow.split(STEP, 1)[0]
+    return (
+        f"cp AEGISOverlay/{name}.lean {name}.lean" in before
+        and f"lake env lean -o .lake/build/lib/lean/{name}.olean {name}.lean" in before
+    )
+
+
 def compile_plan(workflow: str) -> list[tuple[str, str]]:
     if workflow.count(STEP) != 1 or workflow.count(NEXT_STEP) != 1:
         raise ValueError("compile-step anchors not unique")
@@ -57,6 +68,10 @@ def audit(root: Path, workflow: str) -> tuple[list[str], int]:
                     required_group = "root"
                 local_path = root / "AEGISOverlay" / f"{dep}.lean"
                 if dep not in where:
+                    if (required_group == "root" and local_path.is_file()
+                            and prebuilt_root_verified(workflow, dep)):
+                        imports_checked += 1
+                        continue
                     if (required_group == "AEGISOverlay" or local_path.is_file()) and local_path.is_file():
                         problems.append(f"{name}: local import {target} omitted from compile plan")
                     elif required_group == "AEGISOverlay":

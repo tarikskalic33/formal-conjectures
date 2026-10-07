@@ -64,6 +64,20 @@ class CompileGraphTests(unittest.TestCase):
         (self.root / 'AEGISOverlay' / 'Third.lean').unlink()
         self.assertIn('missing declared source', '\n'.join(audit(self.root, WORKFLOW)[0]))
 
+    def test_accepts_only_proven_prebuilt_root(self):
+        self.write('Second', 'import RHKreinCriticalLineBridgeV1')
+        self.write('RHKreinCriticalLineBridgeV1', 'import Mathlib.Tactic')
+        earlier = ("- name: Compile critical-line Mellin Fourier bridge\n"
+                   "    run: |\n"
+                   "      cp AEGISOverlay/RHKreinCriticalLineBridgeV1.lean RHKreinCriticalLineBridgeV1.lean\n"
+                   "      lake env lean -o .lake/build/lib/lean/RHKreinCriticalLineBridgeV1.olean RHKreinCriticalLineBridgeV1.lean\n")
+        self.assertEqual(audit(self.root, earlier + WORKFLOW), ([], 2))
+
+    def test_rejects_unverified_prebuilt_root(self):
+        self.write('Second', 'import RHKreinCriticalLineBridgeV1')
+        self.write('RHKreinCriticalLineBridgeV1', 'import Mathlib.Tactic')
+        self.assertIn('omitted', '\n'.join(audit(self.root, WORKFLOW)[0]))
+
     def test_rejects_unrecognized_plan(self):
         with self.assertRaisesRegex(ValueError, 'compile-step anchors'):
             compile_plan('unrelated workflow')
