@@ -93,7 +93,7 @@ theorem primeTerm_real_v1
     (f : ℝ → ℂ) (hf : RealValuedFnV1 f) (n : ℕ) :
     conj (WeilPrimeTermV1 f n) = WeilPrimeTermV1 f n := by
   have hpos := hf (((n + 1 : ℕ) : ℝ))
-  have hinv := hf ((((n + 1 : ℕ) : ℝ)⁻¹)
+  have hinv := hf ((((n + 1 : ℕ) : ℝ)⁻¹))
   simpa [WeilPrimeTermV1, hpos, hinv]
 
 theorem primeSum_real_v1
