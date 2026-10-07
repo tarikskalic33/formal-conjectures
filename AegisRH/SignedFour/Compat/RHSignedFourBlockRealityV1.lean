@@ -114,7 +114,8 @@ theorem archIntegrand_real_v1
   have hx := hf x
   have hinv := hf x⁻¹
   have hone := hf 1
-  have htwo : conj (2 : ℂ) = (2 : ℂ) := by norm_num
+  have htwo : conj (2 : ℂ) = (2 : ℂ) := by
+    simp only [map_ofNat]
   simpa [WeilArchimedeanIntegrandV1, hx, hinv, hone, htwo]
 
 theorem archIntegral_real_v1
