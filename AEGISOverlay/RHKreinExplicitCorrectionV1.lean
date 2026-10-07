@@ -482,8 +482,8 @@ private theorem finiteSum_hasCompactSupport {ι : Type*} [Fintype ι]
     (f : ι → ℝ → ℂ) (hf : ∀ i, HasCompactSupport (f i)) :
     HasCompactSupport (fun x : ℝ => ∑ i, f i x) := by
   classical
-  change HasCompactSupport (∑ i, f i)
-  exact (HasCompactSupport.addSubmonoid ℝ ℂ).sum_mem (fun i _ => hf i)
+  simpa only [Finset.sum_apply] using
+    (HasCompactSupport.addSubmonoid ℝ ℂ).sum_mem (fun i _ => hf i)
 
 /-- The correction is continuous despite containing derivative columns. -/
 theorem correction_continuous : Continuous correction := by
