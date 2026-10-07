@@ -86,7 +86,7 @@ theorem packetKernelBound_of_eventuallyBounded
       ∀ t : ℝ, t ∈ Icc (-R) R →
         ‖WeilZeroTranslationKernelV11 g t‖ ≤ M := by
     intro t ht
-    exact hM ⟨t, ht, rfl⟩
+    exact hM _ ⟨t, ht, rfl⟩
 
   refine ⟨max C M, ?_⟩
   intro t
