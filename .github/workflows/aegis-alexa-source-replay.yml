@@ -11,7 +11,7 @@ concurrency:
   group: aegis-alexa-source-witness
   cancel-in-progress: false
 env:
-  AEGIS_SOURCE_SHA: '2d08fb6ef9b641c9916fe4fb2e9ef9d17b9406a4'
+  AEGIS_SOURCE_SHA: 'de84fd79ef586afbf22f83748955aac6e276cbaf'
 jobs:
   replay:
     runs-on: ubuntu-latest
