@@ -166,7 +166,7 @@ jobs:
           FILE="$ROOT/RHSignedFourBlockRealityV1.lean"
           test "$(git -C .aegis hash-object sovereign-omega-v2/formal/bridges/lean/RHSignedFourBlockRealityV1.lean)" = "3939248d9f5d477c094076f075bf94c5f26e18fd"
           sha256sum "$FILE" > evidence/signed-reality-source-sha256.txt
-          cp AegisRH/SignedFour/Compat/RHSignedFourBlockRealityV1.lean "$FILE"
+          cp .fork-compat/AegisRH/SignedFour/Compat/RHSignedFourBlockRealityV1.lean "$FILE"
           sha256sum "$FILE" > evidence/signed-reality-compiled-sha256.txt
 
       - name: Compile exact target closure
