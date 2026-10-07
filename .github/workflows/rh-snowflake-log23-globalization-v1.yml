@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           mkdir -p evidence-structural .lake/build/lib/lean/AEGISOverlay
           result=0
-          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHLocalKreinPartitionV1 RHCompactMellinEntireV1; do
+          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHLocalKreinPartitionV1 RHCompactMellinEntireV1; do
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
           done
