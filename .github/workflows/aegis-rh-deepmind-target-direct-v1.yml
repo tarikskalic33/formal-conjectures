@@ -77,7 +77,7 @@ jobs:
           test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
           test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
           test -f FormalConjectures/Millennium/RiemannHypothesis.lean
-          grep -F 'public import RHRestrictedWeilCriterionV13' FormalConjectures/Millennium/RiemannHypothesis.lean
+          grep -Fx 'import RHRestrictedWeilCriterionV13' FormalConjectures/Millennium/RiemannHypothesis.lean
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' FormalConjectures/Millennium/RiemannHypothesis.lean | grep -F 'sorry'
 
       - name: Install pinned Lean and Mathlib cache
