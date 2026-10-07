@@ -13,10 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -/
-module
 
-public import FormalConjecturesUtil
-public import RHRestrictedWeilCriterionV13
+import FormalConjecturesUtil
+import RHRestrictedWeilCriterionV13
 
 /-!
 # Riemann Hypothesis and its generalizations
@@ -44,8 +43,6 @@ continuation of the Dedekind zeta function.
 - J. Neukirch, *Algebraic Number Theory*, Springer (Grundlehren 322), 1999, Chapter VII, §5.
 - D. A. Marcus, *Number Fields*, Springer (GTM 81), 1977, Chapter VII.
 -/
-
-@[expose] public section
 
 namespace RiemannHypothesis
 
