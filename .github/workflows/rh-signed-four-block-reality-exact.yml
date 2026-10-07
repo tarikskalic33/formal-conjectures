@@ -158,6 +158,17 @@ jobs:
           sha256sum "$FILE" > evidence/packet-compiled-sha256.txt
           git -C .fork-compat rev-parse HEAD > evidence/compat-head.txt
 
+      - name: Bind and apply exact signed-four reality proof repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
+          FILE="$ROOT/RHSignedFourBlockRealityV1.lean"
+          test "$(git -C .aegis hash-object sovereign-omega-v2/formal/bridges/lean/RHSignedFourBlockRealityV1.lean)" = "3939248d9f5d477c094076f075bf94c5f26e18fd"
+          sha256sum "$FILE" > evidence/signed-reality-source-sha256.txt
+          cp AegisRH/SignedFour/Compat/RHSignedFourBlockRealityV1.lean "$FILE"
+          sha256sum "$FILE" > evidence/signed-reality-compiled-sha256.txt
+
       - name: Compile exact target closure
         shell: bash
         run: |
@@ -205,7 +216,7 @@ jobs:
           PARENT_SHA=$PARENT_SHA
           TARGET_MODULE=$TARGET_MODULE
           SOURCE_BYTES_PRESERVED=FALSE
-          COMPATIBILITY_OVERLAY=SOURCE_BOUND_RHFineMomentPacketV3
+          COMPATIBILITY_OVERLAY=SOURCE_BOUND_RHFineMomentPacketV3_AND_RHSignedFourBlockRealityV1
           CLAIM=REAL_SYMMETRIC_TOEPLITZ_REDUCTION_FOR_GFINE_DYADIC_B
           COMPARISON_SCHUR_INERTIA=EXACT_RATIONAL_RECEIPT
           GLOBAL_WEIL_SIGN=NOT_CLAIMED
