@@ -100,10 +100,45 @@ def higherPrimePowerOrbitV1 (g : WeilCompactSmoothGV1) (d : ℝ) : ℂ :=
   ∫ y : ℝ, primeDiscrepancyKernelV1 g (d - y) *
     normalizedPrimePowerCorrectionComplexV1 y ∂volume
 
+/-- Direct convolution with the complete normalized Chebyshev psi
+discrepancy, independently of how the integral is decomposed. -/
+def fullPrimeDiscrepancyOrbitV1 (g : WeilCompactSmoothGV1) (d : ℝ) : ℂ :=
+  ∫ y : ℝ, primeDiscrepancyKernelV1 g (d - y) *
+    normalizedFullPrimeDiscrepancyComplexV1 y ∂volume
+
 /-- The arithmetic orbit assembled from the prime-only and prime-power
 parts. No unproved interchange of integration and summation is invoked. -/
 def combinedArithmeticOrbitV1 (g : WeilCompactSmoothGV1) (d : ℝ) : ℂ :=
   primeOnlyOrbitV1 g d + higherPrimePowerOrbitV1 g d
+
+/-- This is the missing exact connection to the actual full psi convolution.
+The two integrability hypotheses are explicit, rather than silently
+distributing a nonintegrable totalized Bochner integral. -/
+theorem fullPrimeDiscrepancyOrbit_eq_combined_of_integrable_v1
+    (g : WeilCompactSmoothGV1) (d : ℝ)
+    (hPrime : Integrable
+      (fun y : ℝ =>
+        primeDiscrepancyKernelV1 g (d - y) *
+          normalizedPrimeOnlyDiscrepancyComplexV1 y) volume)
+    (hPowers : Integrable
+      (fun y : ℝ =>
+        primeDiscrepancyKernelV1 g (d - y) *
+          normalizedPrimePowerCorrectionComplexV1 y) volume) :
+    fullPrimeDiscrepancyOrbitV1 g d = combinedArithmeticOrbitV1 g d := by
+  have hpoint :
+      (fun y : ℝ => primeDiscrepancyKernelV1 g (d - y) *
+        normalizedFullPrimeDiscrepancyComplexV1 y) =
+      (fun y : ℝ =>
+        primeDiscrepancyKernelV1 g (d - y) *
+          normalizedPrimeOnlyDiscrepancyComplexV1 y +
+        primeDiscrepancyKernelV1 g (d - y) *
+          normalizedPrimePowerCorrectionComplexV1 y) := by
+    funext y
+    rw [normalizedFull_eq_primeOnly_add_primePowers_v1]
+    ring
+  unfold fullPrimeDiscrepancyOrbitV1
+  rw [hpoint, integral_add hPrime hPowers]
+  rfl
 
 /-- The full arithmetic orbit differs from the genuine prime-only
 convolution by a uniformly bounded function. -/
@@ -180,6 +215,7 @@ theorem globalPrimeArch_of_primeOnly_growth_and_kernel_bridge_v1
     (universal_of_primeOnly_growth_and_kernel_bridge_v1 hPrime hBridge)
 
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.normalizedFull_eq_primeOnly_add_primePowers_v1
+#print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.fullPrimeDiscrepancyOrbit_eq_combined_of_integrable_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.combinedArithmetic_boundedDifference_primeOnly_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.combinedArithmetic_subexponential_iff_primeOnly_v1
 #print axioms AEGIS.RHPrimeOnlyGrowthBridgeV1.riemannHypothesis_of_primeOnly_growth_and_kernel_bridge_v1
