@@ -15,6 +15,7 @@ limitations under the License.
 -/
 
 import RHPrimeOnlyReflectedTailV3
+import RHFixedPacketEventualTailV1
 import WeilSignedPrimeEventualBridgeV1
 import RHBoundedKernelCriterionV14
 
@@ -116,8 +117,49 @@ theorem riemannHypothesis_of_signed_dictionary_and_prime_growth
   riemannHypothesis_of_prime_only_growth_and_eventual_reflected_bridge
     hPrime (eventual_reflected_remainder_of_signed_dictionary hDictionary)
 
+
+/-- Complete *criterion* for one fixed detecting packet: the actual signed
+prime correlation is eventually bounded exactly when the actual Mathlib RH
+holds. The proof uses the archive's true B-S and zero-kernel identities,
+plus the original four-phase sign converse. Neither implication asserts
+that its respective input is known unconditionally. -/
+theorem fixed_signed_prime_eventually_bounded_iff_rh :
+    (∃ T C : ℝ, ∀ d : ℝ, T ≤ d →
+      ‖SignedPrimeCorrelationV1 detectingPacket d‖ ≤ C) ↔
+      RiemannHypothesis := by
+  constructor
+  · intro hSigned
+    obtain ⟨T, C, hB⟩ :=
+      (AEGIS.WeilSignedPrimeEventualBridgeV1.
+        signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
+          detectingPacket).mp hSigned
+    apply AEGIS.RHFixedPacketEventualTailV1.
+      riemannHypothesis_of_fixed_detecting_packet_eventual_bound
+    refine ⟨T, C, ?_⟩
+    intro d hd
+    rw [norm_zero_kernel_eq_actual_B_positive_v14
+      detectingPacket detectingPacket_moments d]
+    exact hB d hd
+  · intro hRH
+    have hSign : FixedDetectingPacketSign :=
+      (fixed_detecting_packet_sign_iff_universal).mpr
+        (AEGIS.WeilRHImpliesFinalSignV13.rh_implies_universal_v13 hRH)
+    obtain ⟨C, hC⟩ :=
+      AEGIS.RHFixedPacketFourPhaseV1.
+        fixed_packet_four_phase_implies_bounded_zero_kernel
+          detectingPacket detectingPacket_moments hSign
+    apply (AEGIS.WeilSignedPrimeEventualBridgeV1.
+      signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
+        detectingPacket).mpr
+    refine ⟨0, C, ?_⟩
+    intro d _hd
+    rw [← norm_zero_kernel_eq_actual_B_positive_v14
+      detectingPacket detectingPacket_moments d]
+    exact hC d
+
 end AEGIS.RHSignedPrimeActualKernelTailV5
 
 #print axioms AEGIS.RHSignedPrimeActualKernelTailV5.signed_prime_reflected_zero_kernel_tail_bounded
 #print axioms AEGIS.RHSignedPrimeActualKernelTailV5.eventual_reflected_remainder_of_signed_dictionary
 #print axioms AEGIS.RHSignedPrimeActualKernelTailV5.riemannHypothesis_of_signed_dictionary_and_prime_growth
+#print axioms AEGIS.RHSignedPrimeActualKernelTailV5.fixed_signed_prime_eventually_bounded_iff_rh
