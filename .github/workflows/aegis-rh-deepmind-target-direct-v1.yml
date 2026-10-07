@@ -232,6 +232,7 @@ jobs:
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
 
+          lake build FormalConjecturesUtil
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
           mkdir -p .lake/build/lib/lean/FormalConjectures/Millennium
           lean -o .lake/build/lib/lean/FormalConjectures/Millennium/RiemannHypothesis.olean "$TARGET" 2>&1 | tee /tmp/deepmind-rh-target.log
