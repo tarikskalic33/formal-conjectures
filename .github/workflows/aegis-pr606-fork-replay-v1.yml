@@ -299,6 +299,12 @@ jobs:
 
           # Build the native fork prerequisite in this isolated replay environment.
           lake build FormalConjecturesUtil
+
+          # V13Scratch alone does not provide the imported terminal module.
+          lean -o "$OUT/RHRestrictedWeilCriterionV13.olean" \
+            AegisRH/PR606/RHRestrictedWeilCriterionV13.lean 2>&1 | tee /tmp/pr606-rh-terminal.log
+          ! grep -F 'sorryAx' /tmp/pr606-rh-terminal.log
+
           TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
           test -f "$TARGET"
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' "$TARGET" | grep -F 'sorry'
