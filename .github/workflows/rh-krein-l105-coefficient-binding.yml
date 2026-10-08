@@ -1,0 +1,132 @@
+name: AEGIS RH L105 Source-Exact Coefficient Binding
+
+on:
+  push:
+    branches:
+      - 'integration/rh-proof-spine-main-root-v1'
+    paths:
+      - 'research/rh/krein_L105_v1/tools/**'
+      - '.github/workflows/rh-krein-l105-coefficient-binding.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-rebind:
+    name: validate 399 hat plus 5 delta dyadic inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact fork HEAD
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pinned source and generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir -p evidence-l105
+          test "$(git hash-object research/rh/krein_L105_v1/RHKreinL105DataV1.lean)" = 1b88c253ed33ab041880bc0cd3c117d1d2e09e34
+          test "$(git hash-object research/rh/aegis_source_4d7578e/research/krein_lp_L1.05_svd.json)" = 8693c140b4be1f785074aa7040b5c50be5ef5fd2
+          test "$(git hash-object research/rh/krein_L105_v1/tools/m105.py)" = edb52a548ea8befa22ba155553c175bd721ea756
+          test "$(git hash-object research/rh/krein_L105_v1/tools/gen105.py)" = 3f283411bb216bd79099600dd4945c74b5e8eff6
+          test "$(git hash-object research/rh/krein_L105_v1/tools/genall105.py)" = f3769a0b5b34a0c10f167a5782970d772d2de974
+          test "$(git hash-object research/rh/krein_L105_v1/tools/resplit.py)" = 5107d8e04454e814bd9a897b17876ae46d36c523
+          test "$(git hash-object research/rh/krein_L105_v1/tools/sweep.py)" = ed523d5040912814843f6028d7a576c28fca32c8
+          test "$(git hash-object research/rh/krein_L105_v1/tools/minN.py)" = 1f34cdd274ad09fb7f58818733258721bf817ddd
+          test "$(git hash-object research/rh/krein_L105_v1/tools/deg16.py)" = fc93a9781c89103418a558c06d5382eea9c9b047
+          printf 'EXACT_HEAD=%s\nLEAN_DATA_BLOB=1b88c253ed33ab041880bc0cd3c117d1d2e09e34\nJSON_BLOB=8693c140b4be1f785074aa7040b5c50be5ef5fd2\n' "$GITHUB_SHA" > evidence-l105/source.txt
+      - name: Run exact dyadic binding test without Lean or extra mathematical assumptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile research/rh/krein_L105_v1/tools/{m105,gen105,genall105,resplit}.py
+          python3 - <<'PY' | tee evidence-l105/coefficients.log
+          from pathlib import Path
+          from fractions import Fraction
+          import sys,re
+          project=Path.cwd()
+          root=project/'research/rh/krein_L105_v1'
+          sys.path.insert(0,str(root/'tools'))
+          import m105
+          source=(root/'RHKreinL105DataV1.lean').read_text()
+          def read_pairs(key,next_key):
+            i=source.index('def '+key+' ')
+            j=source.index('def '+next_key+' ',i)
+            pairs=re.findall(r'\((-?\d+),\s*(\d+)\)',source[i:j])
+            return [Fraction(int(a),2**int(b)) for a,b in pairs]
+          hat=read_pairs('cqRaw','dqRaw')
+          delta=read_pairs('dqRaw','cqList')
+          assert len(hat)==399,('HAT_COUNT',len(hat))
+          assert len(delta)==5,('DELTA_COUNT',len(delta))
+          assert m105.CQ==hat, 'HAT_BYTES_NOT_MATHEMATICALLY_IDENTICAL'
+          assert m105.DQ==delta, 'DELTA_BYTES_NOT_MATHEMATICALLY_IDENTICAL'
+          assert m105.NH==399
+          assert len(m105._P['coef'])==404
+          print('SOURCE_EXACT_COEFFICIENT_BINDING=PASS')
+          print('DYADIC_EQUALITY=404_OF_404')
+          print('HAT_COLUMNS=399')
+          print('DELTA_TERMS=5')
+          print('KREIN_21_OVER_20_KERNEL_REPLAY=NOT_RUN')
+          print('RIEMANN_HYPOTHESIS=NOT_PROVED')
+          PY
+      - name: Check generator location independence using disposable non-proof fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, subprocess, sys, tempfile, shutil
+          from pathlib import Path
+          original = Path.cwd() / 'research/rh/krein_L105_v1/tools'
+          with tempfile.TemporaryDirectory(prefix='aegis-l105-generator-smoke-') as temp:
+              root = Path(temp)
+              tools = root / 'tools'
+              tools.mkdir()
+              for name in ('gen105.py', 'genall105.py'):
+                  shutil.copy2(original / name, tools / name)
+              (root / 'RHKreinHatAtV1.lean').write_text('/-\nTEST FIXTURE ONLY; NOT A PROOF\n-/\n')
+              fixture = [
+                  {'lo':'0','hi':'1500','N':16,'K0':0,'deg':36,'hats':True,'breaks':['1500']},
+                  {'lo':'1500','hi':'3000','N':16,'K0':0,'deg':16,'hats':False,'breaks':['3000']}
+              ]
+              (tools / 'design105F.json').write_text(json.dumps(fixture))
+              # Execute from outside the generator and certificate directories.
+              for name in ('gen105.py', 'genall105.py'):
+                  subprocess.run([sys.executable, str(tools / name)], cwd=Path(temp).parent,
+                                 check=True, capture_output=True, text=True)
+              batches=json.loads((tools/'batches105.json').read_text())
+              assert batches==[['RHKreinL105Batch000',[0,1]]], batches
+              assert (root/'RHKreinL105Batch000.lean').is_file()
+              assert (root/'RHKreinL105AllV1.lean').is_file()
+              # The second fixture has a gap; it MUST be rejected before any proof-generation.
+              fixture[1]['lo']='1501'
+              (tools/'design105F.json').write_text(json.dumps(fixture))
+              proc=subprocess.run([sys.executable,str(tools/'gen105.py')],cwd=Path(temp).parent,
+                                  capture_output=True,text=True)
+              assert proc.returncode != 0
+              assert 'L105_NONCONTIGUOUS_WINDOW_1' in proc.stderr
+          print('GENERATOR_PATH_SMOKE=PASS')
+          print('DISCONTINUOUS_DESIGN_REJECTED=PASS')
+          print('REAL_L105_BATCH_KERNEL_REPLAY=NOT_RUN')
+          PY
+      - name: Record known missing finite certificate design without inventing data
+        if: always()
+        shell: bash
+        run: |
+          if test -f research/rh/krein_L105_v1/tools/design105F.json; then
+            echo 'DESIGN105F=SOURCE_PRESENT' > evidence-l105/design-status.txt
+          else
+            echo 'DESIGN105F=NOT_COMMITTED_GENERATION_REQUIRED' > evidence-l105/design-status.txt
+          fi
+          printf 'WINDOWS_L_GE_21_OVER_40=OPEN\nPROTECTED_MAIN_ADMISSION=NOT_EXECUTED\n' >> evidence-l105/design-status.txt
+      - name: Upload machine-checkable data receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-l105-coefficient-binding-${{ github.sha }}
+          path: evidence-l105/
+          if-no-files-found: warn
+          retention-days: 30
