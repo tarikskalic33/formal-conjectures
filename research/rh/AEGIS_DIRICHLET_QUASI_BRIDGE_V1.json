@@ -1,0 +1,86 @@
+{
+  "schema": "aegis.rh.dirichlet-quasi-bridge.v1",
+  "created_date_utc": "2026-10-08",
+  "authority_effect": "NONE",
+  "rh_proven_unconditionally": false,
+  "admission": "NOT_ADMITTED",
+  "source_identity": {
+    "repository": "tarikskalic33/formal-conjectures",
+    "base_ref": "main",
+    "base_commit": "02da1ad1288b4881ea1f8e575fbe84af7db04364",
+    "base_lean_toolchain": "leanprover/lean4:v4.33.1",
+    "created_branch": "proof/rh-dirichlet-euler-quasi-bridge-v1-20261008",
+    "new_proof_module": "AEGISOverlay/DirichletEulerQuasiBridgeV1.lean"
+  },
+  "earlier_aegis_evidence": [
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 693,
+      "pr_opened_utc": "2026-09-26T16:52:29Z",
+      "source_commit": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "source_commit_created_utc": "2026-09-28T02:19:54Z",
+      "path": "harness/sdk/epstein_lattice_weil_probe.py",
+      "blob_sha": "3a2d59c6b0ab9d6f2c9f03dd1c33c883bfab690f",
+      "content": "chi_-4, chi_5, chi_-20 and coefficients of zeta(s)*L(s,chi_-20) versus normalized E_(x^2+5y^2); exact Dirichlet-convolution n=6 diagnostic"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 693,
+      "source_commit": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "path": "research/rh/EPSTEIN_LATTICE_WEIL_CONTROL_V1.md",
+      "blob_sha": "da3e1b24481610e4ae3eb750ac8c098658dc90e5",
+      "content": "Epstein D=-20 identity E=A+B and Euler-product distinction; numerical sign controls are explicitly not RH proof"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 679,
+      "pr_opened_utc": "2026-09-24T20:41:36Z",
+      "source_commit": "5e450d7fbb8c45ce652e458f43d2c5f33ab99832",
+      "source_commit_created_utc": "2026-09-27T04:44:40Z",
+      "path": "sovereign-omega-v2/formal/bridges/lean/WeilFixedLineArithmeticV10.lean",
+      "blob_sha": "b3849e4333230e251d3713cce2056956cc5e3ded",
+      "content": "zeta'/zeta Mellin fixed-line evaluation and von-Mangoldt prime-power arithmetic"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 679,
+      "source_commit": "5e450d7fbb8c45ce652e458f43d2c5f33ab99832",
+      "path": "sovereign-omega-v2/formal/bridges/lean/WeilExplicitFormulaV10.lean",
+      "blob_sha": "e7d4d31eb6053d5f7325f23071322580b441c8a0",
+      "content": "normalized Weil explicit formula assembly from zero, pole, gamma and prime terms"
+    }
+  ],
+  "external_comparator": {
+    "repository": "openai/math",
+    "public_initial_commit": "adc7f1241b42e322a6451854ab7e4b4c146bf78a",
+    "public_initial_commit_created_utc": "2026-10-06T21:58:50Z",
+    "paper_filename_date": "2026-09-30",
+    "toolchain": "leanprover/lean4:v4.34.1",
+    "challenge_json_path": "lean/ComparatorChallenges/QuasiRiemannHypothesis.json",
+    "challenge_json_blob_sha": "acf552468fc23c1a27d685d33983c58c50040542",
+    "solution_path": "lean/OAI/NumberTheory/DirichletL/Nonvanishing.lean",
+    "solution_blob_sha": "46c67f4000906b1391a471d6e6396ac0da3c16a5",
+    "import_strategy": "NONE: theorems are explicit hypotheses until same-pin replay/adaptation",
+    "hypothesis_types": [
+      "zeta(s)!=0 for Re(s)>7/8",
+      "L(s,chi)!=0 for Re(s)>7/8 excluding principal pole"
+    ]
+  },
+  "new_theorems": [
+    "zeta_zero_re_le_seven_eighths",
+    "zeta_zero_translation_exponent_le_three_eighths",
+    "zeta_zero_in_reflected_strip",
+    "euler_classsum_ne_zero",
+    "epstein_zero_forces_nontrivial_cancellation"
+  ],
+  "unproved_dependencies": [
+    "ZetaSevenEighthsInput from independently checked comparator on fork pin",
+    "DirichletSevenEighthsInput from independently checked comparator on fork pin",
+    "Riemann-zeta zero reflection when used for left strip",
+    "The D=-20 Epstein E=A+B analytic identity in Lean",
+    "Global bound on the actual AEGIS detecting-packet kernel using the 3/8 exponent"
+  ],
+  "proof_authority": "CONDITIONAL_ONLY",
+  "compilation_status": "PENDING_HOSTED_EXACT_HEAD_REPLAY",
+  "provenance_note": "AEGIS corpus is earlier than the OpenAI public math repository and the September 30 paper filename. This does not establish priority for the classical Dirichlet/Euler identities nor establish independent discovery of the exact 7/8 theorem."
+}
