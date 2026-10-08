@@ -132,8 +132,7 @@ theorem fixed_signed_prime_eventually_bounded_iff_rh :
     obtain ⟨T, C, hB⟩ :=
       (AEGIS.WeilSignedPrimeEventualBridgeV1.signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
           detectingPacket).mp hSigned
-    apply AEGIS.RHFixedPacketEventualTailV1.
-      riemannHypothesis_of_fixed_detecting_packet_eventual_bound
+    apply AEGIS.RHFixedPacketEventualTailV1.riemannHypothesis_of_fixed_detecting_packet_eventual_bound
     refine ⟨T, C, ?_⟩
     intro d hd
     rw [norm_zero_kernel_eq_actual_B_positive_v14
