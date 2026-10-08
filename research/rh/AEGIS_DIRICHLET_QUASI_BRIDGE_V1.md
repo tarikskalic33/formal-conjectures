@@ -81,7 +81,7 @@ critical-line or universal Weil nonnegativity residual.
   externally sourced and explicitly quantified.
 - The isolated replay workflow runs the pinned Lean compiler against
   the new module and checks that the required axioms print without
-  `sorryAx`. Until that run finishes, **compilation is unverified**.
+  `sorryAx`. **Verified source replay:** run [`37709265009`](https://github.com/tarikskalic33/formal-conjectures/actions/runs/37709265009) succeeded on exact head `8d80aba4400b5e7064154bada1596de233c899e7` with Lean 4.33.1; all five theorem declarations printed only `[propext, Classical.choice, Quot.sound]`, no `sorryAx`. The tested source blob is `a77814981ba1bd07473e4df4e7a250f5b89be7e6`. A successor head requires its own exact-head replay.
 - The original fork [PR #63](https://github.com/tarikskalic33/formal-conjectures/pull/63)
   retains the official `RiemannHypothesis.riemannHypothesis` target
   with residual `AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10`.
@@ -99,3 +99,7 @@ summability theorem as explicit provenance and proof dependencies.
 
 Machine-readable pins and explicit unresolved dependencies:
 [`AEGIS_DIRICHLET_QUASI_BRIDGE_V1.json`](AEGIS_DIRICHLET_QUASI_BRIDGE_V1.json).
+
+## 5. Earlier pre-OpenAI divisor/zero-carrier work
+
+AEGIS source [`ZetaDivisorSupportBridgeV1.lean`](https://github.com/Aegis-Omega/AEGIS-OMEGA/blob/99563f50c252411ee4eac188acc6bdb4f8d58b3f/sovereign-omega-v2/formal/bridges/lean/ZetaDivisorSupportBridgeV1.lean), Git commit `99563f50c252411ee4eac188acc6bdb4f8d58b3f` created **2026-09-10 17:56:46 UTC**, blob `6ec09558452bbb2f9a4e82c5d2769a2ea758f7c3`, gives a finitary meromorphic zero-divisor support lane including `nontrivial_zero_occurs_in_some_finite_ledger_v1`. Its later compiler-fix version `3c1e89037019c8149c0056fce9b07e8d53d6421b` is dated **2026-09-26 08:16:08 UTC**. This demonstrates separate early zeta infrastructure, not earlier proof of quasi-RH or RH.
