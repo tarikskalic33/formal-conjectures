@@ -126,7 +126,7 @@ jobs:
         run: |
           set -euo pipefail
           cd .li
-          printf '%s\\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          printf '%s' "$LEAN_TOOLCHAIN" > lean-toolchain
           python3 - <<'PY'
           import os
           from pathlib import Path
