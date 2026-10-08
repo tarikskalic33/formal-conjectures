@@ -192,7 +192,7 @@ jobs:
           chunks=s.split('depends on axioms:')
           assert len(chunks)==3, 'MISSING_PRINT_AXIOMS'
           for c in chunks[1:]:
-            found=set(x.strip() for x in c.split(']',1)[0].lstrip('[').split(','))
+            found=set(x.strip() for x in c.split(']',1)[0].strip().lstrip('[').split(','))
             assert found == {'propext','Classical.choice','Quot.sound'},found
           Path('evidence/RESULT.txt').write_text('WINDOW_7_32=KERNEL_PASS\nAXIOMS=STANDARD_ONLY\nRH=NOT_CLAIMED\n')
           print('EXACT_HEAD_RH_SEVEN_OVER_32=PASS')
