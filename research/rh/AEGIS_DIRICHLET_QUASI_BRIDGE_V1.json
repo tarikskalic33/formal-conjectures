@@ -15,6 +15,15 @@
   "earlier_aegis_evidence": [
     {
       "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "source_commit": "99563f50c252411ee4eac188acc6bdb4f8d58b3f",
+      "source_commit_created_utc": "2026-09-10T17:56:46Z",
+      "branch": "proof/rh-zeta-divisor-support-bridge-v1",
+      "path": "sovereign-omega-v2/formal/bridges/lean/ZetaDivisorSupportBridgeV1.lean",
+      "blob_sha": "6ec09558452bbb2f9a4e82c5d2769a2ea758f7c3",
+      "content": "Pre-OpenAI zeta-divisor support/finite zero ledger, including nontrivial_zero_occurs_in_some_finite_ledger_v1; does not establish any 7/8 zero-free bound"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
       "pr": 693,
       "pr_opened_utc": "2026-09-26T16:52:29Z",
       "source_commit": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
@@ -81,6 +90,19 @@
     "Global bound on the actual AEGIS detecting-packet kernel using the 3/8 exponent"
   ],
   "proof_authority": "CONDITIONAL_ONLY",
-  "compilation_status": "PENDING_HOSTED_EXACT_HEAD_REPLAY",
-  "provenance_note": "AEGIS corpus is earlier than the OpenAI public math repository and the September 30 paper filename. This does not establish priority for the classical Dirichlet/Euler identities nor establish independent discovery of the exact 7/8 theorem."
+  "compilation_status": "VERIFIED_SOURCE_BLOB_HOSTED_LEAN_4_33_1",
+  "provenance_note": "AEGIS corpus is earlier than the OpenAI public math repository and the September 30 paper filename. This does not establish priority for the classical Dirichlet/Euler identities nor establish independent discovery of the exact 7/8 theorem.",
+  "compilation_evidence": {
+    "tested_head": "8d80aba4400b5e7064154bada1596de233c899e7",
+    "tested_lean_source_blob": "a77814981ba1bd07473e4df4e7a250f5b89be7e6",
+    "workflow_run_id": 37709265009,
+    "workflow_job_id": 113091045300,
+    "conclusion": "success",
+    "replay_log_marker": "EXACT_HEAD_LEAN_COMPARATOR_BRIDGE=PASS",
+    "axiom_sets": "[propext, Classical.choice, Quot.sound] for all 5 theorem outputs",
+    "sorry_ax": "not_present",
+    "copyright_run_id": 37709265055,
+    "copyright_conclusion": "success",
+    "check_semantics": "Replays the source blob at the tested exact head only. Any newer head needs its own fresh replay."
+  }
 }
