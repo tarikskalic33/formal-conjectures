@@ -118,7 +118,7 @@ theorem kernel_subexponential_of_eventual_reflected_arithmetic
         calc
           D + C * Real.exp (ε * t) ≤
               D * Real.exp (ε * t) + C * Real.exp (ε * t) :=
-            add_le_add_right hDexp _
+            linarith only [hDexp]
           _ = (C + D) * Real.exp (ε * t) := by ring
       _ ≤ B * Real.exp (ε * t) :=
         mul_le_mul_of_nonneg_right hCDB (Real.exp_nonneg _)
