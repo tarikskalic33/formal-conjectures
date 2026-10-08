@@ -15,6 +15,8 @@ env:
   AEGIS_SOURCE_SHA: f8313af917e41a5a56f441447a46cf8ffe97d247
   MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
   LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_PROVIDER_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_PROVIDER_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
 
 jobs:
   verify:
@@ -43,6 +45,14 @@ jobs:
           path: .aegis
           persist-credentials: false
           fetch-depth: 1
+      - name: Checkout pinned external Li/Hadamard provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_PROVIDER_SHA }}
+          path: .li
+          fetch-depth: 1
+          persist-credentials: false
       - name: Bind repository, toolchain, and recovered proof bytes
         shell: bash
         run: |
@@ -50,6 +60,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git -C .mathlib rev-parse HEAD)" = "$MATHLIB_SHA"
           test "$(git -C .aegis rev-parse HEAD)" = "$AEGIS_SOURCE_SHA"
+          test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
+          test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "10d38a54580ff72d698a30be64fe1c3c44f862a2"
           test "$(cat .mathlib/lean-toolchain)" = "$LEAN_TOOLCHAIN"
           mkdir -p evidence .build
           printf 'FORK_HEAD=%s\nAEGIS_SOURCE_SHA=%s\nMATHLIB_SHA=%s\nLEAN_TOOLCHAIN=%s\n' "$GITHUB_SHA" "$AEGIS_SOURCE_SHA" "$MATHLIB_SHA" "$LEAN_TOOLCHAIN" | tee evidence/provenance.txt
@@ -102,6 +114,51 @@ jobs:
           cd .mathlib
           lake exe cache get
           lean --version | tee ../evidence/lean-version.txt
+      - name: Restore compatible pinned Li provider build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: li-cache
+        with:
+          path: .li/.lake/build
+          key: li-provider-v1-${{ runner.os }}-${{ runner.arch }}-${{ env.LI_PROVIDER_SHA }}-${{ env.MATHLIB_SHA }}
+      - name: Rebind and build required Hadamard and Li provider modules
+        if: steps.li-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd .li
+          printf '%s\\n' "$LEAN_TOOLCHAIN" > lean-toolchain
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p=Path('lakefile.lean')
+          text=p.read_text(encoding='utf-8')
+          old=os.environ['LI_PROVIDER_ORIGINAL_MATHLIB_SHA']
+          new=os.environ['MATHLIB_SHA']
+          assert text.count(old)==1, 'PROVIDER_MATHLIB_PIN_MISMATCH'
+          p.write_text(text.replace(old,new,1),encoding='utf-8')
+          q=Path('Hadamard/General/Factorization.lean')
+          text=q.read_text(encoding='utf-8')
+          repairs=[
+            ('eventually_nhdsWithin_of_forall fun w hw => ite_eq_right hw', 'eventually_nhdsWithin_of_forall fun w hw => if_neg hw'),
+            ('have hgz : g z = Q z := ite_eq_left rfl', 'have hgz : g z = Q z := by simp [g]'),
+            ('rw [ite_eq_right heq, hQ_eq_div z (hz heq)]', 'rw [if_neg heq, hQ_eq_div z (hz heq)]')
+          ]
+          for old,new in repairs:
+            if old in text: text=text.replace(old,new,1)
+          q.write_text(text,encoding='utf-8')
+          PY
+          rm -f lake-manifest.json
+          lake update mathlib
+          lake exe cache get
+          lake build Hadamard.OrderOne.LogDerivMultiplicity Lc.LiCriterion.XiGrowth Lc.LiCriterion.HadamardSummabilityBridge Lc.LiCriterion.HadamardBridge
+      - name: Assert external provider olean closure is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .li/.lake/build/lib/lean/Lc/LiCriterion/XiGrowth.olean
+          test -f .li/.lake/build/lib/lean/Lc/LiCriterion/HadamardSummabilityBridge.olean
+          test -f .li/.lake/build/lib/lean/Hadamard/OrderOne/TailEstimates.olean
+          printf 'LI_PROVIDER_SHA=%s\\nLI_PROVIDER=OLEANS_PRESENT\\n' "$LI_PROVIDER_SHA" | tee evidence/li-provider.txt
       - name: Compile transitive dependency closure and the original 7/32 producer
         shell: bash
         run: |
@@ -109,7 +166,7 @@ jobs:
           ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
           OUT="$GITHUB_WORKSPACE/.build"
           BASE_LEAN_PATH="$(cd "$GITHUB_WORKSPACE/.mathlib" && lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$ROOT:$BASE_LEAN_PATH"
+          export LEAN_PATH="$OUT:$ROOT:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$BASE_LEAN_PATH"
           while IFS= read -r module; do
             echo "=== COMPILE $module ==="
             lean -o "$OUT/$module.olean" "$ROOT/$module.lean" 2>&1 | tee "evidence/$module.log"
@@ -120,7 +177,7 @@ jobs:
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/.aegis/sovereign-omega-v2/formal/bridges/lean"
           BASE_LEAN_PATH="$(cd "$GITHUB_WORKSPACE/.mathlib" && lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$GITHUB_WORKSPACE/.build:$ROOT:$BASE_LEAN_PATH"
+          export LEAN_PATH="$GITHUB_WORKSPACE/.build:$ROOT:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$BASE_LEAN_PATH"
           cat >/tmp/AEGISSevenOver32Audit.lean <<'LEAN'
           import RHWindowSevenOver32V1
           #check AEGIS.RHWindowSevenOver32V1.window_seven_over_32_arithmetic_nonpositive_v1
