@@ -70,14 +70,14 @@ theorem reflected_kernel_subexponential_iff
     change ‖-WeilZeroTranslationKernelV11 g (-t)‖ ≤
       C * Real.exp (ε * t) at hb
     simpa only [norm_neg, zero_translation_kernel_neg_eq_conj_v11 g t hm,
-      norm_conj] using hb
+      Complex.norm_conj] using hb
   · intro h ε hε
     obtain ⟨C, hC, hbound⟩ := h ε hε
     refine ⟨C, hC, ?_⟩
     intro t ht
     change ‖-WeilZeroTranslationKernelV11 g (-t)‖ ≤
       C * Real.exp (ε * t)
-    rw [norm_neg, zero_translation_kernel_neg_eq_conj_v11 g t hm, norm_conj]
+    rw [norm_neg, zero_translation_kernel_neg_eq_conj_v11 g t hm, Complex.norm_conj]
     exact hbound t ht
 
 /-- Given exactly the corrected kernel/arithmetic bounded remainder, the
