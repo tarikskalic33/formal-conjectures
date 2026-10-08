@@ -85,7 +85,7 @@ private theorem shifted_exponent_re
       -((rate + (1 / 2 : ℝ) - rho.1.re) * t) := by
   simp only [Complex.mul_re, Complex.sub_re,
     Complex.ofReal_re, Complex.ofReal_im, mul_zero, sub_zero]
-  norm_num <;> ring
+  norm_num; ring
 
 /-- General AEGIS spectral-cap transport: if every nontrivial zero has
 real part at most `cap`, the zero-translation kernel is little-o of
@@ -137,8 +137,9 @@ theorem scaled_kernel_decay_of_zero_cap
     have hre :
         ((rho.1 - (1 / 2 : ℂ) - (rate : ℂ)) * (t : ℂ)).re ≤ 0 := by
       rw [shifted_exponent_re]
-      exact mul_nonpos_of_nonpos_of_nonneg
-        (neg_nonpos.mpr (hpositive rho).le) ht
+      simpa only [neg_mul] using
+        (mul_nonpos_of_nonpos_of_nonneg
+          (neg_nonpos.mpr (hpositive rho).le) ht)
     rw [norm_mul, Complex.norm_exp]
     exact mul_le_of_le_one_right (norm_nonneg _)
       (Real.exp_le_one_iff.mpr hre)
@@ -160,8 +161,9 @@ theorem scaled_kernel_decay_of_seven_eighths
   have hrate :
       (7 / 8 : ℝ) - (1 / 2 : ℝ) < (3 / 8 : ℝ) + epsilon := by
     linarith
-  exact scaled_kernel_decay_of_zero_cap g (7 / 8) ((3 / 8 : ℝ) + epsilon)
-    (zero_real_part_le_seven_eighths hQ) hrate
+  simpa only [Complex.ofReal_add] using
+    (scaled_kernel_decay_of_zero_cap g (7 / 8) ((3 / 8 : ℝ) + epsilon)
+      (zero_real_part_le_seven_eighths hQ) hrate)
 
 end AEGIS.RHSevenEighthsKernelBridgeV1
 
