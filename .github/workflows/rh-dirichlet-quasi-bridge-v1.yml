@@ -1,0 +1,75 @@
+name: AEGIS RH Dirichlet/Euler Quasi Bridge V1
+
+on:
+  pull_request:
+    paths:
+      - 'AEGISOverlay/DirichletEulerQuasiBridgeV1.lean'
+      - 'research/rh/AEGIS_DIRICHLET_QUASI_BRIDGE_V1.*'
+      - '.github/workflows/rh-dirichlet-quasi-bridge-v1.yml'
+  push:
+    branches:
+      - 'proof/rh-dirichlet-euler-quasi-bridge-v1-20261008'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-conditional-comparator:
+    name: Exact-head Lean and axiom boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify pinned scope and explicit assumptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -F 'rev = "v4.33.1"' lakefile.toml
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          record = json.loads(Path("research/rh/AEGIS_DIRICHLET_QUASI_BRIDGE_V1.json").read_text())
+          source = Path("AEGISOverlay/DirichletEulerQuasiBridgeV1.lean").read_text()
+          assert record["rh_proven_unconditionally"] is False
+          assert record["proof_authority"] == "CONDITIONAL_ONLY"
+          assert record["external_comparator"]["import_strategy"].startswith("NONE:")
+          assert "import Mathlib" in source
+          assert "ZetaSevenEighthsInput" in source
+          assert "DirichletSevenEighthsInput" in source
+          assert "OAI.NumberTheory.DirichletL.Nonvanishing" in source
+          assert not re.search(r"(?m)^\s*(sorry|admit|axiom)\b", source)
+          assert source.count("#print axioms ") == 5
+          print("SOURCE_AND_BOUNDARY_PRECHECK=PASS")
+          PY
+
+      - name: Install pinned Lean and Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          lean --version
+
+      - name: Compile candidate and verify printed axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean AEGISOverlay/DirichletEulerQuasiBridgeV1.lean 2>&1 | tee "$RUNNER_TEMP/rh-dirichlet-quasi-v1.log"
+          if grep -F 'sorryAx' "$RUNNER_TEMP/rh-dirichlet-quasi-v1.log"; then
+            echo 'FAIL: forbidden sorryAx in theorem dependency closure'
+            exit 1
+          fi
+          grep -F 'zeta_zero_re_le_seven_eighths' "$RUNNER_TEMP/rh-dirichlet-quasi-v1.log"
+          grep -F 'epstein_zero_forces_nontrivial_cancellation' "$RUNNER_TEMP/rh-dirichlet-quasi-v1.log"
+          echo "EXACT_HEAD_LEAN_COMPARATOR_BRIDGE=PASS"
