@@ -11,6 +11,8 @@ on:
   pull_request:
     paths:
       - 'AegisRH/PR606/**'
+      - 'AEGISOverlay/RHSevenEighthsKernelBridgeV1.lean'
+      - 'AEGISOverlay/RHGlobalGrowthBoundaryV1.lean'
       - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
       - '.github/workflows/aegis-rh-deepmind-target-direct-v1.yml'
   workflow_dispatch:
@@ -220,6 +222,38 @@ jobs:
             echo "=== $MOD ==="
             lean -o "$OUT/$MOD.olean" "$FILE"
           done < "$GITHUB_WORKSPACE/.deepmind-rh-order.txt"
+
+      - name: Compile and audit AEGIS seven-eighths native kernel bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT_HEAD="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$(git rev-parse HEAD)" = "$CURRENT_HEAD"
+          BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
+          LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
+          SRC="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Compat"
+          OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
+          EVIDENCE="$GITHUB_WORKSPACE/evidence-rh-official/seven-eighths"
+          mkdir -p "$EVIDENCE"
+          ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
+          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
+          test -s "$OUT/RHZeroKernelLaplaceV12.olean"
+          test -s "$OUT/WeilZeroTwoPointV11.olean"
+          printf 'head_sha=%s\n' "$CURRENT_HEAD" | tee "$EVIDENCE/source-pins.txt"
+          printf 'toolchain=%s\nmathlib=%s\n' "$LEAN_TOOLCHAIN" "$MATHLIB_SHA" | tee -a "$EVIDENCE/source-pins.txt"
+          lean --version | tee "$EVIDENCE/lean-version.txt"
+          for MOD in RHGlobalGrowthBoundaryV1 RHSevenEighthsKernelBridgeV1; do
+            FILE="AEGISOverlay/$MOD.lean"
+            test -f "$FILE"
+            BLOB="$(git hash-object "$FILE")"
+            test "$BLOB" = "$(git rev-parse "HEAD:$FILE")"
+            printf '%s %s\n' "$FILE" "$BLOB" | tee -a "$EVIDENCE/source-pins.txt"
+            lean -o "$OUT/$MOD.olean" "$FILE" 2>&1 | tee "$EVIDENCE/$MOD.log"
+            python3 scripts/verify_rh_overlay_axioms.py "$FILE" "$EVIDENCE/$MOD.log" | tee "$EVIDENCE/$MOD.axioms.log"
+            test -s "$OUT/$MOD.olean"
+          done
+          printf 'AEGIS_SEVEN_EIGHTHS_KERNEL_BRIDGE=LEAN_COMPILED_AND_AXIOMS_AUDITED\n' | tee "$EVIDENCE/disposition.txt"
 
       - name: Compile current DeepMind RH target
         shell: bash
