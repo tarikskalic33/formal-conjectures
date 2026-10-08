@@ -130,8 +130,7 @@ theorem fixed_signed_prime_eventually_bounded_iff_rh :
   constructor
   · intro hSigned
     obtain ⟨T, C, hB⟩ :=
-      (AEGIS.WeilSignedPrimeEventualBridgeV1.
-        signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
+      (AEGIS.WeilSignedPrimeEventualBridgeV1.signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
           detectingPacket).mp hSigned
     apply AEGIS.RHFixedPacketEventualTailV1.
       riemannHypothesis_of_fixed_detecting_packet_eventual_bound
@@ -145,11 +144,9 @@ theorem fixed_signed_prime_eventually_bounded_iff_rh :
       (fixed_detecting_packet_sign_iff_universal).mpr
         (AEGIS.WeilRHImpliesFinalSignV13.rh_implies_universal_v13 hRH)
     obtain ⟨C, hC⟩ :=
-      AEGIS.RHFixedPacketFourPhaseV1.
-        fixed_packet_four_phase_implies_bounded_zero_kernel
+      AEGIS.RHFixedPacketFourPhaseV1.fixed_packet_four_phase_implies_bounded_zero_kernel
           detectingPacket detectingPacket_moments hSign
-    apply (AEGIS.WeilSignedPrimeEventualBridgeV1.
-      signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
+    apply (AEGIS.WeilSignedPrimeEventualBridgeV1.signed_prime_eventually_bounded_iff_actual_B_eventually_bounded_v1
         detectingPacket).mpr
     refine ⟨0, C, ?_⟩
     intro d _hd

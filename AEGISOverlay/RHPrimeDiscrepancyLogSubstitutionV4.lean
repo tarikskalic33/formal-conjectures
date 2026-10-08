@@ -92,6 +92,7 @@ theorem full_prime_discrepancy_orbit_eq_chebyshev_x_integral
   apply integral_congr_ae
   filter_upwards [ae_restrict_mem measurableSet_Ioi] with x hx
   rw [normalized_full_discrepancy_log x hx]
+  simp only [div_eq_mul_inv, mul_assoc]
 
 end AEGIS.RHPrimeDiscrepancyLogSubstitutionV4
 
