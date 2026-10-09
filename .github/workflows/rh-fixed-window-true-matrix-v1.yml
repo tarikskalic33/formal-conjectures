@@ -1,0 +1,101 @@
+name: RH Fixed Window True Matrix V1
+
+on:
+  pull_request:
+    paths:
+      - 'AegisRH/fixed_window_true_matrix_arb.py'
+      - '.github/workflows/rh-fixed-window-true-matrix-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact fork head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned Arb backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check python-flint==0.8.0
+          python - <<'PY'
+          import flint
+          print("python-flint", flint.__version__)
+          assert flint.__version__ == "0.8.0"
+          PY
+
+      - name: Evaluate actual formula 15 and certify shifted finite sections
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python AegisRH/fixed_window_true_matrix_arb.py \
+            --ell 1 \
+            --Ns 3,4,5,6,8,10,12,16,20,24,32,40,48,64 \
+            --prec-bits 320 \
+            --near-zero-bits 64 \
+            --tol-bits 160 \
+            --epsilon-power 4 \
+            --output evidence/fixed_window_R_pi.json \
+            | tee evidence/fixed_window_R_pi.log
+
+      - name: Evaluate cofinal window R=2pi
+        shell: bash
+        run: |
+          set -euo pipefail
+          python AegisRH/fixed_window_true_matrix_arb.py \
+            --ell 2 \
+            --Ns 8,16,24,32 \
+            --prec-bits 320 \
+            --near-zero-bits 64 \
+            --tol-bits 160 \
+            --epsilon-power 4 \
+            --output evidence/fixed_window_R_2pi.json \
+            | tee evidence/fixed_window_R_2pi.log
+
+      - name: Enforce finite receipt boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          for path, expected_ell in [
+              ("evidence/fixed_window_R_pi.json", 1),
+              ("evidence/fixed_window_R_2pi.json", 2),
+          ]:
+              p=json.load(open(path))
+              assert p["formula_id"] == "AEGIS_FIXED_WINDOW_TRUE_DN_FORMULA_15_V1"
+              assert p["ell"] == expected_ell
+              assert p["all_shifted_certificates_pass"] is True
+              assert p["batch_claim_boundary"]["finite_checked_N_only"] is True
+              assert p["batch_claim_boundary"]["cofinal_infinite_family_not_yet_proven"] is True
+              assert p["batch_claim_boundary"]["rh_proven"] is False
+              for r in p["results"]:
+                  assert r["claims"]["actual_formula_15_evaluated_with_arb"] is True
+                  assert r["moment_restriction_exact_rational"] is True
+                  assert r["claims"]["single_N_shifted_positive_definite_verified"] is True
+                  assert r["claims"]["all_N_certified"] is False
+                  assert r["claims"]["rh_proven"] is False
+          print("TRUE_FIXED_WINDOW_FINITE_CERTIFICATES_PASS")
+          PY
+
+      - name: Upload exact receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-fixed-window-true-matrix-${{ github.event.pull_request.head.sha || github.sha }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30
