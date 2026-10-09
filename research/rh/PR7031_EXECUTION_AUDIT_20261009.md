@@ -148,3 +148,33 @@ The archived prime-only route is now source-inspected at the audited HEAD:
 This makes the next experiment sharper: prove or falsify the **eventual reflected dictionary/remainder** from the exact signed-prime/actual-`B` identity on its stated separated-translation tail, including the analytic integrability/identification needed to connect Lean's totalized integrals to the source representation. Independently investigate the **prime-only subexponential estimate**; the file's proposed dyadic inequality is a conjectural target, not established evidence. Even if the bridge is proved, the prime-only growth bound remains a load-bearing RH-equivalent obligation and cannot be inferred from finite numerical windows.
 
 The width-obstruction artifact `AEGISOverlay/RHWidthQuantifierObstructionV1.lean` is also important: it formally demonstrates that positivity at a width chosen separately for each finite dimension does not imply positivity at one fixed width for all dimensions. Do not globalize a finite-window or finite-shift result without a proved compatibility/convergence theorem for the actual quadratic form.
+
+
+## Follow-up inspection — V8 narrows the open obligation further
+
+The fork also contains `AEGISOverlay/RHSignedPrimeIntervalExtensionV8.lean`. At source level, it provides an unconditional chain:
+
+`eventually_finite_chebyshev_integral_extends_v8`
+→ `eventual_signed_prime_equals_combined_v8`
+→ `eventual_reflected_kernel_remainder_bounded_v8`.
+
+The V8 comments and theorem statements say that the Abel/Chebyshev dictionary and the eventual reflected-kernel remainder no longer need an extra dictionary premise. The actual RH consumer is then
+
+`riemannHypothesis_of_prime_only_subexponential_growth_v8`
+
+with the sole explicit input
+
+`hPrime : SubexponentialAtTopV1 (primeOnlyOrbitV1 detectingPacket)`.
+
+**Important evidence qualification:** I have inspected these source declarations, but this chat's connector returned no workflow runs for the audited HEAD. The V8 chain therefore still requires exact-head compilation and `#print axioms` replay before it can be labelled machine-verified in this audit.
+
+The reflected bridge V2 proves that, given the bridge, the fixed packet's prime-only subexponential estimate is equivalent to RH. Since V8 purports to supply that bridge unconditionally, proving `hPrime` is not a routine engineering task: it is the remaining RH-equivalent arithmetic growth theorem on this route.
+
+### Revised immediate experiment
+
+1. Compile V8 and its complete import closure at the pinned HEAD; run `#print axioms` for the three dictionary/remainder producers and the RH consumer.
+2. Confirm the V8 source has no hidden premise or declaration mismatch and that its integrals are connected to the analytic source representation under proved integrability conditions.
+3. Then focus solely on the prime-only estimate. First formalize the proposed dyadic self-compression target for `S(d) = primeOnlyOrbitV1 detectingPacket d`; prove it from the explicit prime discrepancy formula or refute the proposed bound with a valid counterexample. If the dyadic inequality is insufficient under the exact definition of `SubexponentialAtTopV1`, state and prove the required stronger estimate.
+4. Do not claim closure if the proof of the growth estimate invokes RH, the universal zero-quadratic sign, fixed-packet sign positivity, or the equivalent eventual boundedness criterion.
+
+This is the shortest identified route in the current source corpus: the reflected kernel dictionary is supplied at source level by V8; the prime-only subexponential bound remains the decisive mathematical obligation.
