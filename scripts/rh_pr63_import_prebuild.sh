@@ -115,7 +115,10 @@ while IFS= read -r mod; do
   [[ -f "$COMPAT/$mod.lean" ]] && file="$COMPAT/$mod.lean"
   [[ -f "$LOCAL/$mod.lean" ]] && file="$LOCAL/$mod.lean"
   echo "RH_IMPORT_BUILD $mod $file"
-  lean -o "$OUT/$mod.olean" "$file"
+  # These overlay sources are intentionally imported by flat module names.
+  # Set the module root to the source directory so the .olean declares `$mod`,
+  # rather than an inferred path-qualified name such as AegisRH.PR606.$mod.
+  lean -R "$(dirname "$file")" -o "$OUT/$mod.olean" "$file"
 done < "$ORDER"
 
 cat > "$AUDIT" <<'LEAN'
