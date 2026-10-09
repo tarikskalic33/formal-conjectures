@@ -85,3 +85,8 @@ srcDir = "scripts"
 root = "extract_names"
 exeName = "extract_names"
 supportInterpreter = true
+
+# Independent root-level axiom audit for the imported RH conditional theorem.
+[[lean_exe]]
+name = "checkRH"
+root = "CheckRH"
