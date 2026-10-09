@@ -36,6 +36,18 @@ rev = "v4.33.1"
 [[lean_lib]]
 name = "FormalConjecturesForMathlib"
 
+# The AEGIS source tree uses legacy flat module imports. Give its source
+# directories explicit Lake roots so those imports resolve in a normal build.
+[[lean_lib]]
+name = "AegisPR606"
+srcDir = "AegisRH/PR606"
+roots = ["RHRestrictedWeilCriterionV13"]
+
+[[lean_lib]]
+name = "AegisSmallWindow"
+srcDir = "AegisRH/SmallWindow"
+roots = ["RHSmallWindowCanonicalJoinV1"]
+
 [[lean_lib]]
 name = "FormalConjecturesUtil"
 globs = ["FormalConjecturesUtil.*"]

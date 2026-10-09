@@ -45,7 +45,10 @@ def classify(source: str, log: str, lean_exit: int, axioms_log: str | None = Non
             return "OPEN_UNIVERSAL_ZERO_QUADRATIC", errors
         if (errors == ["unsolved goals"] and len(goals) == 1
                 and WINDOW_GOAL_PATTERN.fullmatch(goals[0])
-                and "import RHSmallWindowCanonicalJoinV1" in source
+                and (
+                    "import RHSmallWindowCanonicalJoinV1" in source
+                    or "import AegisRH.SmallWindow.RHSmallWindowCanonicalJoinV1" in source
+                )
                 and "apply AEGIS.RHSmallWindowCanonicalJoinV1.riemannHypothesis_of_above_693_over_2000_v1" in body):
             return "OPEN_PROVED_WINDOW_COMPLEMENT", errors
         return "COMPILER_FAILURE_UNEXPECTED", errors

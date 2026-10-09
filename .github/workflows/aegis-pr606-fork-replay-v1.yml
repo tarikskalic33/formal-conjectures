@@ -161,26 +161,38 @@ jobs:
           BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
           SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
           COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
+          LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
           OUT="$GITHUB_WORKSPACE/.lake/aegis-pr606"
           mkdir -p "$OUT"
 
-          python3 - "$BASE" "$SRC" "$COMPAT" "$GITHUB_WORKSPACE/.pr606-order.txt" <<'PY'
+          python3 - "$BASE" "$SRC" "$COMPAT" "$LOCAL" "$GITHUB_WORKSPACE/.pr606-order.txt" <<'PY'
           import pathlib, sys
           base=pathlib.Path(sys.argv[1])
           src=pathlib.Path(sys.argv[2])
           compat=pathlib.Path(sys.argv[3])
-          out=pathlib.Path(sys.argv[4])
+          local=pathlib.Path(sys.argv[4])
+          out=pathlib.Path(sys.argv[5])
 
           base_mods={p.stem:p for p in base.glob('*.lean')}
           src_mods={p.stem:p for p in src.glob('*.lean')}
           compat_mods={p.stem:p for p in compat.glob('*.lean')}
-          mods=set(base_mods)|set(src_mods)|set(compat_mods)
+          local_mods={p.stem:p for p in local.glob('*.lean')}
+          # These local files are copyright-only shadows, not Lean modules.
+          copyright_only={
+            'WeilThreeBlockNormBridgeV21',
+            'WeilThreeBlockPrimeEvaluationV30',
+            'WeilThreeBlockRationalV1',
+            'WeilThreeBlockTranslatedPacketsV22',
+            'WeilTranslatedKernelBoundV11',
+          }
+          mods=set(base_mods)|set(src_mods)|set(compat_mods)|set(local_mods)
 
           def selected(m):
+            if m in local_mods and m not in copyright_only: return local_mods[m]
             if m in compat_mods: return compat_mods[m]
             if m in src_mods: return src_mods[m]
             if m in base_mods: return base_mods[m]
-            raise SystemExit('missing:'+m)
+            raise SystemExit('missing or copyright-only shadow:'+m)
 
           deps={}
           for m in mods:
@@ -208,7 +220,9 @@ jobs:
           print('PR606_IMPORTED_MODULES',len(src_mods))
           print('PR606_FULL_CLOSURE_COUNT',len(order))
           print('\n'.join(
-            ('COMPAT  ' if m in compat_mods else 'PR606   ' if m in src_mods else 'BASE580 ')+m
+            ('LOCAL   ' if m in local_mods and m not in copyright_only else
+             'COMPAT  ' if m in compat_mods else
+             'PR606   ' if m in src_mods else 'BASE580 ')+m
             for m in order
           ))
           PY
@@ -229,9 +243,10 @@ jobs:
           BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
           SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
           COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
+          LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
           OUT="$GITHUB_WORKSPACE/.lake/aegis-pr606"
           BASE_LEAN_PATH="$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$(lake env printenv LEAN_PATH)"
-          export LEAN_PATH="$OUT:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
+          export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$BASE_LEAN_PATH"
 
           dirty=0
           while IFS= read -r MOD; do
@@ -240,6 +255,10 @@ jobs:
             KIND="BASE580"
             if [ -f "$SRC/$MOD.lean" ]; then FILE="$SRC/$MOD.lean"; KIND="PR606"; fi
             if [ -f "$COMPAT/$MOD.lean" ]; then FILE="$COMPAT/$MOD.lean"; KIND="COMPAT"; fi
+            case "$MOD" in
+              WeilThreeBlockNormBridgeV21|WeilThreeBlockPrimeEvaluationV30|WeilThreeBlockRationalV1|WeilThreeBlockTranslatedPacketsV22|WeilTranslatedKernelBoundV11) ;;
+              *) if [ -f "$LOCAL/$MOD.lean" ]; then FILE="$LOCAL/$MOD.lean"; KIND="LOCAL"; fi ;;
+            esac
             FILE_SHA="$(sha256sum "$FILE" | awk '{print $1}')"
             STAMP="$OUT/$MOD.source.sha256"
             if [ "$dirty" -eq 0 ] && [ -f "$OUT/$MOD.olean" ] && [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$FILE_SHA" ]; then

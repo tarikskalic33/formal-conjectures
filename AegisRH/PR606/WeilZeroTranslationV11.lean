@@ -20,6 +20,18 @@ import ZeroCountingMellinSummabilityV1
 import Mathlib.Tactic
 
 /-!
+Fork-local compatibility overlay.
+
+Authoritative AEGIS source anchor:
+  Aegis-Omega/AEGIS-OMEGA@589adf0480bd4d7c12c9828027ea6228398377f4
+
+This file preserves the theorem statements from that source and contains only
+Lean 4.33.1 / Mathlib 0df444a3 elaboration repairs. It is intentionally kept
+in the Formal Conjectures fork; the AEGIS anchor is treated as read-only.
+-/
+
+
+/-!
 AEGIS Ω — zero-side translation transport V11.
 
 This module binds the repository translation packet to the centered Mellin
@@ -39,7 +51,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Filter Topology Complex
-open scoped BigOperators
+open scoped BigOperators ComplexConjugate
 
 set_option autoImplicit false
 noncomputable section
@@ -78,13 +90,27 @@ theorem mellin_translatePacket_v11
     have hlog :
         Complex.log (((Real.exp (-d) : ℝ) : ℂ)) = (-d : ℂ) := by
       rw [← Complex.ofReal_log (Real.exp_pos (-d)).le, Real.log_exp]
+      norm_cast
     rw [hlog]
     congr 1
+    push_cast
     ring
-  rw [hpow, ← Complex.ofReal_exp, ← Complex.exp_add]
-  congr 1
-  push_cast
-  ring
+  have hexp :
+      ((Real.exp (-d / 2) : ℝ) : ℂ) *
+          Complex.exp (s * (d : ℂ)) =
+        Complex.exp ((s - (1 / 2 : ℂ)) * (d : ℂ)) := by
+    rw [Complex.ofReal_exp, ← Complex.exp_add]
+    congr 1
+    push_cast
+    ring
+  rw [hpow]
+  calc
+    (((Real.exp (-d / 2) : ℝ) : ℂ) *
+        (Complex.exp (s * (d : ℂ)) * mellin g.1 s)) =
+      (((Real.exp (-d / 2) : ℝ) : ℂ) *
+        Complex.exp (s * (d : ℂ))) * mellin g.1 s := by rw [← mul_assoc]
+    _ = Complex.exp ((s - (1 / 2 : ℂ)) * (d : ℂ)) *
+        mellin g.1 s := by rw [hexp]
 
 /-- Repository zero summand written in the full Mellin-factorized
 autocorrelation form. -/
@@ -97,7 +123,6 @@ theorem autocorrelation_zero_summand_factorization_v11
           conj (mellin g.1 (1 - conj rho.1))) := by
   unfold WeilZeroIndexSummandV1
   rw [weil_autocorrelation_mellin_factorization_v11]
-  ring
 
 /-- The centered translation factors cancel pointwise in the autocorrelation
 zero summand. -/
@@ -118,9 +143,9 @@ theorem translated_autocorrelation_zero_summand_invariant_v11
           (((1 - conj rho.1) - (1 / 2 : ℂ)) * (d : ℂ))) =
         Complex.exp
           (-((rho.1 - (1 / 2 : ℂ)) * (d : ℂ))) := by
-    rw [map_exp]
+    rw [← Complex.exp_conj]
     congr 1
-    push_cast
+    simp [map_neg, map_add, map_mul, map_ofNat, Complex.conj_ofReal]
     ring
   rw [map_mul, hexp_conj, ← mul_assoc]
   have hcancel :
@@ -128,9 +153,17 @@ theorem translated_autocorrelation_zero_summand_invariant_v11
         Complex.exp (-((rho.1 - (1 / 2 : ℂ)) * (d : ℂ))) = 1 := by
     rw [← Complex.exp_add]
     simp
-  ring_nf
-  rw [hcancel]
-  ring
+  calc
+    _ =
+        (analyticOrderNatAt riemannZeta rho.1 : ℂ) *
+          (Complex.exp ((rho.1 - (1 / 2 : ℂ)) * (d : ℂ)) *
+            Complex.exp (-((rho.1 - (1 / 2 : ℂ)) * (d : ℂ)))) *
+          (mellin g.1 rho.1 *
+            conj (mellin g.1 (1 - conj rho.1))) := by
+              ring
+    _ = _ := by
+      rw [hcancel]
+      ring
 
 /-- Canonical zero quadratic attached to an autocorrelation. -/
 def WeilAutocorrelationZeroQuadraticV11

@@ -7,15 +7,24 @@ concurrency:
 on:
   push:
     branches:
+      - main
       - 'proof/rh-deepmind-target-direct-replay-v2'
     paths:
       - 'AegisRH/PR606/**'
+      - 'AegisRH/SmallWindow/**'
       - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+      - 'scripts/rh_official_target_gate.py'
+      - 'scripts/test_rh_official_target_gate.py'
+      - 'scripts/rh_pr63_proved_window_prebuild.sh'
       - '.github/workflows/aegis-rh-deepmind-target-direct-v1.yml'
   pull_request:
     paths:
       - 'AegisRH/PR606/**'
+      - 'AegisRH/SmallWindow/**'
       - 'FormalConjectures/Millennium/RiemannHypothesis.lean'
+      - 'scripts/rh_official_target_gate.py'
+      - 'scripts/test_rh_official_target_gate.py'
+      - 'scripts/rh_pr63_proved_window_prebuild.sh'
       - '.github/workflows/aegis-rh-deepmind-target-direct-v1.yml'
   workflow_dispatch:
 
@@ -92,6 +101,7 @@ jobs:
           test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
           test -f FormalConjectures/Millennium/RiemannHypothesis.lean
           grep -Fx 'import RHRestrictedWeilCriterionV13' FormalConjectures/Millennium/RiemannHypothesis.lean
+          grep -Fx 'import RHSmallWindowCanonicalJoinV1' FormalConjectures/Millennium/RiemannHypothesis.lean
           ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' FormalConjectures/Millennium/RiemannHypothesis.lean | grep -F 'sorry'
 
       - name: Install pinned Lean and Mathlib cache
@@ -158,8 +168,8 @@ jobs:
           set -euo pipefail
           BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
           LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
-          SRC="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Source"
-          COMPAT="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Compat"
+          SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           mkdir -p "$OUT"
 
@@ -180,9 +190,17 @@ jobs:
           mods=set()
           for _,g in groups: mods |= set(g)
 
+          LOCAL_COPYRIGHT_STUBS = {
+              "WeilThreeBlockNormBridgeV21",
+              "WeilThreeBlockPrimeEvaluationV30",
+              "WeilThreeBlockRationalV1",
+              "WeilThreeBlockTranslatedPacketsV22",
+              "WeilTranslatedKernelBoundV11",
+          }
           def selected(m):
-              for _,g in reversed(groups):
-                  if m in g: return g[m]
+              for group_name,g in reversed(groups):
+                  if m in g and not (group_name == "LOCAL" and m in LOCAL_COPYRIGHT_STUBS):
+                      return g[m]
               raise SystemExit("missing:"+m)
 
           deps={}
@@ -218,8 +236,8 @@ jobs:
           set -euo pipefail
           BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
           LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
-          SRC="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Source"
-          COMPAT="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Compat"
+          SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
@@ -229,7 +247,10 @@ jobs:
             FILE="$BASE/$MOD.lean"
             [ -f "$SRC/$MOD.lean" ] && FILE="$SRC/$MOD.lean"
             [ -f "$COMPAT/$MOD.lean" ] && FILE="$COMPAT/$MOD.lean"
-            [ -f "$LOCAL/$MOD.lean" ] && FILE="$LOCAL/$MOD.lean"
+            case "$MOD" in
+              WeilThreeBlockNormBridgeV21|WeilThreeBlockPrimeEvaluationV30|WeilThreeBlockRationalV1|WeilThreeBlockTranslatedPacketsV22|WeilTranslatedKernelBoundV11) ;;
+              *) [ -f "$LOCAL/$MOD.lean" ] && FILE="$LOCAL/$MOD.lean" ;;
+            esac
             echo "=== $MOD ==="
             lean -o "$OUT/$MOD.olean" "$FILE"
           done < "$GITHUB_WORKSPACE/.deepmind-rh-order.txt"
@@ -238,8 +259,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export RH_WINDOW_SRC_OVERRIDE="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Source"
-          export RH_WINDOW_COMPAT_OVERRIDE="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Compat"
+          export RH_WINDOW_SRC_OVERRIDE="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          export RH_WINDOW_COMPAT_OVERRIDE="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           bash scripts/rh_pr63_proved_window_prebuild.sh "$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
 
       - name: Compile current DeepMind RH target
@@ -248,8 +269,8 @@ jobs:
           set -euo pipefail
           BASE="$GITHUB_WORKSPACE/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
           LOCAL="$GITHUB_WORKSPACE/AegisRH/PR606"
-          SRC="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Source"
-          COMPAT="$GITHUB_WORKSPACE/.port-source/AegisRH/PR606/Compat"
+          SRC="$GITHUB_WORKSPACE/AegisRH/PR606/Source"
+          COMPAT="$GITHUB_WORKSPACE/AegisRH/PR606/Compat"
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"

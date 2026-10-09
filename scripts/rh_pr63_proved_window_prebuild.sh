@@ -35,9 +35,19 @@ base, wbase, src, compat, local, overlay, win, orderpath, out = map(Path, sys.ar
 roots=(base, wbase, src, compat, local, overlay, win)
 groups=[{p.stem:p for p in r.glob("*.lean")} for r in roots]
 allmods=set().union(*(set(g) for g in groups))
+LOCAL_COPYRIGHT_STUBS = {
+    "WeilThreeBlockNormBridgeV21",
+    "WeilThreeBlockPrimeEvaluationV30",
+    "WeilThreeBlockRationalV1",
+    "WeilThreeBlockTranslatedPacketsV22",
+    "WeilTranslatedKernelBoundV11",
+}
 def chosen(n):
-    for group in reversed(groups):
-        if n in group: return group[n]
+    # These five local files contain only the repository copyright header.
+    # Prefer the pinned AEGIS source rather than compiling empty shadow modules.
+    for i in reversed(range(len(groups))):
+        if n in groups[i] and not (i == 4 and n in LOCAL_COPYRIGHT_STUBS):
+            return groups[i][n]
     raise SystemExit(f"RH_WINDOW_SOURCE_MISSING:{n}")
 done=set()
 active=set()
