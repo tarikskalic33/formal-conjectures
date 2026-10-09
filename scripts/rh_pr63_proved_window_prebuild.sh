@@ -107,7 +107,8 @@ while IFS="$(printf '\t')" read -r name file digest; do
         exit 1
     fi
     rm -f "$OUT/$name.olean" "$OUT/$name.source.sha256"
-    lean -o "$OUT/$name.olean" "$file"
+    # Preserve the flat module name used by imports in this overlay.
+    lean -R "$(dirname "$file")" -o "$OUT/$name.olean" "$file"
     printf '%s\n' "$digest" > "$OUT/$name.source.sha256"
 done < "$ORDER"
 
