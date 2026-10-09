@@ -190,9 +190,17 @@ jobs:
           mods=set()
           for _,g in groups: mods |= set(g)
 
+          LOCAL_COPYRIGHT_STUBS = {
+              "WeilThreeBlockNormBridgeV21",
+              "WeilThreeBlockPrimeEvaluationV30",
+              "WeilThreeBlockRationalV1",
+              "WeilThreeBlockTranslatedPacketsV22",
+              "WeilTranslatedKernelBoundV11",
+          }
           def selected(m):
-              for _,g in reversed(groups):
-                  if m in g: return g[m]
+              for group_name,g in reversed(groups):
+                  if m in g and not (group_name == "LOCAL" and m in LOCAL_COPYRIGHT_STUBS):
+                      return g[m]
               raise SystemExit("missing:"+m)
 
           deps={}
@@ -239,7 +247,10 @@ jobs:
             FILE="$BASE/$MOD.lean"
             [ -f "$SRC/$MOD.lean" ] && FILE="$SRC/$MOD.lean"
             [ -f "$COMPAT/$MOD.lean" ] && FILE="$COMPAT/$MOD.lean"
-            [ -f "$LOCAL/$MOD.lean" ] && FILE="$LOCAL/$MOD.lean"
+            case "$MOD" in
+              WeilThreeBlockNormBridgeV21|WeilThreeBlockPrimeEvaluationV30|WeilThreeBlockRationalV1|WeilThreeBlockTranslatedPacketsV22|WeilTranslatedKernelBoundV11) ;;
+              *) [ -f "$LOCAL/$MOD.lean" ] && FILE="$LOCAL/$MOD.lean" ;;
+            esac
             echo "=== $MOD ==="
             lean -o "$OUT/$MOD.olean" "$FILE"
           done < "$GITHUB_WORKSPACE/.deepmind-rh-order.txt"
