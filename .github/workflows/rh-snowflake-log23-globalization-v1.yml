@@ -11,6 +11,8 @@ on:
       - 'AEGISOverlay/**'
       - 'AegisRH/SmallWindow/**'
       - 'scripts/verify_rh_overlay_axioms.py'
+      - 'scripts/rh_theorem_inventory.py'
+      - 'scripts/test_rh_theorem_inventory.py'
       - '.github/workflows/rh-snowflake-log23-globalization-v1.yml'
   workflow_dispatch:
 
@@ -35,6 +37,28 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Inventory all Lean theorem-like declarations and source dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest scripts.test_rh_theorem_inventory -v
+          python3 scripts/rh_theorem_inventory.py \
+            --output evidence-rh-theorem-inventory/inventory.json \
+            --require RHSnowflakeLog23.irrational_log_two_div_log_three \
+            --require RHSnowflakeLog23.snowflake_shift_group_dense \
+            --require RHSnowflakeLog23.snowflake_nonnegative_of_continuous \
+            --require AEGIS.RHSmallWindowCanonicalJoinV1.riemannHypothesis_of_above_693_over_2000_v1
+          git rev-parse HEAD > evidence-rh-theorem-inventory/formal-conjectures-head.txt
+
+      - name: Upload full Lean declaration inventory
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-theorem-inventory-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-rh-theorem-inventory/
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Install pinned Lean and Mathlib cache
         shell: bash

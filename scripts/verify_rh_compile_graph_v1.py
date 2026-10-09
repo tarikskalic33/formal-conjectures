@@ -98,7 +98,8 @@ def audit(root: Path, workflow: str) -> tuple[list[str], int]:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--root", type=Path, default=Path("."))
+    repo_root = Path(__file__).resolve().parent.parent
+    p.add_argument("--root", type=Path, default=repo_root)
     p.add_argument("--workflow", type=Path,
                    default=Path(".github/workflows/rh-snowflake-log23-globalization-v1.yml"))
     args = p.parse_args(argv)
