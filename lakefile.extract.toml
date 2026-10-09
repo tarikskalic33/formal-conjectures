@@ -37,6 +37,16 @@ rev = "v4.33.1"
 name = "FormalConjecturesForMathlib"
 
 [[lean_lib]]
+name = "AegisPR606"
+srcDir = "AegisRH/PR606"
+globs = [".+"]
+
+[[lean_lib]]
+name = "AegisSmallWindow"
+srcDir = "AegisRH/SmallWindow"
+globs = [".+"]
+
+[[lean_lib]]
 name = "FormalConjecturesUtil"
 globs = ["FormalConjecturesUtil.*"]
 
