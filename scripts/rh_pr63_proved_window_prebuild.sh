@@ -7,6 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
 OUT="${1:?usage: rh_pr63_proved_window_prebuild.sh OUTPUT_DIR}"
+if [[ "$OUT" != /* ]]; then OUT="$ROOT/$OUT"; fi
 WINDOW_HEAD="$(git -C "$ROOT/.aegis-window" rev-parse HEAD)"
 if [[ -n "${RH_WINDOW_SHA:-}" && "$WINDOW_HEAD" != "$RH_WINDOW_SHA" ]]; then
   echo "RH_WINDOW_SOURCE_PIN_MISMATCH: expected $RH_WINDOW_SHA, checked out $WINDOW_HEAD" >&2
@@ -17,8 +18,14 @@ BASE="$ROOT/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
 SRC="$ROOT/AegisRH/PR606/Source"
 COMPAT="$ROOT/AegisRH/PR606/Compat"
 LOCAL="$ROOT/AegisRH/PR606"
-if [[ -v RH_WINDOW_SRC_OVERRIDE ]]; then SRC="$RH_WINDOW_SRC_OVERRIDE"; fi
-if [[ -v RH_WINDOW_COMPAT_OVERRIDE ]]; then COMPAT="$RH_WINDOW_COMPAT_OVERRIDE"; fi
+if [[ -v RH_WINDOW_SRC_OVERRIDE ]]; then
+  SRC="$RH_WINDOW_SRC_OVERRIDE"
+  [[ "$SRC" = /* ]] || SRC="$ROOT/$SRC"
+fi
+if [[ -v RH_WINDOW_COMPAT_OVERRIDE ]]; then
+  COMPAT="$RH_WINDOW_COMPAT_OVERRIDE"
+  [[ "$COMPAT" = /* ]] || COMPAT="$ROOT/$COMPAT"
+fi
 OVERLAY="$ROOT/AEGISOverlay"
 WIN="$ROOT/AegisRH/SmallWindow"
 WORKTMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
