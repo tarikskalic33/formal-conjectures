@@ -93,17 +93,12 @@ theorem mellin_translatePacket_v11
       norm_cast
     rw [hlog]
     congr 1
-    push_cast
     ring
-  have hexp :
-      ((Real.exp (-d / 2) : ℝ) : ℂ) *
-          Complex.exp (s * (d : ℂ)) =
-        Complex.exp ((s - (1 / 2 : ℂ)) * (d : ℂ)) := by
-    rw [Complex.ofReal_exp, ← Complex.exp_add]
-    congr 1
-    push_cast
-    ring
-  rw [hpow, ← mul_assoc, hexp]
+  rw [hpow, ← Complex.ofReal_exp, ← Complex.exp_add]
+  congr 1
+  congr 1
+  push_cast
+  ring
 
 /-- Repository zero summand written in the full Mellin-factorized
 autocorrelation form. -/
@@ -113,9 +108,10 @@ theorem autocorrelation_zero_summand_factorization_v11
     WeilZeroIndexSummandV1 (WeilAutocorrelationV1 g) rho =
       (analyticOrderNatAt riemannZeta rho.1 : ℂ) *
         (mellin g.1 rho.1 *
-          conj (mellin g.1 (1 - conj rho.1))) := by
+          Complex.conj (mellin g.1 (1 - Complex.conj rho.1))) := by
   unfold WeilZeroIndexSummandV1
   rw [weil_autocorrelation_mellin_factorization_v11]
+  ring
 
 /-- The centered translation factors cancel pointwise in the autocorrelation
 zero summand. -/
@@ -131,9 +127,9 @@ theorem translated_autocorrelation_zero_summand_invariant_v11
     mellin_translatePacket_v11,
     mellin_translatePacket_v11]
   have hexp_conj :
-      conj
+      Complex.conj
         (Complex.exp
-          (((1 - conj rho.1) - (1 / 2 : ℂ)) * (d : ℂ))) =
+          (((1 - Complex.conj rho.1) - (1 / 2 : ℂ)) * (d : ℂ))) =
         Complex.exp
           (-((rho.1 - (1 / 2 : ℂ)) * (d : ℂ))) := by
     rw [← Complex.exp_conj]
@@ -152,7 +148,7 @@ theorem translated_autocorrelation_zero_summand_invariant_v11
           (Complex.exp ((rho.1 - (1 / 2 : ℂ)) * (d : ℂ)) *
             Complex.exp (-((rho.1 - (1 / 2 : ℂ)) * (d : ℂ)))) *
           (mellin g.1 rho.1 *
-            conj (mellin g.1 (1 - conj rho.1))) := by
+            Complex.conj (mellin g.1 (1 - Complex.conj rho.1))) := by
               ring
     _ = _ := by
       rw [hcancel]
