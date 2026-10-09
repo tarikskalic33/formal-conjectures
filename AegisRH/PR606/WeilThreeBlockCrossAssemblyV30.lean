@@ -16,6 +16,7 @@ limitations under the License.
 
 import WeilThreeBlockPrimeEvaluationV30
 import WeilThreeBlockNormBridgeV21
+import Mathlib.Analysis.SpecialFunctions.Exp
 
 /-!
 Conditional assembly over the actual repository integrals.
