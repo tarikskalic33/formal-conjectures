@@ -240,6 +240,14 @@ jobs:
           LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
         run: bash scripts/rh_pr63_import_prebuild.sh
 
+      - name: Audit RH conditional theorem and transitive axioms
+        if: steps.mode.outputs.website_only != 'true' && hashFiles('AegisRH/PR606/RHRestrictedWeilCriterionV13.lean') != ''
+        run: |
+          lake build checkRH
+          lake env lean CheckRH.lean > "$RUNNER_TEMP/check-rh-axioms.log" 2>&1
+          cat "$RUNNER_TEMP/check-rh-axioms.log"
+          python3 scripts/verify_rh_overlay_axioms.py CheckRH.lean "$RUNNER_TEMP/check-rh-axioms.log"
+
       - name: Build problems
         if: steps.mode.outputs.website_only != 'true'
         run: |
