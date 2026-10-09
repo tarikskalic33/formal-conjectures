@@ -41,12 +41,12 @@ name = "FormalConjecturesForMathlib"
 [[lean_lib]]
 name = "AegisPR606"
 srcDir = "AegisRH/PR606"
-globs = [".+"]
+roots = ["RHRestrictedWeilCriterionV13"]
 
 [[lean_lib]]
 name = "AegisSmallWindow"
 srcDir = "AegisRH/SmallWindow"
-globs = [".+"]
+roots = ["RHSmallWindowCanonicalJoinV1"]
 
 [[lean_lib]]
 name = "FormalConjecturesUtil"
