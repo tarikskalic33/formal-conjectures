@@ -10,7 +10,8 @@ set -euo pipefail
 : "${LI_FACTORIZATION_BLOB:?}"
 : "${LEAN_TOOLCHAIN:?}"
 
-ROOT="$(pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
 BASE="$ROOT/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
 SRC="$ROOT/AegisRH/PR606/Source"
 COMPAT="$ROOT/AegisRH/PR606/Compat"
