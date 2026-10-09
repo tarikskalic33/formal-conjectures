@@ -130,3 +130,21 @@ Do not reopen PR #7031 with the same theorem application or with CI changes that
 - Canonical join: https://github.com/tarikskalic33/formal-conjectures/blob/37e8a5dd1fd7febec380dd562417168714cc86c4/AegisRH/SmallWindow/RHSmallWindowCanonicalJoinV1.lean
 - Millennium gate: https://github.com/tarikskalic33/formal-conjectures/blob/37e8a5dd1fd7febec380dd562417168714cc86c4/AegisRH/PR606/Source/RHMillenniumGateV10.lean
 - Existing proof-junction crosswalk: https://github.com/tarikskalic33/formal-conjectures/blob/37e8a5dd1fd7febec380dd562417168714cc86c4/research/rh/RH_PROOF_JUNCTIONS_20261008.md
+
+
+## Follow-up source inspection — prime-only terminal
+
+The archived prime-only route is now source-inspected at the audited HEAD:
+
+- `AEGISOverlay/RHPrimeOnlyGrowthBridgeV1.lean` explicitly says that neither the prime-only subexponential estimate nor the kernel/arithmetic bounded-remainder estimate is proved; both remain inputs to its terminal.
+- `AEGISOverlay/RHKernelSubexponentialV1.lean` says the subexponential estimate is not proved and identifies a dyadic self-compression bound as a possible arithmetic target, but does not assert such a bound.
+- `AEGISOverlay/RHPrimeOnlyReflectedBridgeV2.lean` gives the corrected reflected orientation, comparing the arithmetic orbit with `-K(-t)), not `K(t)`. Its bridge is conditional.
+- `AEGISOverlay/RHPrimeOnlyReflectedTailV3.lean` improves the needed bridge to an eventual tail bound, but the terminal still requires both:
+  `hPrime : SubexponentialAtTopV1 (primeOnlyOrbitV1 detectingPacket)`
+  and
+  `hBridge : EventuallyReflectedFixedKernelArithmeticRemainderBoundedV3`.
+  It derives RH from those premises; it does not produce either premise.
+
+This makes the next experiment sharper: prove or falsify the **eventual reflected dictionary/remainder** from the exact signed-prime/actual-`B` identity on its stated separated-translation tail, including the analytic integrability/identification needed to connect Lean's totalized integrals to the source representation. Independently investigate the **prime-only subexponential estimate**; the file's proposed dyadic inequality is a conjectural target, not established evidence. Even if the bridge is proved, the prime-only growth bound remains a load-bearing RH-equivalent obligation and cannot be inferred from finite numerical windows.
+
+The width-obstruction artifact `AEGISOverlay/RHWidthQuantifierObstructionV1.lean` is also important: it formally demonstrates that positivity at a width chosen separately for each finite dimension does not imply positivity at one fixed width for all dimensions. Do not globalize a finite-window or finite-shift result without a proved compatibility/convergence theorem for the actual quadratic form.
