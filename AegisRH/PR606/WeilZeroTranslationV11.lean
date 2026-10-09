@@ -103,7 +103,12 @@ theorem mellin_translatePacket_v11
     congr 1
     push_cast
     ring
-  rw [hpow, ← mul_assoc, hexp]
+  rw [hpow]
+  calc
+    (((Real.exp (-d / 2) : ℝ) : ℂ) *
+        Complex.exp (s * (d : ℂ))) * mellin g.1 s =
+      Complex.exp ((s - (1 / 2 : ℂ)) * (d : ℂ)) *
+        mellin g.1 s := by rw [hexp]
 
 /-- Repository zero summand written in the full Mellin-factorized
 autocorrelation form. -/
