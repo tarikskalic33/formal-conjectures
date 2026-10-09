@@ -11,6 +11,8 @@ on:
       - 'AEGISOverlay/**'
       - 'AegisRH/SmallWindow/**'
       - 'scripts/verify_rh_overlay_axioms.py'
+      - 'scripts/rh_theorem_inventory.py'
+      - 'scripts/test_rh_theorem_inventory.py'
       - '.github/workflows/rh-snowflake-log23-globalization-v1.yml'
   workflow_dispatch:
 
