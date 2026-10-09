@@ -38,7 +38,6 @@ name = "FormalConjecturesForMathlib"
 
 # The AEGIS source tree uses legacy flat module imports. Give its source
 # directories explicit Lake roots so those imports resolve in a normal build.
-
 [[lean_lib]]
 name = "AegisPR606"
 srcDir = "AegisRH/PR606"
