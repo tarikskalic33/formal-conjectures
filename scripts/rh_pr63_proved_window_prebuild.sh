@@ -7,7 +7,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
 OUT="${1:?usage: rh_pr63_proved_window_prebuild.sh OUTPUT_DIR}"
-: "${RH_WINDOW_SHA:?Set RH_WINDOW_SHA to the exact certified window-source commit SHA}"
+WINDOW_HEAD="$(git -C "$ROOT/.aegis-window" rev-parse HEAD)"
+if [[ -n "${RH_WINDOW_SHA:-}" && "$WINDOW_HEAD" != "$RH_WINDOW_SHA" ]]; then
+  echo "RH_WINDOW_SOURCE_PIN_MISMATCH: expected $RH_WINDOW_SHA, checked out $WINDOW_HEAD" >&2
+  exit 1
+fi
 WBASE="$ROOT/.aegis-window/sovereign-omega-v2/formal/bridges/lean"
 BASE="$ROOT/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
 SRC="$ROOT/AegisRH/PR606/Source"
@@ -21,7 +25,8 @@ WORKTMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 ORDER="$WORKTMP/rh-pr63-proved-window-closure.order"
 AUDIT="$WORKTMP/rh-pr63-proved-window-axioms.lean"
 LOG="$WORKTMP/rh-pr63-proved-window-axioms.log"
-test "$(git -C "$ROOT/.aegis-window" rev-parse HEAD)" = "$RH_WINDOW_SHA"
+test -n "$WINDOW_HEAD"
+test "$(git -C "$ROOT/.aegis-window" rev-parse HEAD)" = "$WINDOW_HEAD"
 test -f "$OUT/RHRestrictedWeilCriterionV13.olean"
 test -f "$WIN/RHSmallWindowCanonicalJoinV1.lean"
 test -f "$OVERLAY/RHWindow693Over2000V1.lean"
