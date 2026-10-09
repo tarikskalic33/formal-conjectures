@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -/
-module
-
 import FormalConjecturesUtil
 import RHRestrictedWeilCriterionV13
 import RHSmallWindowCanonicalJoinV1
@@ -46,7 +44,6 @@ continuation of the Dedekind zeta function.
 - D. A. Marcus, *Number Fields*, Springer (GTM 81), 1977, Chapter VII.
 -/
 
-@[expose] public section
 
 namespace RiemannHypothesis
 
