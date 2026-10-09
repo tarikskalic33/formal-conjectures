@@ -318,6 +318,11 @@ jobs:
             AegisRH/PR606/RHRestrictedWeilCriterionV13.lean 2>&1 | tee /tmp/pr606-rh-terminal.log
           ! grep -F 'sorryAx' /tmp/pr606-rh-terminal.log
 
+          # Compile the canonical entrypoint with the explicit module path above.
+          lean -o "$OUT/AEGISRHRootV1.olean" \\
+            AegisRH/PR606/AEGISRHRootV1.lean 2>&1 | tee /tmp/aegis-rh-root.log
+          ! grep -F 'sorryAx' /tmp/aegis-rh-root.log
+
           # Compile the exact proved-window producer consumed by the official RH statement.
           bash scripts/rh_pr63_proved_window_prebuild.sh "$OUT"
 
