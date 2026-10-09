@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -/
 import FormalConjecturesUtil
-import RHRestrictedWeilCriterionV13
-import RHSmallWindowCanonicalJoinV1
+import AegisRH.PR606.RHRestrictedWeilCriterionV13
+import AegisRH.SmallWindow.RHSmallWindowCanonicalJoinV1
 
 /-!
 # Riemann Hypothesis and its generalizations
