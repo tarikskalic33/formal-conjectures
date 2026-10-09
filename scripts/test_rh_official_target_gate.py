@@ -39,6 +39,23 @@ class TargetGateTests(unittest.TestCase):
         self.assertEqual(classify(source, log, 1)[0], "OPEN_PROVED_WINDOW_COMPLEMENT")
         self.assertEqual(classify(SOURCE, log, 1)[0], "COMPILER_FAILURE_UNEXPECTED")
 
+    def test_qualified_small_window_import_residual_is_classified(self):
+        log = (
+            "FormalConjectures/Millennium/RiemannHypothesis.lean:60:49: error: unsolved goals\\n"
+            "⊢ ∀ (L : ℝ), 693 / 2000 < L → "
+            "AEGIS.WeilWindowExhaustionV1.WindowArithmeticNonpositiveV1 L\\n"
+        )
+        source = (
+            "import FormalConjecturesUtil\\n"
+            "import AegisRH.PR606.RHRestrictedWeilCriterionV13\\n"
+            "import AegisRH.SmallWindow.RHSmallWindowCanonicalJoinV1\\n"
+            "namespace RiemannHypothesis\\n"
+            "theorem riemannHypothesis : RiemannHypothesis := by\\n"
+            "  apply AEGIS.RHSmallWindowCanonicalJoinV1.riemannHypothesis_of_above_693_over_2000_v1\\n"
+            "end RiemannHypothesis\\n"
+        )
+        self.assertEqual(classify(source, log, 1)[0], "OPEN_PROVED_WINDOW_COMPLEMENT")
+
     def test_unverified_large_window_source_is_not_rh(self):
         log = (
             "error: unsolved goals\n"
