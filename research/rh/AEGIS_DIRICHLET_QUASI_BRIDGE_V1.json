@@ -1,0 +1,108 @@
+{
+  "schema": "aegis.rh.dirichlet-quasi-bridge.v1",
+  "created_date_utc": "2026-10-08",
+  "authority_effect": "NONE",
+  "rh_proven_unconditionally": false,
+  "admission": "NOT_ADMITTED",
+  "source_identity": {
+    "repository": "tarikskalic33/formal-conjectures",
+    "base_ref": "main",
+    "base_commit": "02da1ad1288b4881ea1f8e575fbe84af7db04364",
+    "base_lean_toolchain": "leanprover/lean4:v4.33.1",
+    "created_branch": "proof/rh-dirichlet-euler-quasi-bridge-v1-20261008",
+    "new_proof_module": "AEGISOverlay/DirichletEulerQuasiBridgeV1.lean"
+  },
+  "earlier_aegis_evidence": [
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "source_commit": "99563f50c252411ee4eac188acc6bdb4f8d58b3f",
+      "source_commit_created_utc": "2026-09-10T17:56:46Z",
+      "branch": "proof/rh-zeta-divisor-support-bridge-v1",
+      "path": "sovereign-omega-v2/formal/bridges/lean/ZetaDivisorSupportBridgeV1.lean",
+      "blob_sha": "6ec09558452bbb2f9a4e82c5d2769a2ea758f7c3",
+      "content": "Pre-OpenAI zeta-divisor support/finite zero ledger, including nontrivial_zero_occurs_in_some_finite_ledger_v1; does not establish any 7/8 zero-free bound"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 693,
+      "pr_opened_utc": "2026-09-26T16:52:29Z",
+      "source_commit": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "source_commit_created_utc": "2026-09-28T02:19:54Z",
+      "path": "harness/sdk/epstein_lattice_weil_probe.py",
+      "blob_sha": "3a2d59c6b0ab9d6f2c9f03dd1c33c883bfab690f",
+      "content": "chi_-4, chi_5, chi_-20 and coefficients of zeta(s)*L(s,chi_-20) versus normalized E_(x^2+5y^2); exact Dirichlet-convolution n=6 diagnostic"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 693,
+      "source_commit": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "path": "research/rh/EPSTEIN_LATTICE_WEIL_CONTROL_V1.md",
+      "blob_sha": "da3e1b24481610e4ae3eb750ac8c098658dc90e5",
+      "content": "Epstein D=-20 identity E=A+B and Euler-product distinction; numerical sign controls are explicitly not RH proof"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 679,
+      "pr_opened_utc": "2026-09-24T20:41:36Z",
+      "source_commit": "5e450d7fbb8c45ce652e458f43d2c5f33ab99832",
+      "source_commit_created_utc": "2026-09-27T04:44:40Z",
+      "path": "sovereign-omega-v2/formal/bridges/lean/WeilFixedLineArithmeticV10.lean",
+      "blob_sha": "b3849e4333230e251d3713cce2056956cc5e3ded",
+      "content": "zeta'/zeta Mellin fixed-line evaluation and von-Mangoldt prime-power arithmetic"
+    },
+    {
+      "repository": "Aegis-Omega/AEGIS-OMEGA",
+      "pr": 679,
+      "source_commit": "5e450d7fbb8c45ce652e458f43d2c5f33ab99832",
+      "path": "sovereign-omega-v2/formal/bridges/lean/WeilExplicitFormulaV10.lean",
+      "blob_sha": "e7d4d31eb6053d5f7325f23071322580b441c8a0",
+      "content": "normalized Weil explicit formula assembly from zero, pole, gamma and prime terms"
+    }
+  ],
+  "external_comparator": {
+    "repository": "openai/math",
+    "public_initial_commit": "adc7f1241b42e322a6451854ab7e4b4c146bf78a",
+    "public_initial_commit_created_utc": "2026-10-06T21:58:50Z",
+    "paper_filename_date": "2026-09-30",
+    "toolchain": "leanprover/lean4:v4.34.1",
+    "challenge_json_path": "lean/ComparatorChallenges/QuasiRiemannHypothesis.json",
+    "challenge_json_blob_sha": "acf552468fc23c1a27d685d33983c58c50040542",
+    "solution_path": "lean/OAI/NumberTheory/DirichletL/Nonvanishing.lean",
+    "solution_blob_sha": "46c67f4000906b1391a471d6e6396ac0da3c16a5",
+    "import_strategy": "NONE: theorems are explicit hypotheses until same-pin replay/adaptation",
+    "hypothesis_types": [
+      "zeta(s)!=0 for Re(s)>7/8",
+      "L(s,chi)!=0 for Re(s)>7/8 excluding principal pole"
+    ]
+  },
+  "new_theorems": [
+    "zeta_zero_re_le_seven_eighths",
+    "zeta_zero_translation_exponent_le_three_eighths",
+    "zeta_zero_in_reflected_strip",
+    "euler_classsum_ne_zero",
+    "epstein_zero_forces_nontrivial_cancellation"
+  ],
+  "unproved_dependencies": [
+    "ZetaSevenEighthsInput from independently checked comparator on fork pin",
+    "DirichletSevenEighthsInput from independently checked comparator on fork pin",
+    "Riemann-zeta zero reflection when used for left strip",
+    "The D=-20 Epstein E=A+B analytic identity in Lean",
+    "Global bound on the actual AEGIS detecting-packet kernel using the 3/8 exponent"
+  ],
+  "proof_authority": "CONDITIONAL_ONLY",
+  "compilation_status": "VERIFIED_SOURCE_BLOB_HOSTED_LEAN_4_33_1",
+  "provenance_note": "AEGIS corpus is earlier than the OpenAI public math repository and the September 30 paper filename. This does not establish priority for the classical Dirichlet/Euler identities nor establish independent discovery of the exact 7/8 theorem.",
+  "compilation_evidence": {
+    "tested_head": "8d80aba4400b5e7064154bada1596de233c899e7",
+    "tested_lean_source_blob": "a77814981ba1bd07473e4df4e7a250f5b89be7e6",
+    "workflow_run_id": 37709265009,
+    "workflow_job_id": 113091045300,
+    "conclusion": "success",
+    "replay_log_marker": "EXACT_HEAD_LEAN_COMPARATOR_BRIDGE=PASS",
+    "axiom_sets": "[propext, Classical.choice, Quot.sound] for all 5 theorem outputs",
+    "sorry_ax": "not_present",
+    "copyright_run_id": 37709265055,
+    "copyright_conclusion": "success",
+    "check_semantics": "Replays the source blob at the tested exact head only. Any newer head needs its own fresh replay."
+  }
+}
