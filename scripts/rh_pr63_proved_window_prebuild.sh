@@ -4,9 +4,10 @@
 # Reuse PR606 exact import closure; compile the already-proved 693/2000 window
 # into the same module search path without weakening the official RH target.
 set -euo pipefail
-ROOT="$(pwd)"
-OUT="$1"
-WINDOW_SHA="2c3d041b633147ec97c7ef753aa9d157a47bb9f5"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
+OUT="${1:?usage: rh_pr63_proved_window_prebuild.sh OUTPUT_DIR}"
+: "${RH_WINDOW_SHA:?Set RH_WINDOW_SHA to the exact certified window-source commit SHA}"
 WBASE="$ROOT/.aegis-window/sovereign-omega-v2/formal/bridges/lean"
 BASE="$ROOT/.aegis-base/sovereign-omega-v2/formal/bridges/lean"
 SRC="$ROOT/AegisRH/PR606/Source"
@@ -16,12 +17,11 @@ if [[ -v RH_WINDOW_SRC_OVERRIDE ]]; then SRC="$RH_WINDOW_SRC_OVERRIDE"; fi
 if [[ -v RH_WINDOW_COMPAT_OVERRIDE ]]; then COMPAT="$RH_WINDOW_COMPAT_OVERRIDE"; fi
 OVERLAY="$ROOT/AEGISOverlay"
 WIN="$ROOT/AegisRH/SmallWindow"
-WORKTMP="/tmp"
-if [[ -n "$RUNNER_TEMP" ]]; then WORKTMP="$RUNNER_TEMP"; fi
+WORKTMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 ORDER="$WORKTMP/rh-pr63-proved-window-closure.order"
 AUDIT="$WORKTMP/rh-pr63-proved-window-axioms.lean"
 LOG="$WORKTMP/rh-pr63-proved-window-axioms.log"
-test "$(git -C "$ROOT/.aegis-window" rev-parse HEAD)" = "$WINDOW_SHA"
+test "$(git -C "$ROOT/.aegis-window" rev-parse HEAD)" = "$RH_WINDOW_SHA"
 test -f "$OUT/RHRestrictedWeilCriterionV13.olean"
 test -f "$WIN/RHSmallWindowCanonicalJoinV1.lean"
 test -f "$OVERLAY/RHWindow693Over2000V1.lean"
