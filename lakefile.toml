@@ -36,6 +36,11 @@ rev = "v4.33.1"
 [[lean_lib]]
 name = "FormalConjecturesForMathlib"
 
+# Compile the AEGIS RH sources as normal Lake modules, not workflow-only flat .olean files.
+[[lean_lib]]
+name = "AegisRH"
+globs = ["AegisRH.+"]
+
 [[lean_lib]]
 name = "FormalConjecturesUtil"
 globs = ["FormalConjecturesUtil.*"]
