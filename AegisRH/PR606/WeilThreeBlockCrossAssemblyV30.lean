@@ -14,8 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -/
 
+import Mathlib.Tactic
+import WeilDisjointEnergyV2
+import WeilMixedClosureV2
+import WeilMixedAlgebraV2
+import WeilThreeBlockTranslatedPacketsV22
+import WeilThreeBlockCrossPrimeWindowV29
 import WeilThreeBlockPrimeEvaluationV30
+import WeilThreeBlockAnalyticConstantsV21
 import WeilThreeBlockNormBridgeV21
+import WeilWidthArchIntegralV27
 
 /-!
 Conditional assembly over the actual repository integrals.

@@ -34,6 +34,22 @@ import sys
 base, wbase, src, compat, local, overlay, win, orderpath, out = map(Path, sys.argv[1:])
 roots=(base, wbase, src, compat, local, overlay, win)
 groups=[{p.stem:p for p in r.glob("*.lean")} for r in roots]
+# The local PR606 overlay can contain copyright-only placeholders copied from
+# the official port.  Their exact Git blob must not shadow the pinned AEGIS
+# implementation, otherwise the import graph is truncated and Lean's
+# error-recovery output can misleadingly include sorryAx after failed elaboration.
+EMPTY_LOCAL_STUB_BLOB_SHA1 = "a53c1ed890046f8370bd14b9a0c1001e34e77364"
+def git_blob_sha1(path):
+    data = path.read_bytes()
+    return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
+local_group = groups[4]  # roots[4] is the AegisRH/PR606 local overlay.
+ignored = []
+for name, source_path in list(local_group.items()):
+    if git_blob_sha1(source_path) == EMPTY_LOCAL_STUB_BLOB_SHA1:
+        ignored.append(name)
+        del local_group[name]
+if ignored:
+    print("RH_WINDOW_IGNORED_EMPTY_LOCAL_STUBS=" + ",".join(sorted(ignored)))
 allmods=set().union(*(set(g) for g in groups))
 def chosen(n):
     for group in reversed(groups):
