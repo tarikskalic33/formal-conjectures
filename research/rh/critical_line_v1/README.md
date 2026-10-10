@@ -44,8 +44,28 @@ with `|x − a|/a ≤ 1/8`). The moments `∫_a^b e^{−αx}(x − a)^k dx` sati
 `Λ(1/2+14i) ∈ [−2.051476, −2.051340]·10⁻⁶` (Arb: −2.0514083·10⁻⁶) and
 `Λ(1/2+14.3i) ∈ [2.026476, 2.026639]·10⁻⁶` (Arb: 2.0265577·10⁻⁶).
 
-Next: the cell expansion with its remainder, the moment recursion and the x-tail in Lean, then the
-integer checker under `decide` at t = 14 and t = 14.3.
+`RHCellBinomialV1` (Mathlib only, standard axioms):
+
+- `choose_succ`: `choose(z, k+1) = choose(z, k)(z − k)/(k + 1)`.
+- `binom_hasSum`: `(1 + u)^z = Σ_k choose(z, k) u^k` for real `|u| < 1` (from
+  `one_add_cpow_hasFPowerSeriesOnBall_zero`).
+- `binom_rem_le`: for `0 ≤ u ≤ U`, `‖z‖ ≤ M`, `1 ≤ M`, `q = U(M + d + 1)/(d + 2) < 1`,
+  `‖(1 + u)^z − Σ_{k≤d} choose(z, k) u^k‖ ≤ β_{d+1} U^{d+1}/(1 − q)` with `β_k = Π_{j<k}(M + j)/(j + 1)`.
+- `cpow_cell`: `x^z = a^z (1 + (x − a)/a)^z` for `0 < a ≤ x`. `cpow_geom`: `(r^j)^z = (r^z)^j`.
+
+`RHCellMomentsV1` (imports the above, standard axioms):
+
+- `mom_zero`, `mom_succ`: `α I_0 = e^{−αa} − e^{−αb}` and `α I_{k+1} = (k + 1) I_k − e^{−αb}(b − a)^{k+1}`
+  for `I_k = ∫_a^b e^{−αx}(x − a)^k dx`.
+- `cell_approx`: for `1 ≤ a ≤ b`, `re z ≤ 0`, `(b − a)/a ≤ U`,
+  `‖∫_a^b x^z e^{−αx} dx − a^z Σ_{k≤d} choose(z, k) a^{−k} I_k‖ ≤ β_{d+1} U^{d+1}/(1 − q) · I_0`.
+
+CI: `.github/workflows/rh-critical-line-v1.yml` compiles these modules in order against plain Mathlib
+(the pin in `lake-manifest.json`, no other repositories) and fails unless every `#print axioms` report
+is within `[propext, Classical.choice, Quot.sound]`.
+
+Next: split `∫_{x>1}` into the 22 geometric cells plus the tail beyond `X = (9/8)^22`, the enclosures
+for `e^{−πa}` and `π`, then the integer checker under `decide` at t = 14 and t = 14.3.
 
 Still open for "every zero with `0 < γ < T` lies on the line":
 
