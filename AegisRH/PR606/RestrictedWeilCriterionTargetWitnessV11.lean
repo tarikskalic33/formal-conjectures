@@ -16,6 +16,8 @@ limitations under the License.
 
 import WeilMomentKillerConstructionV1
 import ZeroCriticalStripV1
+import ZeroHeightSummabilityBridgeV1
+import Mathlib.Analysis.Calculus.ContDiff.Deriv
 import Mathlib.Analysis.Complex.RealDeriv
 import Mathlib.Analysis.Calculus.Deriv.Support
 import Mathlib.Analysis.Calculus.BumpFunction.Normed
@@ -48,7 +50,7 @@ AUTHORITY_EFFECT = NONE.
 -/
 
 open Set Filter MeasureTheory Complex
-open scoped Topology
+open scoped Topology ContDiff
 
 set_option autoImplicit false
 noncomputable section
@@ -68,8 +70,9 @@ def TargetPhiV11 (rho : ℂ) (u : ℝ) : ℂ :=
 
 private theorem contDiff_deriv_complex_v11
     {f : ℝ → ℂ} (hf : ContDiff ℝ ∞ f) :
-    ContDiff ℝ ∞ (deriv f) :=
-  (contDiff_infty_iff_deriv.mp hf).2
+    ContDiff ℝ ∞ (deriv f) := by
+  exact
+    ((contDiff_infty_iff_deriv (𝕜 := ℝ) (f := f)).mp hf).2
 
 theorem targetPsi_contDiff_v11 (rho : ℂ) :
     ContDiff ℝ ∞ (TargetPsiV11 rho) := by
@@ -80,9 +83,12 @@ theorem targetPsi_contDiff_v11 (rho : ℂ) :
 
 theorem targetPsi_hasCompactSupport_v11 (rho : ℂ) :
     HasCompactSupport (TargetPsiV11 rho) := by
+  have hbase' :
+      HasCompactSupport (Complex.ofReal ∘ psi0) :=
+    psi0_hasCompactSupport.comp_left (by norm_num)
   have hbase :
-      HasCompactSupport (fun u : ℝ => (psi0 u : ℂ)) :=
-    psi0_hasCompactSupport.comp_left rfl
+      HasCompactSupport (fun u : ℝ => (psi0 u : ℂ)) := by
+    simpa [Function.comp_def] using hbase'
   exact hbase.mul_right
 
 theorem targetPhi_contDiff_v11 (rho : ℂ) :
@@ -113,7 +119,7 @@ private theorem integral_deriv_eq_zero_complex_v11
       hint.integrableOn hint.integrableOn
   rw [HasCompactSupport.integral_Iic_deriv_eq hF hFc 0,
     HasCompactSupport.integral_Ioi_deriv_eq hF hFc 0] at h
-  simpa using h
+  simpa using h.symm
 
 /-- First exact moment: D(D+1) integrates to zero. -/
 theorem targetPhi_integral_zero_v11 (rho : ℂ) :
@@ -159,7 +165,7 @@ theorem targetPhi_exp_integral_zero_v11 (rho : ℂ) :
       ((contDiff_deriv_complex_v11
         (targetPsi_contDiff_v11 rho)).of_le (by simp)).mul
       (Complex.ofRealCLM.contDiff.comp
-        (Real.contDiff_exp.of_le (by simp)))
+        (show ContDiff ℝ 1 Real.exp from Real.contDiff_exp))
   have hFc : HasCompactSupport F := by
     dsimp [F]
     exact (targetPsi_hasCompactSupport_v11 rho).deriv.mul_right
@@ -175,6 +181,11 @@ theorem targetPhi_exp_integral_zero_v11 (rho : ℂ) :
         (Real.exp u : ℂ) u :=
       (Real.hasDerivAt_exp u).ofReal_comp
     have hd := h1.mul h2
+    change
+      deriv
+          ((deriv (TargetPsiV11 rho)) *
+            (fun x : ℝ => (Real.exp x : ℂ))) u =
+        TargetPhiV11 rho u * (Real.exp u : ℂ)
     rw [hd.deriv]
     unfold TargetPhiV11
     ring
@@ -194,13 +205,24 @@ theorem targetPsi_deriv_v11 (rho : ℂ) (u : ℝ) :
         ((deriv psi0 u : ℝ) : ℂ) u :=
     hpsiR.ofReal_comp
   have hlin :
-      HasDerivAt (fun x : ℝ => -(x • rho)) (-rho) u :=
-    ((hasDerivAt_id' u).smul_const rho).fun_neg
+      HasDerivAt (fun x : ℝ => -(x • rho)) (-rho) u := by
+    simpa using ((hasDerivAt_id' u).smul_const rho).fun_neg
   have hexp := hlin.cexp
   have hprod := hpsi.mul hexp
-  unfold TargetPsiV11
-  rw [hprod.deriv]
-  ring
+  calc
+    deriv (TargetPsiV11 rho) u =
+        ((deriv psi0 u : ℝ) : ℂ) * Complex.exp (-(u • rho)) +
+          (psi0 u : ℂ) * (Complex.exp (-(u • rho)) * (-rho)) := by
+      change
+        deriv
+            ((fun x : ℝ => (psi0 x : ℂ)) *
+              (fun x : ℝ => Complex.exp (-(x • rho)))) u =
+          _
+      simpa [smul_eq_mul] using hprod.deriv
+    _ = ((((deriv psi0 u : ℝ) : ℂ) -
+          rho * (psi0 u : ℂ)) *
+          Complex.exp (-(u • rho))) := by
+      ring
 
 /-- Second derivative of the targeted modulation. -/
 theorem targetPsi_second_deriv_v11 (rho : ℂ) (u : ℝ) :
@@ -231,8 +253,8 @@ theorem targetPsi_second_deriv_v11 (rho : ℂ) (u : ℝ) :
           rho * ((deriv psi0 u : ℝ) : ℂ)) u :=
     hpsi1.sub (hpsi0.const_mul rho)
   have hlin :
-      HasDerivAt (fun x : ℝ => -(x • rho)) (-rho) u :=
-    ((hasDerivAt_id' u).smul_const rho).fun_neg
+      HasDerivAt (fun x : ℝ => -(x • rho)) (-rho) u := by
+    simpa using ((hasDerivAt_id' u).smul_const rho).fun_neg
   have hexp := hlin.cexp
   have hprod := hq.mul hexp
   have hfirst := targetPsi_deriv_v11 rho
@@ -244,8 +266,33 @@ theorem targetPsi_second_deriv_v11 (rho : ℂ) (u : ℝ) :
             Complex.exp (-(x • rho)) := by
     funext x
     exact hfirst x
-  rw [hfun, hprod.deriv]
-  ring
+  rw [hfun]
+  calc
+    deriv
+        (fun x : ℝ =>
+          (((deriv psi0 x : ℝ) : ℂ) -
+            rho * (psi0 x : ℂ)) *
+            Complex.exp (-(x • rho))) u =
+      (((deriv (deriv psi0) u : ℝ) : ℂ) -
+          rho * ((deriv psi0 u : ℝ) : ℂ)) *
+          Complex.exp (-(u • rho)) +
+        (((deriv psi0 u : ℝ) : ℂ) -
+          rho * (psi0 u : ℂ)) *
+          (Complex.exp (-(u • rho)) * (-rho)) := by
+      change
+        deriv
+            ((fun x : ℝ =>
+                (((deriv psi0 x : ℝ) : ℂ) -
+                  rho * (psi0 x : ℂ))) *
+              (fun x : ℝ => Complex.exp (-(x • rho)))) u =
+          _
+      simpa [smul_eq_mul] using hprod.deriv
+    _ =
+      ((((deriv (deriv psi0) u : ℝ) : ℂ) -
+        2 * rho * ((deriv psi0 u : ℝ) : ℂ) +
+        rho ^ 2 * (psi0 u : ℂ)) *
+        Complex.exp (-(u • rho))) := by
+      ring
 
 /-- After multiplying by exp(u rho), the targeted moment-killer becomes a
 finite differential expression in the original real bump. -/
@@ -261,9 +308,16 @@ theorem targetPhi_weighted_pointwise_v11 (rho : ℂ) (u : ℝ) :
           Complex.exp (-(u • rho)) = 1 := by
     rw [← Complex.exp_add]
     simp
-  ring_nf at hexp ⊢
-  rw [hexp]
-  ring
+  calc
+    _ =
+        (Complex.exp (u • rho) * Complex.exp (-(u • rho))) *
+          (((deriv (deriv psi0) u : ℝ) : ℂ) +
+            (1 - 2 * rho) * ((deriv psi0 u : ℝ) : ℂ) +
+            (rho ^ 2 - rho) * (psi0 u : ℂ)) := by
+          ring
+    _ = _ := by
+      rw [hexp]
+      ring
 
 /-- Exact targeted transform. -/
 theorem targetPhi_weighted_integral_v11 (rho : ℂ) :
@@ -277,15 +331,19 @@ theorem targetPhi_weighted_integral_v11 (rho : ℂ) :
   have h1 : Integrable (deriv psi0) :=
     ((contDiff_deriv psi0_contDiff).continuous).integrable_of_hasCompactSupport
       psi0_hasCompactSupport.deriv
+  have h2cont : Continuous (deriv (deriv psi0)) :=
+    (contDiff_deriv (contDiff_deriv psi0_contDiff)).continuous
   have h2 : Integrable (deriv (deriv psi0)) :=
-    ((contDiff_deriv (contDiff_deriv psi0_contDiff)).continuous)
-      .integrable_of_hasCompactSupport psi0_hasCompactSupport.deriv.deriv
+    h2cont.integrable_of_hasCompactSupport
+      psi0_hasCompactSupport.deriv.deriv
 
   have hi1 : ∫ u : ℝ, deriv psi0 u = 0 :=
-    integral_deriv_eq_zero psi0_contDiff psi0_hasCompactSupport
+    integral_deriv_eq_zero
+      (psi0_contDiff.of_le (by simp))
+      psi0_hasCompactSupport
   have hi2 : ∫ u : ℝ, deriv (deriv psi0) u = 0 :=
     integral_deriv_eq_zero
-      (contDiff_deriv psi0_contDiff)
+      ((contDiff_deriv psi0_contDiff).of_le (by simp))
       psi0_hasCompactSupport.deriv
 
   calc
@@ -305,13 +363,26 @@ theorem targetPhi_weighted_integral_v11 (rho : ℂ) :
         (∫ u : ℝ, ((deriv psi0 u : ℝ) : ℂ)) +
       (rho ^ 2 - rho) *
         (∫ u : ℝ, (psi0 u : ℂ)) := by
-          rw [integral_add
-              (h2.ofReal)
-              ((h1.ofReal.const_mul (1 - 2 * rho)).add
-                (h0.ofReal.const_mul (rho ^ 2 - rho))),
-            integral_add,
-            integral_const_mul,
-            integral_const_mul]
+          have h2c : Integrable (fun u : ℝ =>
+              ((deriv (deriv psi0) u : ℝ) : ℂ)) := h2.ofReal
+          have h1c : Integrable (fun u : ℝ =>
+              (1 - 2 * rho) * ((deriv psi0 u : ℝ) : ℂ)) :=
+            h1.ofReal.const_mul (1 - 2 * rho)
+          have h0c : Integrable (fun u : ℝ =>
+              (rho ^ 2 - rho) * (psi0 u : ℂ)) :=
+            h0.ofReal.const_mul (rho ^ 2 - rho)
+          calc
+            _ = (∫ u : ℝ,
+                  ((deriv (deriv psi0) u : ℝ) : ℂ) +
+                    (1 - 2 * rho) * ((deriv psi0 u : ℝ) : ℂ)) +
+                ∫ u : ℝ, (rho ^ 2 - rho) * (psi0 u : ℂ) := by
+                  exact integral_add (h2c.add h1c) h0c
+            _ = ((∫ u : ℝ, ((deriv (deriv psi0) u : ℝ) : ℂ)) +
+                  ∫ u : ℝ, (1 - 2 * rho) * ((deriv psi0 u : ℝ) : ℂ)) +
+                ∫ u : ℝ, (rho ^ 2 - rho) * (psi0 u : ℂ) := by
+                  rw [integral_add h2c h1c]
+            _ = _ := by
+                  rw [integral_const_mul, integral_const_mul]
     _ =
       (rho ^ 2 - rho) *
         ((∫ u : ℝ, psi0 u : ℝ) : ℂ) := by
