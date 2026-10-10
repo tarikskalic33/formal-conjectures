@@ -15,7 +15,7 @@ limitations under the License.
 -/
 
 import RHFixIntervalV1
-import RHPi40V1
+import RHPi80V1
 
 /-!
 # Fixed-point enclosures of `e^{−q}` and `e^{−πa}`
@@ -23,7 +23,7 @@ import RHPi40V1
 * `ofQ q`, `ball q e`: the integer interval around a rational (outward rounding).
 * `expQ x N`: Taylor sum of `e^x` in `ℚ` plus the Lagrange bound of `Real.exp_bound` (`|x| ≤ 1`).
 * `expNegQ q s N`: `e^{−q} = (e^{−q/2^s})^{2^s}`, `s` squarings (`0 ≤ q ≤ 2^s`).
-* `expNegPi a`: `e^{−πa}` from `π` to forty digits (`RHPi40V1`, Mathlib's `pi_lower_bound`).
+* `expNegPi a`: `e^{−πa}` from `π` to eighty digits (`RHPi80V1`, Mathlib's `sqrtTwoAddSeries` chain).
 * `powIv k I`: `I^k`; with it `e^{−π m² a} = (e^{−πa})^{m²}` reuses one exponential.
 
 All of it is integer and rational arithmetic, so the kernel evaluates it.  AUTHORITY_EFFECT = NONE.
@@ -114,16 +114,16 @@ theorem mem_expNegQ {q : ℚ} {s N : ℕ} (hq0 : 0 ≤ q) (hq : q ≤ 2 ^ s) (hN
     rw [← Real.exp_nat_mul]; congr 1; push_cast; field_simp
   rw [e]; exact h
 
-/-- Forty digits of `π` (`RHPi40V1`). -/
-def piLo : ℚ := 31415926535897932384626433832795028841971 / 10 ^ 40
-def piHi : ℚ := 31415926535897932384626433832795028841972 / 10 ^ 40
+/-- Eighty digits of `π` (`RHPi80V1`). -/
+def piLo : ℚ := 314159265358979323846264338327950288419716939937510582097494459230781640628620899 / 10 ^ 80
+def piHi : ℚ := 314159265358979323846264338327950288419716939937510582097494459230781640628620900 / 10 ^ 80
 
 theorem piLo_le : (piLo : ℝ) ≤ Real.pi := by
-  have h := AEGIS.RHPi40V1.pi_gt_d40
+  have h := AEGIS.RHPi80V1.pi_gt_d80
   simp only [piLo]; push_cast; linarith
 
 theorem le_piHi : Real.pi ≤ (piHi : ℝ) := by
-  have h := AEGIS.RHPi40V1.pi_lt_d40
+  have h := AEGIS.RHPi80V1.pi_lt_d80
   simp only [piHi]; push_cast; linarith
 
 /-- `e^{−πa}` for `a ≥ 0`, monotone in `π`. -/
