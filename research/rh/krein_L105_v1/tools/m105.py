@@ -111,9 +111,24 @@ def phaseRow(C, S, h, n):
 # ---- certificate data ----
 L105 = Q(21, 20)
 def hk(k): return Q(107 + 2 * k, 100)          # u_k = 21/20 + (k+1)/50
-_P = json.load(open('/tmp/claude-0/-home-user-AEGIS-OMEGA/eb61930d-8cb3-5904-af97-9be2520ea188/scratchpad/l105/best_L1.05_s8.0_r3e-10.json'))
-CQ = [Q(x) for x in _P['coef'][:-5]]           # exact dyadic values of the float coefficients
-DQ = [Q(x) for x in _P['coef'][-5:]]
+# The Lean source is the canonical, immutable certificate coefficient payload.
+# Never read a provider scratchpad or re-round binary64 coefficients.
+def _canonical_coefficients(name, expected):
+    from pathlib import Path
+    import re
+    src = Path(__file__).resolve().parents[1] / "RHKreinL105DataV1.lean"
+    body = src.read_text(encoding="utf-8")
+    match = re.search(r"(?m)^def " + re.escape(name) + r" : List \\(ℤ × ℕ\\) := \\[([\\s\\S]*?)\\]", body)
+    if match is None:
+        raise ValueError("MISSING_CANONICAL_LEAN_COEFFICIENTS:" + name)
+    cells = re.findall(r"\\((-?\\d+),\\s*(\\d+)\\)", match.group(1))
+    rest = re.sub(r"\\((-?\\d+),\\s*(\\d+)\\)", "", match.group(1)).replace(",", "").strip()
+    if rest or len(cells) != expected:
+        raise ValueError("INVALID_CANONICAL_LEAN_COEFFICIENTS:" + name)
+    return [Q(int(num), 2 ** int(exp)) for num, exp in cells]
+
+CQ = _canonical_coefficients("cqRaw", 399)
+DQ = _canonical_coefficients("dqRaw", 5)
 NH = len(CQ)
 SUMC = sum(abs(x) for x in CQ)
 
