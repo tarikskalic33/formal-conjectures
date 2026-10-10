@@ -1,0 +1,82 @@
+name: AEGIS RH Ten Block Rational SOS Exact Preflight
+
+on:
+  push:
+    branches:
+      - 'evidence/rh-ten-block-sos-c49-replay-v1'
+    paths:
+      - '.github/workflows/rh-ten-block-sos-c49-replay.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/rh-ten-block-sos-c49-replay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SHA: c49cf685e6c30383f6b0c204b963c8aca264f6d0
+
+jobs:
+  verify:
+    name: exact-rational ten-block SOS replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout witness repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Checkout exact AEGIS preflight source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Aegis-Omega/AEGIS-OMEGA
+          ref: ${{ env.SOURCE_SHA }}
+          path: .aegis
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Bind exact source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .aegis rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f .aegis/research/rh/ten_block_sos_preflight_v1.py
+          mkdir -p evidence
+          sha256sum .aegis/research/rh/ten_block_sos_preflight_v1.py             .aegis/research/rh/RH_TEN_BLOCK_SOS_PREFLIGHT_V1.md             | tee evidence/source-sha256.log
+
+      - name: Run exact Fraction certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .aegis/research/rh/ten_block_sos_preflight_v1.py             | tee evidence/ten-block-sos.txt
+          grep -Fx 'TEN_BLOCK_RATIONAL_SOS=PASS' evidence/ten-block-sos.txt
+          grep -Fx 'CANDIDATE_MARGIN=3591/3200' evidence/ten-block-sos.txt
+          grep -Fx 'ACTUAL_TEN_PACKET_BINDING=NOT_PROVEN' evidence/ten-block-sos.txt
+          grep -Fx 'RH=NOT_PROVEN' evidence/ten-block-sos.txt
+          grep -Fx 'AUTHORITY_EFFECT=NONE' evidence/ten-block-sos.txt
+
+      - name: Emit bounded disposition
+        shell: bash
+        run: |
+          cat > evidence/DISPOSITION.txt <<EOF
+          SOURCE_SHA=$SOURCE_SHA
+          PARENT_GAP9_HEAD=414a0120517fa3ae3354a31780c09e03a7fa5ff1
+          DIAGONAL=5671/3200
+          GAPS_1_8=1/100
+          GAP_9=57/100
+          SOS_MARGIN=3591/3200
+          ACTUAL_TEN_PACKET_BINDING=NOT_PROVEN
+          UNIVERSAL_FINAL_SIGN=NOT_PROVEN
+          RH=NOT_PROVEN
+          AUTHORITY_EFFECT=NONE
+          EOF
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-ten-block-sos-c49-exact-replay
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
