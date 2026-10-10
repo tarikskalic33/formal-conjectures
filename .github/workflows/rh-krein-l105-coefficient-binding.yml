@@ -362,6 +362,10 @@ jobs:
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$GITHUB_WORKSPACE:$GEN:$L105:$REFLECTIVE:$OVERLAY:$SRC:$COMPAT:$L105SRC:$WIN:$BASE:$ROOT_LEAN_PATH"
           export GEN L105 REFLECTIVE OVERLAY SRC COMPAT L105SRC WIN BASE OUT
+          # Required qualified import: the custom closure excludes FormalConjectures.
+          mkdir -p "$OUT/FormalConjectures/Millennium"
+          lean -o "$OUT/FormalConjectures/Millennium/RHSnowflakeLog23.olean" FormalConjectures/Millennium/RHSnowflakeLog23.lean 2>&1 | tee evidence-l105/replay/RHSnowflakeLog23.log
+          test -s "$OUT/FormalConjectures/Millennium/RHSnowflakeLog23.olean"
           python3 - <<'PY'
           from pathlib import Path
           import os, sys
