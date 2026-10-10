@@ -114,8 +114,7 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [[ "$WEBSITE_ONLY" == "true" ]] || \
-             [[ "$REF_NAME" == *-webtest ]]; then
+          if [[ "$WEBSITE_ONLY" == "true" ]]; then
             echo "website_only=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Website-only build: skipping Lean compilation, downloading data from live site."
           else
@@ -123,6 +122,9 @@ jobs:
           fi
 
           site=true
+          if [[ "$REF_NAME" == *-webtest ]]; then
+            site=false  # private verification branch: Lean build only
+          fi
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             # A pull request is checked out as a merge commit, so HEAD^1 is the
             # base and this diff is exactly what the pull request changes. If
@@ -434,10 +436,7 @@ jobs:
 
   # Deployment job
   deploy:
-    if: >-
-      github.ref == 'refs/heads/main' ||
-      (github.repository != 'google-deepmind/formal-conjectures' &&
-       endsWith(github.ref_name, '-webtest'))
+    if: false # verification branch: never deploy Pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
