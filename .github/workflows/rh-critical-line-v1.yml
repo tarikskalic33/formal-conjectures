@@ -17,7 +17,7 @@ env:
 jobs:
   critical-line:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout exact candidate head
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -48,9 +48,9 @@ jobs:
           out="$RUNNER_TEMP/clbuild"
           mkdir -p "$out"
           for m in RHCriticalLineSignV1 RHRiemannThetaFormulaV1 RHLambdaLineV1 RHFixIntervalV1 \
-                   RHThetaTailV1 RHMellinThreeTermsV1 RHCellBinomialV1 RHCellMomentsV1 \
+                   RHThetaTailV1 RHMellinThreeTermsV1 RHCellBinomialV1 RHCellMomentsV1 RHPi40V1 \
                    RHExpEnclosureV1 RHLambdaCheckV1 RHCheckSoundV1 RHCheckLoopV1 RHCellSplitV1 \
-                   RHFirstZeroV1; do
+                   RHFirstZeroV1 RHSecondZeroV1 RHThirdZeroV1; do
             echo "== $m" | tee -a critical-line.log
             lake env bash -c "LEAN_PATH=$out:\$LEAN_PATH lean -R $dir -o $out/$m.olean $dir/$m.lean" 2>&1 | tee -a critical-line.log
           done
@@ -64,12 +64,14 @@ jobs:
           import re
           log = open('critical-line.log').read()
           lines = re.findall(r"depends on axioms: \[([^\]]*)\]", log)
-          assert len(lines) >= 26, f"expected >= 26 axiom reports, got {len(lines)}"
+          assert len(lines) >= 32, f"expected >= 32 axiom reports, got {len(lines)}"
           allowed = {'propext', 'Classical.choice', 'Quot.sound'}
           for l in lines:
               ax = {a.strip() for a in l.split(',') if a.strip()}
               assert ax <= allowed, f"non-standard axioms: {ax - allowed}"
           assert "'AEGIS.RHFirstZeroV1.first_zero' depends on axioms: [propext, Classical.choice, Quot.sound]" in log
+          assert "'AEGIS.RHSecondZeroV1.two_zeros' depends on axioms: [propext, Classical.choice, Quot.sound]" in log
+          assert "'AEGIS.RHThirdZeroV1.three_zeros' depends on axioms: [propext, Classical.choice, Quot.sound]" in log
           print(f"{len(lines)} theorems, all within {sorted(allowed)}")
           PY
 

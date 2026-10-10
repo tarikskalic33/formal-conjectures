@@ -1,9 +1,14 @@
 # Zeros on the critical line from sign changes (Turing, first half)
 
-**`RHFirstZeroV1.first_zero`**: `∃ t ∈ [14, 14.3], ζ(1/2 + it) = 0`, kernel-checked, axioms
-`[propext, Classical.choice, Quot.sound]`. Numerically this is the zero at t ≈ 14.1347; the Lean
-statement is only that some zero lies on the line in that window (no claim that nothing lies below it).
-This is one zero found by a sign change. It does not say every zero is on the line (that is RH).
+**Three zeros of ζ on the critical line, kernel-checked** (axioms `[propext, Classical.choice, Quot.sound]`):
+
+- `RHFirstZeroV1.first_zero`: `∃ t ∈ [14, 14.3], ζ(1/2 + it) = 0`;
+- `RHSecondZeroV1.second_zero`: `∃ t ∈ [20.9, 21.1], ζ(1/2 + it) = 0`;
+- `RHThirdZeroV1.third_zero`: `∃ t ∈ [24.9, 25.1], ζ(1/2 + it) = 0`; `three_zeros` puts them together.
+
+Numerically these are the zeros at t ≈ 14.1347, 21.0220 and 25.0109. The Lean statements are only that
+some zero lies on the line in each window (no claim that nothing else lies there or below). They come
+from sign changes of `re Λ(1/2 + it)`. They do not say every zero is on the line (that is RH).
 
 `RHCriticalLineSignV1` (Mathlib only, `[propext, Classical.choice, Quot.sound]`):
 
@@ -65,8 +70,13 @@ with `|x − a|/a ≤ 1/8`). The moments `∫_a^b e^{−αx}(x − a)^k dx` sati
 - `cell_approx`: for `1 ≤ a ≤ b`, `re z ≤ 0`, `(b − a)/a ≤ U`,
   `‖∫_a^b x^z e^{−αx} dx − a^z Σ_{k≤d} choose(z, k) a^{−k} I_k‖ ≤ β_{d+1} U^{d+1}/(1 − q) · I_0`.
 
+`RHPi40V1` (Mathlib only, standard axioms): `π` to forty digits (`pi_gt_d40`, `pi_lt_d40`) by Mathlib's
+`sqrtTwoAddSeries` chain, 72 steps at `2^{-290}`. The tactic `pi_bound_pow2` computes the witnesses
+(`⌈√·⌉` / `⌊√·⌋` on naturals) and `norm_num` checks every step, so the generator is untrusted; `picert.py`
+is its exact mirror. Compiles in about 15 s.
+
 `RHExpEnclosureV1` (standard axioms): `ofQ`/`ball` (rational to integer interval), `e^x` from
-`Real.exp_bound`, `e^{−q} = (e^{−q/2^s})^{2^s}`, `e^{−πa}` from Mathlib's 20 digits of `π`, and
+`Real.exp_bound`, `e^{−q} = (e^{−q/2^s})^{2^s}`, `e^{−πa}` from `π` to forty digits (`RHPi40V1`), and
 `e^{−πm²a} = (e^{−πa})^{m²}` (`exp_neg_pi_sq`), so one exponential serves `m = 1, 2, 3`.
 
 `RHLambdaCheckV1`: the integer checker `lamIv` (complex intervals, `binAux` for `ρ = (9/8)^z`, `cellAux`
@@ -91,16 +101,28 @@ operation-for-operation mirror; `#eval` in Lean and the mirror give the same int
 
 CI: `.github/workflows/rh-critical-line-v1.yml` compiles all of these in order against plain Mathlib
 (the pin in `lake-manifest.json`, no other repositories) and fails unless every `#print axioms` report
-is within `[propext, Classical.choice, Quot.sound]` and `first_zero` is reported.
+is within `[propext, Classical.choice, Quot.sound]` and `first_zero`, `two_zeros`, `three_zeros` are
+reported.
 
-Next: the zero at t ≈ 21.02 with the same `lamIv_mem` (`M = 11`, `d = 18`, `K = 60`; the mirror gives
-`re Λ(1/2 + 20.9i) ∈ [1.0661, 1.1055]·10⁻⁸` and `re Λ(1/2 + 21.1i) ∈ [−6.064, −5.647]·10⁻⁹`). At t ≈ 25
-the forward moment recursion loses too many bits at Q.128 for the degree needed; more bits or
-narrower cells are required.
+`RHSecondZeroV1` (standard axioms): the same `lamIv_mem` with `M = 11`, `d = 18`, `K = 60`;
+`lam209_pos`, `lam211_neg` (`decide +kernel`): `re Λ(1/2 + 20.9i) ∈ [1.085337, 1.086279]·10⁻⁸` and
+`re Λ(1/2 + 21.1i) ∈ [−5.859899, −5.850487]·10⁻⁹` (Arb: 1.0858080·10⁻⁸ and −5.8551929·10⁻⁹);
+`second_zero`, `two_zeros`.
+
+`RHThirdZeroV1` (standard axioms): `M = 13`, `d = 22`, `K = 70`; `lam249_neg`, `lam251_pos`:
+`re Λ(1/2 + 24.9i) ∈ [−4.82157, −4.82061]·10⁻¹⁰` and `re Λ(1/2 + 25.1i) ∈ [3.39414, 3.39510]·10⁻¹⁰`
+(Arb: −4.8210895·10⁻¹⁰ and 3.3946199·10⁻¹⁰); `third_zero`, `three_zeros`. This needed the forty
+digits: with twenty, the relative error 3·10⁻²¹ of `π` enters `I_0` through `1/α` and the forward moment
+recursion multiplies it by about `k!/α^k`, so the enclosure at t = 24.9 was too wide to give a sign.
+
+Kernel times on one core: about 4.5, 4.5 and 7 minutes for the three pairs of checks.
+
+Next: more zeros (t ≈ 30.42, 32.94, 37.59, ...) with the same checker, then the zero count `N(T)`.
 
 Still open for "every zero with `0 < γ < T` lies on the line":
 
-1. enclosures of `Λ(1/2 + it)` at sample points: done at t = 14 and 14.3 (`lamIv`), without ζ or Γ;
+1. enclosures of `Λ(1/2 + it)` at sample points: done at t = 14, 14.3, 20.9, 21.1, 24.9, 25.1 (`lamIv`),
+   without ζ or Γ;
 2. the zero count `N(T)` (argument principle plus the Backlund/Turing bound on `S(t)`).
 
 This is verification up to a height, not RH. AUTHORITY_EFFECT = NONE.
