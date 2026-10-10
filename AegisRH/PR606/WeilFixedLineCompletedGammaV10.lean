@@ -70,7 +70,7 @@ private theorem log_four_pi_normalization_v10 :
     _ = Real.log (4 * Real.pi) := by
       rw [Real.log_mul] <;> positivity
 
-private theorem digamma_plus_gamma_profile_integrable_v10
+theorem digamma_plus_gamma_profile_integrable_v10
     (f : WeilCompactSmoothGV1) (c : ℝ) (hc : 1 < c) :
     Integrable
       (fun t : ℝ =>
