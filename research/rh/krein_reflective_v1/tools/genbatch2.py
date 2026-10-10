@@ -9,7 +9,7 @@ parent = Path(__file__).resolve().parents[1] / "RHKreinCellBatchV1.lean"
 header_source = parent.read_text(encoding="utf-8")
 if not header_source.startswith("/-") or "-/" not in header_source:
     raise ValueError("MISSING_TRACKED_LEAN_LICENSE_HEADER")
-HDR = header_source.split("-/", 1)[0] + "-/\\n\\nimport RHKreinCellBatchV1\\n"
+HDR = header_source.split("-/", 1)[0] + "-/\n\nimport RHKreinCellBatchV1\n"
 def q(x):
     x=F(x); return f"{x.numerator}" if x.denominator==1 else f"{x.numerator}/{x.denominator}"
 names=[]
