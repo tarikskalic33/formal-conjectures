@@ -118,11 +118,11 @@ def _canonical_coefficients(name, expected):
     import re
     src = Path(__file__).resolve().parents[1] / "RHKreinL105DataV1.lean"
     body = src.read_text(encoding="utf-8")
-    match = re.search(r"(?m)^def " + re.escape(name) + r" : List \\(ℤ × ℕ\\) := \\[([\\s\\S]*?)\\]", body)
+    match = re.search(r"(?m)^def " + re.escape(name) + r" : List \(ℤ × ℕ\) := \[([\s\S]*?)\]", body)
     if match is None:
         raise ValueError("MISSING_CANONICAL_LEAN_COEFFICIENTS:" + name)
-    cells = re.findall(r"\\((-?\\d+),\\s*(\\d+)\\)", match.group(1))
-    rest = re.sub(r"\\((-?\\d+),\\s*(\\d+)\\)", "", match.group(1)).replace(",", "").strip()
+    cells = re.findall(r"\((-?\d+),\s*(\d+)\)", match.group(1))
+    rest = re.sub(r"\((-?\d+),\s*(\d+)\)", "", match.group(1)).replace(",", "").strip()
     if rest or len(cells) != expected:
         raise ValueError("INVALID_CANONICAL_LEAN_COEFFICIENTS:" + name)
     return [Q(int(num), 2 ** int(exp)) for num, exp in cells]
