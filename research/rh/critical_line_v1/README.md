@@ -1,5 +1,10 @@
 # Zeros on the critical line from sign changes (Turing, first half)
 
+**`RHFirstZeroV1.first_zero`**: `∃ t ∈ [14, 14.3], ζ(1/2 + it) = 0`, kernel-checked, axioms
+`[propext, Classical.choice, Quot.sound]`. Numerically this is the zero at t ≈ 14.1347; the Lean
+statement is only that some zero lies on the line in that window (no claim that nothing lies below it).
+This is one zero found by a sign change. It does not say every zero is on the line (that is RH).
+
 `RHCriticalLineSignV1` (Mathlib only, `[propext, Classical.choice, Quot.sound]`):
 
 - `Xi_im`: `Λ(1/2 + it)` is real. The proof uses `completedRiemannZeta_one_sub`, `riemannZeta_conj`,
@@ -60,16 +65,42 @@ with `|x − a|/a ≤ 1/8`). The moments `∫_a^b e^{−αx}(x − a)^k dx` sati
 - `cell_approx`: for `1 ≤ a ≤ b`, `re z ≤ 0`, `(b − a)/a ≤ U`,
   `‖∫_a^b x^z e^{−αx} dx − a^z Σ_{k≤d} choose(z, k) a^{−k} I_k‖ ≤ β_{d+1} U^{d+1}/(1 − q) · I_0`.
 
-CI: `.github/workflows/rh-critical-line-v1.yml` compiles these modules in order against plain Mathlib
-(the pin in `lake-manifest.json`, no other repositories) and fails unless every `#print axioms` report
-is within `[propext, Classical.choice, Quot.sound]`.
+`RHExpEnclosureV1` (standard axioms): `ofQ`/`ball` (rational to integer interval), `e^x` from
+`Real.exp_bound`, `e^{−q} = (e^{−q/2^s})^{2^s}`, `e^{−πa}` from Mathlib's 20 digits of `π`, and
+`e^{−πm²a} = (e^{−πa})^{m²}` (`exp_neg_pi_sq`), so one exponential serves `m = 1, 2, 3`.
 
-Next: split `∫_{x>1}` into the 22 geometric cells plus the tail beyond `X = (9/8)^22`, the enclosures
-for `e^{−πa}` and `π`, then the integer checker under `decide` at t = 14 and t = 14.3.
+`RHLambdaCheckV1`: the integer checker `lamIv` (complex intervals, `binAux` for `ρ = (9/8)^z`, `cellAux`
+for the coefficients and the moments together, `loopJ` over the 22 cells). `checkmirror.py` is its
+operation-for-operation mirror; `#eval` in Lean and the mirror give the same integers.
+
+`RHCheckSoundV1`, `RHCheckLoopV1` (standard axioms): every operation encloses its real or complex value
+(`binAux_mem`, `cellAux_mem`, `cellV_mem`, `loopJ_mem`).
+
+`RHCellSplitV1` (standard axioms): `∫_{x>1} = Σ_{j<J} ∫_{a_j}^{a_{j+1}} + ∫_{x>a_J}` and
+`‖∫_{x>X} x^z e^{−αx}‖ ≤ e^{−αX}/α`.
+
+`RHFirstZeroV1` (standard axioms):
+
+- `lamIv_mem`: `re Λ(1/2 + it) ∈ lamIv p t M d K J s N` whenever `1 ≤ M`, `9/16 + t²/4 ≤ M²`,
+  `(M + K + 1)/(8(K + 2)) < 1`, `(M + d + 1)/(8(d + 2)) < 1`, `π_hi (9/8)^J ≤ 2^s`, `0 < N`.
+- `lam14_neg`, `lam143_pos` (`decide +kernel`, about two minutes each): at `p = 128`, `d = 14`, `K = 50`,
+  `J = 22`, `s = 6`, `N = 30`, `M = 15/2`:
+  `re Λ(1/2 + 14i) ∈ [−2.051501, −2.051316]·10⁻⁶` and `re Λ(1/2 + 14.3i) ∈ [2.026465, 2.026650]·10⁻⁶`
+  (Arb: −2.0514083·10⁻⁶ and 2.0265577·10⁻⁶).
+- `first_zero`: the sign change gives `ζ(1/2 + it) = 0` for some `t ∈ [14, 14.3]`.
+
+CI: `.github/workflows/rh-critical-line-v1.yml` compiles all of these in order against plain Mathlib
+(the pin in `lake-manifest.json`, no other repositories) and fails unless every `#print axioms` report
+is within `[propext, Classical.choice, Quot.sound]` and `first_zero` is reported.
+
+Next: the zero at t ≈ 21.02 with the same `lamIv_mem` (`M = 11`, `d = 18`, `K = 60`; the mirror gives
+`re Λ(1/2 + 20.9i) ∈ [1.0661, 1.1055]·10⁻⁸` and `re Λ(1/2 + 21.1i) ∈ [−6.064, −5.647]·10⁻⁹`). At t ≈ 25
+the forward moment recursion loses too many bits at Q.128 for the degree needed; more bits or
+narrower cells are required.
 
 Still open for "every zero with `0 < γ < T` lies on the line":
 
-1. rigorous enclosures of `Λ(1/2 + it)` at sample points (ζ and Γ in interval arithmetic);
+1. enclosures of `Λ(1/2 + it)` at sample points: done at t = 14 and 14.3 (`lamIv`), without ζ or Γ;
 2. the zero count `N(T)` (argument principle plus the Backlund/Turing bound on `S(t)`).
 
 This is verification up to a height, not RH. AUTHORITY_EFFECT = NONE.

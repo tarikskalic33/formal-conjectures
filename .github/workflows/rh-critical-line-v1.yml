@@ -48,7 +48,9 @@ jobs:
           out="$RUNNER_TEMP/clbuild"
           mkdir -p "$out"
           for m in RHCriticalLineSignV1 RHRiemannThetaFormulaV1 RHLambdaLineV1 RHFixIntervalV1 \
-                   RHThetaTailV1 RHMellinThreeTermsV1 RHCellBinomialV1 RHCellMomentsV1; do
+                   RHThetaTailV1 RHMellinThreeTermsV1 RHCellBinomialV1 RHCellMomentsV1 \
+                   RHExpEnclosureV1 RHLambdaCheckV1 RHCheckSoundV1 RHCheckLoopV1 RHCellSplitV1 \
+                   RHFirstZeroV1; do
             echo "== $m" | tee -a critical-line.log
             lake env bash -c "LEAN_PATH=$out:\$LEAN_PATH lean -R $dir -o $out/$m.olean $dir/$m.lean" 2>&1 | tee -a critical-line.log
           done
@@ -62,11 +64,12 @@ jobs:
           import re
           log = open('critical-line.log').read()
           lines = re.findall(r"depends on axioms: \[([^\]]*)\]", log)
-          assert len(lines) >= 13, f"expected >= 13 axiom reports, got {len(lines)}"
+          assert len(lines) >= 26, f"expected >= 26 axiom reports, got {len(lines)}"
           allowed = {'propext', 'Classical.choice', 'Quot.sound'}
           for l in lines:
               ax = {a.strip() for a in l.split(',') if a.strip()}
               assert ax <= allowed, f"non-standard axioms: {ax - allowed}"
+          assert "'AEGIS.RHFirstZeroV1.first_zero' depends on axioms: [propext, Classical.choice, Quot.sound]" in log
           print(f"{len(lines)} theorems, all within {sorted(allowed)}")
           PY
 
