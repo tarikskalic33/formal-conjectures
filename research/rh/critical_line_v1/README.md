@@ -29,9 +29,23 @@ the cancellation amplifies its error about 10¹¹ times.
 `RHThetaTailV1` (Mathlib only, standard axioms): `θ(t) − 1 = Σ_{n≥1} 2e^{−πn²t}` and, for `t ≥ 1`,
 `0 ≤ θ(t) − 1 − Σ_{n=1}^{3} 2e^{−πn²t} ≤ 4e^{−16πt}` (`theta_tail_bound`).
 
-Next: `𝓜A(w) = 2 Σ_{n≤3} ∫_1^X e^{−πn²x} x^{w−1} dx` plus explicit tails, a per-cell Taylor model of
-`x^{w−1}` (44 cells of width 1/4, degree 12: remainder ≤ 5·10⁻¹¹ against |Λ(1/2 + 14i)| ≈ 2·10⁻⁶), and a
-rational checker run by the kernel at t = 14 and t = 14.3.
+`RHMellinThreeTermsV1` (imports the formula and the tail, standard axioms):
+
+- `mellin_A_three_terms`: for `re w ≤ 1`,
+  `‖𝓜A(w) − Σ_{n<3} 2 ∫_{x>1} x^{w−1} e^{−π(n+1)²x} dx‖ ≤ 4e^{−16π}/(16π)` (≈ 1.2·10⁻²³).
+
+`geomirror.py` is the cell layout the kernel checker will follow. Cells are geometric, `[r^j, r^{j+1}]`
+with `r = 9/8`, so the base power repeats: `a_j^{w−1} = ρ^j` with `ρ = r^{w−1}`. One `log r` and one
+`e^{iθ}` are computed, and everything after that is multiplication. On each cell,
+`x^{w−1} = a^{w−1} Σ_k choose(w−1, k)((x − a)/a)^k` (Mathlib `one_add_cpow_hasFPowerSeriesOnBall_zero`,
+with `|x − a|/a ≤ 1/8`). The moments `∫_a^b e^{−αx}(x − a)^k dx` satisfy
+`α I_k = k I_{k−1} − e^{−αb}(b − a)^k`. With 22 cells, degree 14, Q.128 and π to 20 digits the run takes
+0.4 s, and the enclosures contain the Arb values:
+`Λ(1/2+14i) ∈ [−2.051476, −2.051340]·10⁻⁶` (Arb: −2.0514083·10⁻⁶) and
+`Λ(1/2+14.3i) ∈ [2.026476, 2.026639]·10⁻⁶` (Arb: 2.0265577·10⁻⁶).
+
+Next: the cell expansion with its remainder, the moment recursion and the x-tail in Lean, then the
+integer checker under `decide` at t = 14 and t = 14.3.
 
 Still open for "every zero with `0 < γ < T` lies on the line":
 
