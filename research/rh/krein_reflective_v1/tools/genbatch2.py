@@ -2,7 +2,14 @@ import json, sys
 from fractions import Fraction as F
 br={**json.load(open(sys.argv[1])),**json.load(open(sys.argv[2]))}
 start,end,size,outdir=int(sys.argv[3]),int(sys.argv[4]),int(sys.argv[5]),sys.argv[6]
-HDR=open('genbatch.py').read().split('HDR="""')[1].split('"""')[0]
+# Generate the header from the tracked, kernel-facing batch interface.
+# The old genbatch.py/scratchpad header is not part of this Git tree.
+from pathlib import Path
+parent = Path(__file__).resolve().parents[1] / "RHKreinCellBatchV1.lean"
+header_source = parent.read_text(encoding="utf-8")
+if not header_source.startswith("/-") or "-/" not in header_source:
+    raise ValueError("MISSING_TRACKED_LEAN_LICENSE_HEADER")
+HDR = header_source.split("-/", 1)[0] + "-/\\n\\nimport RHKreinCellBatchV1\\n"
 def q(x):
     x=F(x); return f"{x.numerator}" if x.denominator==1 else f"{x.numerator}/{x.denominator}"
 names=[]
