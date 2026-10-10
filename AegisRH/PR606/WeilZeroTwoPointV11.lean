@@ -139,11 +139,8 @@ theorem zero_translation_kernel_summable_v11
   have hs :=
     riemann_zeta_nontrivial_zero_critical_strip_v1
       rho.2.1 rho.2.2
-  have hre :
-      (((rho.1 - (1 / 2 : ℂ)) * (d : ℂ))).re ≤
-        |d| / 2 := by
-    simp only [Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
-      Complex.ofReal_im, mul_zero, sub_zero]
+  have hre_real :
+      (rho.1.re - (1 / 2 : ℝ)) * d ≤ |d| / 2 := by
     have habs : |rho.1.re - 1 / 2| ≤ (1 / 2 : ℝ) := by
       rw [abs_le]
       constructor <;> linarith [hs.1, hs.2]
@@ -155,12 +152,18 @@ theorem zero_translation_kernel_summable_v11
       _ ≤ (1 / 2 : ℝ) * |d| := by
             gcongr
       _ = |d| / 2 := by ring
+  have hre :
+      (((rho.1 - (1 / 2 : ℂ)) * (d : ℂ))).re ≤
+        |d| / 2 := by
+    simpa [Complex.mul_re, Complex.sub_re] using hre_real
   have hfactor :
       ‖WeilZeroTranslationFactorV11 rho d‖ ≤ C := by
     unfold WeilZeroTranslationFactorV11 C
     rw [Complex.norm_exp]
     exact Real.exp_le_exp.mpr hre
-  exact mul_le_mul_of_nonneg_left hfactor (norm_nonneg _)
+  simpa [mul_comm] using
+    mul_le_mul_of_nonneg_left hfactor
+      (norm_nonneg (WeilZeroCoefficientV11 g rho))
 
 /-- Canonical translated zero kernel. -/
 def WeilZeroTranslationKernelV11
@@ -178,9 +181,9 @@ private theorem reflected_translation_factor_v11
         (((1 - conj rho.1) - (1 / 2 : ℂ)) * (d : ℂ))) =
       WeilZeroTranslationFactorV11 rho (-d) := by
   unfold WeilZeroTranslationFactorV11
-  rw [map_exp]
+  rw [← Complex.exp_conj]
   congr 1
-  push_cast
+  simp [map_neg, map_add, map_mul, map_ofNat, Complex.conj_ofReal]
   ring
 
 /-- Per-zero two-point expansion. -/
@@ -200,8 +203,26 @@ theorem twoPoint_zero_summand_expansion_v11
     mellin_twoPointTranslate_v11,
     map_mul, map_add, map_one, map_mul,
     reflected_translation_factor_v11]
-  unfold WeilZeroTranslationFactorV11
-  ring
+  simp only [WeilZeroTranslationFactorV11]
+  ring_nf
+  have hcancel :
+      Complex.exp
+          (rho.1 * (d : ℂ) + (d : ℂ) * (-1 / 2 : ℂ)) *
+        Complex.exp
+          (rho.1 * ((-d : ℝ) : ℂ) +
+            ((-d : ℝ) : ℂ) * (-1 / 2 : ℂ)) = 1 := by
+    rw [← Complex.exp_add]
+    have hz :
+        (rho.1 * (d : ℂ) + (d : ℂ) * (-1 / 2 : ℂ)) +
+          (rho.1 * ((-d : ℝ) : ℂ) +
+            ((-d : ℝ) : ℂ) * (-1 / 2 : ℂ)) = 0 := by
+      push_cast
+      ring
+    rw [hz, Complex.exp_zero]
+  linear_combination
+    ((analyticOrderNatAt riemannZeta rho.1 : ℂ) *
+      c * conj c * mellin g.1 rho.1 *
+      conj (mellin g.1 (1 - conj rho.1))) * hcancel
 
 /-- Canonical zero quadratic of a two-point translated packet. -/
 theorem twoPoint_zero_quadratic_expansion_v11
@@ -260,10 +281,7 @@ theorem twoPoint_zero_quadratic_expansion_v11
         have h1 := hbase.mul_left (1 + c * conj c)
         have h2 := hd.mul_left c
         have h3 := hnd.mul_left (conj c)
-        rw [← h1.tsum_add (h2.add h3), ← h2.tsum_add h3]
-        apply tsum_congr
-        intro rho
-        ring
+        rw [← h1.tsum_add h2, ← (h1.add h2).tsum_add h3]
     _ = _ := by
       rfl
 
