@@ -1,8 +1,9 @@
 import json
 from fractions import Fraction as Q
-R='/home/user/mathlib4-433/tree105'
-B=json.load(open('batches105.json'))
-HDR=open('/home/user/mathlib4-433/tree_cell2/RHKreinHatAtV1.lean').read().split('-/')[0]+'-/\n'
+from pathlib import Path
+R=str(Path(__file__).resolve().parents[1])
+B=json.load(open(Path(__file__).resolve().parent / 'batches105.json'))
+HDR=(Path(R) / 'RHKreinHatAtV1.lean').read_text(encoding='utf-8').split('-/', 1)[0]+'-/\n'
 imports="\n".join(f"import {nm}" for nm,_ in B)
 e=f"b{0:03d}"
 for k in range(1,len(B)): e=f"(glue {e} b{k:03d})"
