@@ -1,5 +1,7 @@
 import json
-B=json.load(open('/home/user/mathlib4-433/tree_cell2/batches.json'))
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+B=json.load(open(ROOT / 'batches.json'))
 n=len(B)
 imports="\n".join(f"import {nm}" for nm,s,m in B)
 cases="\n".join(
@@ -115,5 +117,5 @@ end AEGIS.RHKreinAllCellsV1
 #print axioms AEGIS.RHKreinAllCellsV1.allCellsAnalyticSound
 #print axioms AEGIS.RHKreinAllCellsV1.zero_quadratic_margin_two_fifths
 """
-open('/home/user/mathlib4-433/tree_cell2/RHKreinAllCellsV1.lean','w').write(txt)
+(ROOT / 'RHKreinAllCellsV1.lean').write_text(txt, encoding='utf-8')
 print('written', n)
