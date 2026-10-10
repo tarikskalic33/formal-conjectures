@@ -94,5 +94,32 @@ class L105WorkflowContractTests(unittest.TestCase):
         )
 
 
+    def test_generated_batches_not_compiled_in_common_closure(self):
+        # Regression: historical run 37837553043 compiled Batch000-Batch007
+        # serially in the shared base job, then exited 143 on runner shutdown.
+        # Generated heavy cells must be delegated to the 12 shard jobs, not
+        # compiled again before the shard jobs start.
+        base = self.source.split("\n  kernel-base:\n", 1)[1].split(
+            "\n  kernel-batches:\n", 1
+        )[0]
+        closure = base.split(
+            "      - name: Compute and compile exact L105 dependency closure", 1
+        )[1].split("      - name: Export independently verifiable base oleans", 1)[0]
+        skip = (
+            "RHKreinL105Batch[0-9][0-9][0-9]|"
+            "RHKreinL105AllV1|RHWindowL105FinalV1) continue ;;"
+        )
+        self.assertIn('case "$name" in', closure)
+        self.assertIn(skip, closure)
+        self.assertLess(closure.index('case "$name" in'), closure.index('lean -o "$olean"'))
+        self.assertIn("test ! -e \"$OUT/RHKreinL105Batch000.olean\"", base)
+        shards = self.source.split("\n  kernel-batches:\n", 1)[1].split(
+            "\n  kernel-replay:\n", 1
+        )[0]
+        self.assertIn("shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]", shards)
+        self.assertIn('lean -o "$OUT/$name.olean" "$GEN/$name.lean"', shards)
+
+
+
 if __name__ == "__main__":
     unittest.main()
