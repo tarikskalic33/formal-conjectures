@@ -284,12 +284,13 @@ jobs:
           print("\n".join(order))
           print("PR606_TERMINAL_MODULES_END")
           PY
+          test -s evidence/pr606-lean-inventory-count.txt
+          test -s evidence/pr606-terminal-closure-count.txt
           {
-            echo "## PR #606 exact-head Lean inventory"
-            echo
-            echo "- proof source: `$AEGIS_SHA`"
-            echo "- total local Lean modules: `$(cat evidence/pr606-lean-inventory-count.txt)`"
-            echo "- terminal dependency closure: `$(cat evidence/pr606-terminal-closure-count.txt)`"
+            printf '## PR #606 exact-head Lean inventory\n\n'
+            printf -- '- proof source: `%s`\n' "$AEGIS_SHA"
+            printf -- '- total local Lean modules: `%s`\n' "$(cat evidence/pr606-lean-inventory-count.txt)"
+            printf -- '- terminal dependency closure: `%s`\n' "$(cat evidence/pr606-terminal-closure-count.txt)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Restore shared Mathlib olean cache
