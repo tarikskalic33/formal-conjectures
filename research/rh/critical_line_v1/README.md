@@ -1,14 +1,16 @@
 # Zeros on the critical line from sign changes (Turing, first half)
 
-**Three zeros of ζ on the critical line, kernel-checked** (axioms `[propext, Classical.choice, Quot.sound]`):
+**Nine zeros of ζ on the critical line, kernel-checked** (axioms `[propext, Classical.choice, Quot.sound]`):
 
-- `RHFirstZeroV1.first_zero`: `∃ t ∈ [14, 14.3], ζ(1/2 + it) = 0`;
-- `RHSecondZeroV1.second_zero`: `∃ t ∈ [20.9, 21.1], ζ(1/2 + it) = 0`;
-- `RHThirdZeroV1.third_zero`: `∃ t ∈ [24.9, 25.1], ζ(1/2 + it) = 0`; `three_zeros` puts them together.
+`RHNineZerosV1.nine_zeros`: there are `14 ≤ t₁ < t₂ < ⋯ < t₉ ≤ 48.9` with `ζ(1/2 + t_i i) = 0`.
 
-Numerically these are the zeros at t ≈ 14.1347, 21.0220 and 25.0109. The Lean statements are only that
-some zero lies on the line in each window (no claim that nothing else lies there or below). They come
-from sign changes of `re Λ(1/2 + it)`. They do not say every zero is on the line (that is RH).
+They come from twelve kernel-checked signs of `re Λ(1/2 + it)`:
+`14 (−)`, `14.3 (+)`, `20.9 (+)`, `21.1 (−)`, `24.9 (−)`, `25.1 (+)`, `31.7 (−)`, `35.3 (+)`, `39.3 (−)`,
+`42.2 (+)`, `45.7 (−)`, `48.9 (+)`. Each sign change gives a zero on the line, and a zero is never at a
+checked point (`Xi_re_zero_of_zeta`), so the nine are distinct. Numerically they are the zeros at
+t ≈ 14.13, 21.02, 25.01, 30.42, 32.94, 37.59, 40.92, 43.33, 48.01. The Lean statement is only that these
+nine exist; it does not say that there are no others, and it says nothing about zeros off the line
+(that is RH).
 
 `RHCriticalLineSignV1` (Mathlib only, `[propext, Classical.choice, Quot.sound]`):
 
@@ -75,8 +77,10 @@ with `|x − a|/a ≤ 1/8`). The moments `∫_a^b e^{−αx}(x − a)^k dx` sati
 (`⌈√·⌉` / `⌊√·⌋` on naturals) and `norm_num` checks every step, so the generator is untrusted; `picert.py`
 is its exact mirror. Compiles in about 15 s.
 
+`RHPi80V1` (standard axioms): `π` to eighty digits with the same tactic, 140 steps at `2^{-580}`, about 15 s.
+
 `RHExpEnclosureV1` (standard axioms): `ofQ`/`ball` (rational to integer interval), `e^x` from
-`Real.exp_bound`, `e^{−q} = (e^{−q/2^s})^{2^s}`, `e^{−πa}` from `π` to forty digits (`RHPi40V1`), and
+`Real.exp_bound`, `e^{−q} = (e^{−q/2^s})^{2^s}`, `e^{−πa}` from `π` to eighty digits (`RHPi80V1`), and
 `e^{−πm²a} = (e^{−πa})^{m²}` (`exp_neg_pi_sq`), so one exponential serves `m = 1, 2, 3`.
 
 `RHLambdaCheckV1`: the integer checker `lamIv` (complex intervals, `binAux` for `ρ = (9/8)^z`, `cellAux`
@@ -101,8 +105,8 @@ operation-for-operation mirror; `#eval` in Lean and the mirror give the same int
 
 CI: `.github/workflows/rh-critical-line-v1.yml` compiles all of these in order against plain Mathlib
 (the pin in `lake-manifest.json`, no other repositories) and fails unless every `#print axioms` report
-is within `[propext, Classical.choice, Quot.sound]` and `first_zero`, `two_zeros`, `three_zeros` are
-reported.
+is within `[propext, Classical.choice, Quot.sound]` and `first_zero`, `two_zeros`, `three_zeros`,
+`nine_zeros` are reported.
 
 `RHSecondZeroV1` (standard axioms): the same `lamIv_mem` with `M = 11`, `d = 18`, `K = 60`;
 `lam209_pos`, `lam211_neg` (`decide +kernel`): `re Λ(1/2 + 20.9i) ∈ [1.085337, 1.086279]·10⁻⁸` and
@@ -115,14 +119,25 @@ reported.
 digits: with twenty, the relative error 3·10⁻²¹ of `π` enters `I_0` through `1/α` and the forward moment
 recursion multiplies it by about `k!/α^k`, so the enclosure at t = 24.9 was too wide to give a sign.
 
-Kernel times on one core: about 4.5, 4.5 and 7 minutes for the three pairs of checks.
+`RHXiSignV1` (standard axioms): at `p = 192`, `M = 26`, `d = 36`, `K = 110`, `N = 40` a kernel-checked sign of
+`lamIv` is the sign of `re Λ(1/2 + it)` (`xi_neg_of_check`, `xi_pos_of_check`); `Xi_re_zero_of_zeta`:
+`ζ(1/2 + it) = 0 → re Λ(1/2 + it) = 0`.
 
-Next: more zeros (t ≈ 30.42, 32.94, 37.59, ...) with the same checker, then the zero count `N(T)`.
+`RHZeroChecksAV1`, `RHZeroChecksBV1`, `RHZeroChecksCV1` (standard axioms, independent, compiled in
+parallel): the kernel checks at 31.7, 35.3 / 39.3, 42.2 / 45.7, 48.9. The mirror gives
+`re Λ(1/2 + 31.7i) ≈ −1.34435·10⁻¹¹`, `35.3: 2.45603·10⁻¹²`, `39.3: −6.338·10⁻¹⁴`, `42.2: 4.00·10⁻¹⁵`,
+`45.7: −8.14·10⁻¹⁶`, `48.9: [1.0226, 1.4960]·10⁻¹⁷` (Arb: −1.344·10⁻¹¹, 2.456·10⁻¹², −6.338·10⁻¹⁴,
+4.002·10⁻¹⁵, −8.140·10⁻¹⁶, 1.262·10⁻¹⁷). At these heights `|Λ|` is about `e^{−πt/4}`, the degree must
+grow, and the forward moment recursion needs `π` to eighty digits and `p = 192`.
+
+`RHNineZerosV1` (standard axioms): `zero4` … `zero9` and `nine_zeros`.
+
+Next: the zero count `N(T)`, so that "these are all the zeros up to height T" can be stated.
 
 Still open for "every zero with `0 < γ < T` lies on the line":
 
-1. enclosures of `Λ(1/2 + it)` at sample points: done at t = 14, 14.3, 20.9, 21.1, 24.9, 25.1 (`lamIv`),
-   without ζ or Γ;
+1. enclosures of `Λ(1/2 + it)` at sample points: done at twelve points up to t = 48.9 (`lamIv`), without
+   ζ or Γ;
 2. the zero count `N(T)` (argument principle plus the Backlund/Turing bound on `S(t)`).
 
 This is verification up to a height, not RH. AUTHORITY_EFFECT = NONE.
