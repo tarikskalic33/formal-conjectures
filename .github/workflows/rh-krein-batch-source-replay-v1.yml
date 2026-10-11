@@ -1,0 +1,81 @@
+name: RH Krein batch source exact-head replay
+
+on:
+  pull_request:
+    paths:
+      - 'research/rh/krein_reflective_v1/tools/**'
+      - 'research/rh/krein_L105_v1/tools/**'
+      - 'research/rh/krein_L105_v1/RHKreinL105DataV1.lean'
+      - 'research/rh/krein_reflective_v1/RHKreinAllCellsV1.lean'
+      - '.github/workflows/rh-krein-batch-source-replay-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct-sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable PR head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reconstruct exact rational coefficient mirror and 219 proof-source batches
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-rh-batches/produced
+          python3 -m py_compile research/rh/krein_L105_v1/tools/*.py research/rh/krein_reflective_v1/tools/*.py
+          (
+            cd research/rh/krein_reflective_v1/tools
+            python3 genbatch2.py val2A.json val2B.json 15 2199 10 "$GITHUB_WORKSPACE/evidence-rh-batches/produced"
+          )
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re, sys
+          root = pathlib.Path.cwd()
+          leaf = root / 'evidence-rh-batches/produced'
+          batches = json.loads((leaf / 'batches.json').read_text())
+          expected = [f'RHKreinCellBatch{i:04d}' for i in range(15, 2199, 10)]
+          assert len(expected) == 219 and [b[0] for b in batches] == expected
+          assert [b[1] for b in batches] == list(range(15, 2199, 10))
+          assert sum(b[2] for b in batches) == 2184
+          assert batches[-1][2] == 4
+          terminal = (root / 'research/rh/krein_reflective_v1/RHKreinAllCellsV1.lean').read_text()
+          imported = re.findall(r'^import (RHKreinCellBatch\d{4})$', terminal, re.M)
+          assert imported == expected, 'FINAL_IMPORTS_DO_NOT_MATCH_RECONSTRUCTED_BATCHES'
+          manifest = []
+          for nm in expected:
+              p = leaf / (nm + '.lean')
+              raw = p.read_bytes()
+              assert b'sorry' not in raw and b'axiom ' not in raw
+              assert b'by decide +kernel' in raw
+              manifest.append({'module': nm, 'sha256': hashlib.sha256(raw).hexdigest()})
+          sys.path.insert(0, str(root / 'research/rh/krein_L105_v1/tools'))
+          import m105
+          assert len(m105.CQ) == 399 and len(m105.DQ) == 5
+          assert (m105.CQ[0].numerator, m105.CQ[0].denominator) == (-4804200472052481, 2**24)
+          result = {
+              'status': 'GENERATED_SOURCE_CONSISTENCY_PASS',
+              'not_a_lean_kernel_build': True,
+              'generated_modules': len(expected),
+              'covered_cell_count': sum(b[2] for b in batches),
+              'rational_hat_coefficients': len(m105.CQ),
+              'rational_delta_coefficients': len(m105.DQ),
+              'imported_modules_match_exactly': True,
+              'generated_hashes': manifest,
+          }
+          (root / 'evidence-rh-batches/receipt.json').write_text(json.dumps(result, indent=2, sort_keys=True)+'\n')
+          print(json.dumps({k:v for k,v in result.items() if k!='generated_hashes'}, indent=2))
+          PY
+          git rev-parse HEAD > evidence-rh-batches/head_sha.txt
+      - name: Archive exact reconstructed source evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-krein-batches-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-rh-batches/
+          if-no-files-found: warn
+          retention-days: 30
