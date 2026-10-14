@@ -1,0 +1,74 @@
+{
+  "verification_status": "CANDIDATE_KERNEL_PENDING; UNCONDITIONAL_RH_CLOSURE_NOT_ACHIEVED",
+  "RH_PROVEN_UNCONDITIONALLY": false,
+  "canonical_target": "RiemannHypothesis",
+  "final_theorem_signature": null,
+  "final_theorem_axioms": null,
+  "assembly_candidate": "AEGIS.RHAssemblyV1.narrow_window_schur_norm_family",
+  "assembly_candidate_domain": "LogWindowContainsV1 g (693/2000) and WeilMomentConditionsV1 g",
+  "lean_version": "4.33.1",
+  "mathlib_sha": "0df444a360eaa60ab8c11dca51a86af692955474",
+  "aegis_source_pin": "2c3d041b633147ec97c7ef753aa9d157a47bb9f5",
+  "provider_sha": "35df682f3b709ffe5fbcfdd452dfa964bd622b87",
+  "existing_verified_runs": [
+    {
+      "sha": "fed5269b549ec846a5c5d821ceca7af399b6b0fe",
+      "run_id": 38567547533,
+      "job_id": 115863986349,
+      "artifact_id": 11898515779,
+      "artifact_sha256": "373f6a81bddc40caf3cbcebfd0bc00c6b2e863f09cc50c95c45d6ee49c85e258",
+      "module_count": 210
+    },
+    {
+      "sha": "efc691a1fddcc26ed1a057b3c748cb01709cfdfd",
+      "run_id": 38577005420,
+      "job_id": 115896640636,
+      "artifact_id": 11904420908,
+      "artifact_sha256": "187029312cfaf0db8f670e3a034999b2959085d2f54bc6d7556e9c9048a53a4a",
+      "module_count": 212
+    }
+  ],
+  "axioms_of_existing_audited_endpoints": [
+    "propext",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "new_candidate_axioms": null,
+  "repositories": [
+    {
+      "repo": "Aegis-Omega/AEGIS-OMEGA",
+      "default_head": "495bfd85d79abcb2b4f6898fe9c156488492426a"
+    },
+    {
+      "repo": "Aegis-Omega/AegisOmega",
+      "default_head": "ed426124475cc9ee8b4d138b2928ae547352e97b",
+      "scope": "main tree and 52 branch names inspected; not an exhaustive historical census"
+    },
+    {
+      "repo": "Aegis-Omega/sovereign-guard",
+      "alias": "tarikskalic33/sovereign-guard",
+      "default_head": "3c6568684fc58bbab015f0ea34a87f9df4cfe1aa",
+      "scope": "main tree and four branches inspected"
+    },
+    {
+      "repo": "tarikskalic33/formal-conjectures",
+      "pr83_head": "fed5269b549ec846a5c5d821ceca7af399b6b0fe",
+      "pr86_verified_parent": "efc691a1fddcc26ed1a057b3c748cb01709cfdfd",
+      "branch": "proof/rh-finite-actual-gram-join-v1",
+      "merged": false,
+      "draft": true
+    }
+  ],
+  "proof_graph_status": "Module DAG/source statements recorded; elaborated proof-term DAG not yet exported",
+  "execution_events": [
+    "Original eventual/all-indices mismatch is kernel-closed at actual PR83 head.",
+    "PR86 infinity parser failure repaired with ContDiff scope and kernel replay passed.",
+    "Local kernel smoke passed at trust level 0; first cofinal core module passed.",
+    "Local exec-server became unavailable before new constructor verification. Exact-head GitHub replay is the verification path."
+  ],
+  "receipt_location": "Successful exact-head CI generates evidence-cofinal/assembly/RH_EVIDENCE_PASSPORT.json with actual checkout SHA, source hashes, axiom outputs and probe result.",
+  "limitations": [
+    "Eight historical source blobs have exact blob/source hashes but no identified containing historical commit.",
+    "Complete all-history proof census and elaborated declaration dependency closure are not completed."
+  ]
+}

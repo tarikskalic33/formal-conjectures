@@ -1,0 +1,1066 @@
+{
+  "status": "COMMITTED_SNAPSHOT; ELABORATED_PROOF_EXPORT_PENDING",
+  "canonical_target": "RiemannHypothesis",
+  "source_manifest_verified_run": 38567547533,
+  "module_source_records": [
+    {
+      "module": "WeilCriterionCompactSmoothV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilCriterionCompactSmoothV1.lean",
+      "sha256": "cde3befd425dde8eedd28f95b12469279d356ea14f2fd10c8ba9398f8482be53"
+    },
+    {
+      "module": "ZeroHeightFiniteSumV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroHeightFiniteSumV1.lean",
+      "sha256": "c980ebc8245e8bf9ef1b316e601edfe7c0d955c468018cfc1ff2a1bf86bc1431"
+    },
+    {
+      "module": "ZeroHeightLimitContractV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroHeightLimitContractV1.lean",
+      "sha256": "473f59be097bbc69d3482a351137638c2f8d9d2d4b6a62494f11b283150ab501"
+    },
+    {
+      "module": "ZeroHeightSummabilityBridgeV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroHeightSummabilityBridgeV1.lean",
+      "sha256": "4778e1f2bd64e1ee191be8092a32706cd7277aaa72a80a89bb1ef467dca39949"
+    },
+    {
+      "module": "ZeroMajorantSummabilityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroMajorantSummabilityV1.lean",
+      "sha256": "360ee880341d453835c33d7252ba2d96a5f836da2b78de768f9ccbe1e5fca73f"
+    },
+    {
+      "module": "ZeroCriticalStripV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroCriticalStripV1.lean",
+      "sha256": "3e05b5e32f04354d88844f0cb4c44cdd1d2288e3444f6ed72e58bdd3d3f105a0"
+    },
+    {
+      "module": "ZeroHeightShellMassV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroHeightShellMassV1.lean",
+      "sha256": "c54e4a4603ca6bdb9d056cad7d9ac16d736411a9a743cdefead78cc8d11c730f"
+    },
+    {
+      "module": "ZeroShellQuadraticBoundV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroShellQuadraticBoundV1.lean",
+      "sha256": "fca6acdcf6bb7a710fac65839197c9c3d12ca431aeca37dd826d855101fef9dd"
+    },
+    {
+      "module": "ZeroShellAnalyticSynthesisV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroShellAnalyticSynthesisV1.lean",
+      "sha256": "5a688159e9c71c623862500a7fbdde37748e5b99334fdfe38ff6c508176dd53e"
+    },
+    {
+      "module": "MellinDecayEstimateV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/MellinDecayEstimateV1.lean",
+      "sha256": "ca2203ce4c2da420d89bbcb012aaefefb23584eac040b975272d2ce3fa5d2eed"
+    },
+    {
+      "module": "WeilMellinInversionV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMellinInversionV1.lean",
+      "sha256": "01eacbcd7ea3911cc84407252eb65e42fa1aba30aa72e3eac1592b1252e1336a"
+    },
+    {
+      "module": "WeilMomentAnnihilatorV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMomentAnnihilatorV1.lean",
+      "sha256": "71aa2ee682ae45e4e761279c1ac4bf3db1ce8b510c63d73dd27f19287a8ea76d"
+    },
+    {
+      "module": "WeilPrimeSummabilityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPrimeSummabilityV1.lean",
+      "sha256": "6b1c23496a8b4252b858a80cd9f2d6e4cbca3adef68953fc8c45d7e2f67ea98f"
+    },
+    {
+      "module": "WeilArchimedeanConvergenceV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilArchimedeanConvergenceV1.lean",
+      "sha256": "84c286ab801f6647def8450b0f6979a81a73ab2e436f4a2e835c5caef470bfd8"
+    },
+    {
+      "module": "WeilAutocorrelationRealityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAutocorrelationRealityV1.lean",
+      "sha256": "d7ed312feef5e19156a564e339f241369e2b3794f933324a874c927593704d84"
+    },
+    {
+      "module": "WeilAutocorrelationClosureV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAutocorrelationClosureV1.lean",
+      "sha256": "764b37b7f10cba5603b2c2cb46af799216bade9493a2a41379a60cb31234450a"
+    },
+    {
+      "module": "Lc.XiZeros",
+      "source": "Lc/XiZeros.lean",
+      "sha256": "7626a148d6e49c569d498fe625616e28250427d3118ebd38d5b059381e978f6b"
+    },
+    {
+      "module": "FunctionsOfOneComplexVariable.EntireLog",
+      "source": "FunctionsOfOneComplexVariable/EntireLog.lean",
+      "sha256": "42fcb51dcef2ccb3c6729fcf61039e7f0a633e05ef286733f7d218b20361350d"
+    },
+    {
+      "module": "FunctionsOfOneComplexVariable.BorelCaratheodory",
+      "source": "FunctionsOfOneComplexVariable/BorelCaratheodory.lean",
+      "sha256": "c455ada13da3cc6688e613baffab127bed5b2683a8032a88ba3b41d231ce56ff"
+    },
+    {
+      "module": "Hadamard.Basic",
+      "source": "Hadamard/Basic.lean",
+      "sha256": "fd272623904fbddac1ae2952d7f1755783d189cb83aa4f2435bf1837b88de0a1"
+    },
+    {
+      "module": "Hadamard.OrderOne.CofiniteControl",
+      "source": "Hadamard/OrderOne/CofiniteControl.lean",
+      "sha256": "d1ff5845fce48b187396f81716f962bb16ec753c1aff279443d22ea4e05cac56"
+    },
+    {
+      "module": "Hadamard.OrderOne.MultipliableFactors",
+      "source": "Hadamard/OrderOne/MultipliableFactors.lean",
+      "sha256": "64e3e10ebb1f79ad6104d79ca0aa95c1d82472f29aaa3c6193bf40819bdd3736"
+    },
+    {
+      "module": "Lc.LiCriterion.MobiusMap",
+      "source": "Lc/LiCriterion/MobiusMap.lean",
+      "sha256": "7ba73287750254feaff69592636a3bf1707897e1c76383f506fdb12db766c524"
+    },
+    {
+      "module": "Lc.LiCriterion.GenusOne",
+      "source": "Lc/LiCriterion/GenusOne.lean",
+      "sha256": "5b53793cb362751bad06dc852f7fd7735d77df8ba56b3b5fa8aebf3931f5c455"
+    },
+    {
+      "module": "Lc.LiCriterion.Pringsheim",
+      "source": "Lc/LiCriterion/Pringsheim.lean",
+      "sha256": "8422429e544573eea07852165e414f41c2fe087b0d4bc01baaed59c4740da503"
+    },
+    {
+      "module": "Lc.LiCriterion.Basic",
+      "source": "Lc/LiCriterion/Basic.lean",
+      "sha256": "e65df2122d0e001e83796b96979a3d90020583432c9ce401c00f97044dc1da9f"
+    },
+    {
+      "module": "Hadamard.ZeroCounting",
+      "source": "Hadamard/ZeroCounting.lean",
+      "sha256": "9987d7ac4775ef1dcafee17265391ca9270c4b7a3a4984fb5bbc3b3d2903a3b9"
+    },
+    {
+      "module": "Hadamard.ZeroSet",
+      "source": "Hadamard/ZeroSet.lean",
+      "sha256": "bd0437c14bc7949e7228b357407e832e7a7aa156d51aa6ca8d47ad201040933e"
+    },
+    {
+      "module": "Hadamard.OrderOne.ZeroCountingBounds",
+      "source": "Hadamard/OrderOne/ZeroCountingBounds.lean",
+      "sha256": "1ea6d0e69cd1c9fa065cca9e254ac5989858bd2fb8ca75447814f701e0246eb8"
+    },
+    {
+      "module": "Hadamard.OrderOne.TailEstimates",
+      "source": "Hadamard/OrderOne/TailEstimates.lean",
+      "sha256": "aec94ba321ff4f1104e982729b43b0fcbc23f6448cc4e89194073532391c2fed"
+    },
+    {
+      "module": "Hadamard.OrderOne.SummabilityMultiplicity",
+      "source": "Hadamard/OrderOne/SummabilityMultiplicity.lean",
+      "sha256": "f5f1a50b99c27faf1f6304df8902629bfa90286248a6924afdd35e061a84823e"
+    },
+    {
+      "module": "Lc.LiCriterion.HadamardSummabilityBridge",
+      "source": "Lc/LiCriterion/HadamardSummabilityBridge.lean",
+      "sha256": "6dcd2437505ed6ba99830aceee02c07103aef9fa7b907bbf9ce0bed04f72d8f4"
+    },
+    {
+      "module": "Hadamard.OrderOne.OrderFromMaxModulus",
+      "source": "Hadamard/OrderOne/OrderFromMaxModulus.lean",
+      "sha256": "ff105cf4e302e0a40e7ce18b08922146bb20b4973f937af995cfe2f98b22c67f"
+    },
+    {
+      "module": "Lc.LiCriterion.XiGrowth",
+      "source": "Lc/LiCriterion/XiGrowth.lean",
+      "sha256": "329c7fcbdc3e563ce9932d7cdbd4eb4434a314dbcf02310549c1782fb9cbbb81"
+    },
+    {
+      "module": "ZeroCountingBoundV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroCountingBoundV1.lean",
+      "sha256": "3e24ee3f14d8ff7d358d0243996a1b88f6ea96cbf69225ff00356d0a549e55e5"
+    },
+    {
+      "module": "ZeroCountingMellinSummabilityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/ZeroCountingMellinSummabilityV1.lean",
+      "sha256": "6cf6b91301d4cf40472818470b3fff8cd9e1a03469a111a6d9f6b76456538a08"
+    },
+    {
+      "module": "FormalConjecturesUtil.FixedWindowLimitBridge",
+      "source": "FormalConjecturesUtil/FixedWindowLimitBridge.lean",
+      "sha256": "4992cb6912e31c253a907c58dfcaa3013fead6a9f73073a922901d8219a51602"
+    },
+    {
+      "module": "RHMomentDecayCofinalJoinV1",
+      "source": "AEGISOverlay/RHMomentDecayCofinalJoinV1.lean",
+      "sha256": "3555eb1494dd0670174c6718a77cb751c1ed045b9938e72a88399eabe2853c66"
+    },
+    {
+      "module": "RHFeshbachCoreV1",
+      "source": "research/rh/krein_ring_v1/RHFeshbachCoreV1.lean",
+      "sha256": "e64cfea3341ca7cb9dd7bcaf1cfdb8c254c3d0b8a6f6d9c973156792e05004ed"
+    },
+    {
+      "module": "WeilPrimeLineIdentityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPrimeLineIdentityV1.lean",
+      "sha256": "77b44010b7b92b15ab45778826c885fbbba9a69c21b400a7c0f4b01e4ab73dff"
+    },
+    {
+      "module": "WeilAutocorrelationPoleAggregationV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAutocorrelationPoleAggregationV1.lean",
+      "sha256": "7bb9b15715769f21c6ffd0a3200aa9fccca4bd89c42ae369127e39dd4a1c5429"
+    },
+    {
+      "module": "WeilPoleTermV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPoleTermV1.lean",
+      "sha256": "0f9649cec81bbfde0b5f57c99edcb46d20a903dc039168a445e9157e1212157a"
+    },
+    {
+      "module": "WeilFixedLineExplicitFormulaContractV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineExplicitFormulaContractV2.lean",
+      "sha256": "3b6bcd3d4ae4b73be3f420d4284401a98c6236df0c58ad647a0028e9968ab84f"
+    },
+    {
+      "module": "Hadamard.OrderOne.LocallyUniformProduct",
+      "source": "Hadamard/OrderOne/LocallyUniformProduct.lean",
+      "sha256": "4e004d1b122ff44ec42d80f4d0b1191c1fe722ff21d2094901c284f45a5f1913"
+    },
+    {
+      "module": "Hadamard.OrderOne.LogDeriv",
+      "source": "Hadamard/OrderOne/LogDeriv.lean",
+      "sha256": "32325c26c539373cc2ec26c23e80f2e114a00a32de7062af1a6506295160b5cc"
+    },
+    {
+      "module": "Hadamard.OrderOne.LogDerivMultiplicity",
+      "source": "Hadamard/OrderOne/LogDerivMultiplicity.lean",
+      "sha256": "b757c52cc49f8f865dface97c2632da7270e3ce477e905614642243bde1bb9da"
+    },
+    {
+      "module": "Hadamard.OrderOne.QuotientCancellation",
+      "source": "Hadamard/OrderOne/QuotientCancellation.lean",
+      "sha256": "53248967fea506d44ec8eccb92d3c007abd481328a46b15ea01f904750118401"
+    },
+    {
+      "module": "Hadamard.ZeroSetMultiplicity",
+      "source": "Hadamard/ZeroSetMultiplicity.lean",
+      "sha256": "3e1da34ac59ead8b52c4e8750edf9669f324b985bf521fd9d630b16a0372df49"
+    },
+    {
+      "module": "Hadamard.Theorem",
+      "source": "Hadamard/Theorem.lean",
+      "sha256": "e1b34b561d1dec2bf4c781083e0eb6c91e94181d03ddf139def3274739cd9dac"
+    },
+    {
+      "module": "Hadamard.General.Factorization",
+      "source": "Hadamard/General/Factorization.lean",
+      "sha256": "f1f67c15a6aa2c25c088d8c22e126974d01a06f524a2d1d1baba6f72e1858bde"
+    },
+    {
+      "module": "Hadamard.General",
+      "source": "Hadamard/General.lean",
+      "sha256": "4218ddf7b78eef826f696cc9078300bff707b215f096425de125743e1640ab33"
+    },
+    {
+      "module": "Lc.LiCriterion.HadamardBridge",
+      "source": "Lc/LiCriterion/HadamardBridge.lean",
+      "sha256": "a44c65e65a71689137b6db995b8ee9a41a6fcb63c0fcd0258dbf5afdd2816f9d"
+    },
+    {
+      "module": "WeilPairedHadamardFixedLineV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPairedHadamardFixedLineV1.lean",
+      "sha256": "1eaea8c2d9647861a1a0271c89695cbbd852976623b7596ff8459c776ba28eff"
+    },
+    {
+      "module": "WeilPairedHadamardKernelTsumV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPairedHadamardKernelTsumV2.lean",
+      "sha256": "4388bc88b3369b85869ea4c5187fc80e6abebfabc1bd4ec1fbf7a5551008a2c4"
+    },
+    {
+      "module": "WeilFixedLineFubiniCoreV3",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineFubiniCoreV3.lean",
+      "sha256": "25f6a69b74844a6af404f34e550f6f3465c1531a1f73e6993f164c538b611570"
+    },
+    {
+      "module": "WeilMellinWeightedFixedLineV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMellinWeightedFixedLineV2.lean",
+      "sha256": "51eed930b62271427ef7097a164ab7ebeae7569580fd0b9c1a4437ced1a7de04"
+    },
+    {
+      "module": "WeilFixedLineFubiniSwapV4",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineFubiniSwapV4.lean",
+      "sha256": "b6226f21053f2a55672ec06cb9d18644007c01e4e20d967cd9c7229699eb595d"
+    },
+    {
+      "module": "WeilPairedMellinProfileV5",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPairedMellinProfileV5.lean",
+      "sha256": "e254e69e06accbd2a7ce93fc0ae027c21f76e952ef93d0cb9a4672549d164f57"
+    },
+    {
+      "module": "WeilFixedLineKernelIntegralV6",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineKernelIntegralV6.lean",
+      "sha256": "f778b1c9ec2873ea812e9dae27207f6c9cc94306a05cc9ec636645751c411648"
+    },
+    {
+      "module": "WeilFixedLineXSpaceTailV7",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineXSpaceTailV7.lean",
+      "sha256": "566099516733f1661662a2e3f6b8c709b9c514aba612ea906ba0cca9fa6b6283"
+    },
+    {
+      "module": "WeilReciprocalPairedTestV8",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilReciprocalPairedTestV8.lean",
+      "sha256": "cc7976c6417fcd1d32fa98139b6bec9356d78f0690b046e6ca85bb294e96f41f"
+    },
+    {
+      "module": "WeilPairedZeroEvaluationV9",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPairedZeroEvaluationV9.lean",
+      "sha256": "77c73f19fae41bc4133709f8d8fa59fa889a3d994dcfd8abb8462b4a49c6450c"
+    },
+    {
+      "module": "WeilMixedClosureV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMixedClosureV2.lean",
+      "sha256": "def6148deca54152e9f6c8a4c0c3c489c4933a1dcca7b379db8e05cbac14eea5"
+    },
+    {
+      "module": "WeilThreeBlockRationalV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockRationalV1.lean",
+      "sha256": "f6076a2cb13107151c352675a8f460b18981c48c6158802b31b08b1e6b0f5eb6"
+    },
+    {
+      "module": "WeilThreeBlockComplexV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockComplexV2.lean",
+      "sha256": "8d07d516aea197a4a0b122d273724bba895e441f5417dcb84135dd9d21a285cb"
+    },
+    {
+      "module": "WeilMixedAlgebraV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMixedAlgebraV2.lean",
+      "sha256": "6259d769cb0f529f62a4ed8fa8446e256883bbb0464976436e921bd40be37c00"
+    },
+    {
+      "module": "WeilDisjointEnergyV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDisjointEnergyV2.lean",
+      "sha256": "ffc7cf026d1d158663ebffecdf15e265e841e6b70c62cdf60f2365f9e2dccebe"
+    },
+    {
+      "module": "WeilLogCoordinateIsometryV21",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilLogCoordinateIsometryV21.lean",
+      "sha256": "841caff752466eeb81177a4672040f269df88d20531a038789cff07498671481"
+    },
+    {
+      "module": "WeilThreeBlockAnalyticConstantsV21",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockAnalyticConstantsV21.lean",
+      "sha256": "7d2d7bd21ef9b0bc812c9a98a975f8f559bbd5ed7b456ea756640762771fed5a"
+    },
+    {
+      "module": "WeilDiagonalKernelReductionV21",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDiagonalKernelReductionV21.lean",
+      "sha256": "99cbe5c671c174ecd798ea5f10b7ef6a3870f23f8782c3cb28fad0f5e92bfe0b"
+    },
+    {
+      "module": "WeilThreeBlockTranslatedPacketsV22",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockTranslatedPacketsV22.lean",
+      "sha256": "f74b16c4562017458fc62d6a1a6d6a30e144e04fb5d78a6da1a360f2e4ff0993"
+    },
+    {
+      "module": "WeilWidthPrimeVanishingV23",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWidthPrimeVanishingV23.lean",
+      "sha256": "64572986800a9f6476a9e98b3e94e4dbb2df73e7dbb9d11e402690b5f2bfaedd"
+    },
+    {
+      "module": "WeilArchimedeanCothTailV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilArchimedeanCothTailV1.lean",
+      "sha256": "531b53a53d2ef864f9b071791ed5c0a9f028a62cdc283f4475baf7b9d73b0bd7"
+    },
+    {
+      "module": "WeilWidthDiagonalArchFrontierV24",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWidthDiagonalArchFrontierV24.lean",
+      "sha256": "c0628419fb4a768335a059e6de29a38bd19e257b846d13bffdbf72f39b0f44d5"
+    },
+    {
+      "module": "WeilWidthArchCorrelationV25",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWidthArchCorrelationV25.lean",
+      "sha256": "b778712a5002a6d419800649951f503202ec0e966983a4c9d1843996d97194b4"
+    },
+    {
+      "module": "WeilAutocorrelationMellinV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAutocorrelationMellinV11.lean",
+      "sha256": "e7e7d43007c753d388b689aa7e1b011100fe215190cb0bacbda86cc74ea9dcd0"
+    },
+    {
+      "module": "WeilZeroTranslationV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilZeroTranslationV11.lean",
+      "sha256": "9f16962c2ac42f5385d4c23a3e3a217a3f17b303b7c014ded1af5e9d3426420b"
+    },
+    {
+      "module": "WeilDigammaIntegralReductionV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaIntegralReductionV1.lean",
+      "sha256": "8204c5433d37654eb0b439a6807e88088eef288f9d3be116e21c482a7738759e"
+    },
+    {
+      "module": "WeilDigammaSeriesRealV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesRealV1.lean",
+      "sha256": "38a2da47f96e36e43d064a19b386d94439ac531ad3c468401d6348708d9eb464"
+    },
+    {
+      "module": "WeilDigammaSeriesHalfPlaneV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilDigammaSeriesHalfPlaneV1.lean",
+      "sha256": "58c647d29a7c499c65d0d5c8362c43fadced78341e102c269619d7d8ba37f0b6"
+    },
+    {
+      "module": "WeilFixedLineGammaCoreV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaCoreV10.lean",
+      "sha256": "0198de6ad1460d837e3913bb3528af97824f9f381cddffb1e5ef428a02efd140"
+    },
+    {
+      "module": "WeilFixedLineGammaFubiniV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaFubiniV10.lean",
+      "sha256": "7a49f9160639482592b94507dabb6591e29971f7d95cab69b13ef4f7395771f1"
+    },
+    {
+      "module": "WeilFixedLineGammaAssemblyV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaAssemblyV10.lean",
+      "sha256": "865cd8a226b348f1b82847a47d229b36ee57098ea55019fd015340fb59ed7985"
+    },
+    {
+      "module": "WeilArchimedeanCorrectionV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilArchimedeanCorrectionV10.lean",
+      "sha256": "1e4ed77283f55c78ee7ce7ffd3bd018cbeff7217760e7a0e0ad577f278c927d2"
+    },
+    {
+      "module": "WeilFixedLineGammaXSpaceV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineGammaXSpaceV10.lean",
+      "sha256": "0a3ad7a92770bc59c47b9265bcb711b95561d88064a62f34a09a152f32797928"
+    },
+    {
+      "module": "WeilFixedLineCompletedGammaV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineCompletedGammaV10.lean",
+      "sha256": "99ad2a46996a0adcf68e99288c8eebc0c5c12787d88b5675712464e8512b9dc6"
+    },
+    {
+      "module": "WeilPairedHadamardTsumFusionV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilPairedHadamardTsumFusionV1.lean",
+      "sha256": "f230e64bcbe4bb6fe089756d0c3281fd2a5131d4d4591cf25f1c6117e856a827"
+    },
+    {
+      "module": "WeilZeroCarrierBridgeV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilZeroCarrierBridgeV10.lean",
+      "sha256": "fa4c1989b248d5117e3478862b7934250c0a9ef5f190b7d87ab650fe3a2942f8"
+    },
+    {
+      "module": "WeilFixedLineZeroSideV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineZeroSideV10.lean",
+      "sha256": "f73e90478d261cf1a3864f9792d8c61d7a5b64b988790c08ba01238ca845225c"
+    },
+    {
+      "module": "WeilXiLogDerivDecompositionV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilXiLogDerivDecompositionV10.lean",
+      "sha256": "b55523198d63b3ad12149e7ebaed92530b5b8bfd2b9fa15c4e732874cf25c34f"
+    },
+    {
+      "module": "WeilFixedLineArithmeticV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFixedLineArithmeticV10.lean",
+      "sha256": "4954ae2e172f8620eb410f94acfb076b3f238c6d88a65cc66ad1128d01b22521"
+    },
+    {
+      "module": "WeilExplicitFormulaV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilExplicitFormulaV10.lean",
+      "sha256": "cb1fd815d27f121d85f6ba89a4dfba05de2b0760526664e8b1b7db47a2401452"
+    },
+    {
+      "module": "WeilWidthArchBudgetV26",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWidthArchBudgetV26.lean",
+      "sha256": "8e1d3a45e94c5770550e4e0657ef80133a9621b0aa01f160e890c971787cb054"
+    },
+    {
+      "module": "WeilWidthArchIntegralV27",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWidthArchIntegralV27.lean",
+      "sha256": "eb61e1af8b015b3b6f3a3aaa94a6b639a90714095c0de8d9dec168964a0ec505"
+    },
+    {
+      "module": "WeilThreeBlockCrossPrimeV28",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockCrossPrimeV28.lean",
+      "sha256": "d27f40814b7da5b4755c7e63c9fa54d536a383341c086182c71b996f2b949991"
+    },
+    {
+      "module": "WeilThreeBlockCrossPrimeWindowV29",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockCrossPrimeWindowV29.lean",
+      "sha256": "2fe243388829ccd3a1c924a33865f65de7c72c3970e97a69246e2b419eabc05f"
+    },
+    {
+      "module": "WeilThreeBlockPrimeEvaluationV30",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockPrimeEvaluationV30.lean",
+      "sha256": "f081664968e867a19c6cbd5b927c2a69524afd6104af2b513eb5c5eb4b70c5fd"
+    },
+    {
+      "module": "WeilThreeBlockNormBridgeV21",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockNormBridgeV21.lean",
+      "sha256": "a17d2a02bcce1785cee0060367c7efe3cbafddbb729a1a8f525518bb421dd520"
+    },
+    {
+      "module": "WeilThreeBlockCrossAssemblyV30",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilThreeBlockCrossAssemblyV30.lean",
+      "sha256": "72c665829f668375d4cbd959253523df6f14ba0277cf37c831fdc74d7795360c"
+    },
+    {
+      "module": "WeilSeparatedArchBridgeV31",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilSeparatedArchBridgeV31.lean",
+      "sha256": "e334fc87b9d6066f5af9ad2dc98e69128527c4bcee4097c33d433ae5e366be31"
+    },
+    {
+      "module": "RHFinalClosureSpineV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHFinalClosureSpineV1.lean",
+      "sha256": "7f6b7f44d8ff9158138daf45214d23c72728aaf4b914a0d9adeb7f30436255e6"
+    },
+    {
+      "module": "WeilAutocorrelationExplicitFormulaV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAutocorrelationExplicitFormulaV10.lean",
+      "sha256": "e0d49f362c156bea93da3b0b331546104287671a36bc0580f484d680db29f307"
+    },
+    {
+      "module": "WeilMomentKillerConstructionV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilMomentKillerConstructionV1.lean",
+      "sha256": "e4656ad65dfd343a5f4fe67b34a1938a5be5ff5162e6d242ad658e7b140ae1dd"
+    },
+    {
+      "module": "RestrictedWeilCriterionTargetWitnessV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionTargetWitnessV11.lean",
+      "sha256": "345495c8e9547310edbcba1bcd6ccd55113c16758f527eb07660139c2f86397e"
+    },
+    {
+      "module": "WeilZeroSideIdentificationV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilZeroSideIdentificationV1.lean",
+      "sha256": "ac8be760fed8229bdbd9f49717df968cf45ad65a6f7b502d5dfe163dafd33fc7"
+    },
+    {
+      "module": "WeilTwoPointPositivityV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilTwoPointPositivityV1.lean",
+      "sha256": "cc337c523c7f134f28b8accaa24a3ec9ff10e268e5ebdeb6723fb250a7fe08a3"
+    },
+    {
+      "module": "WeilAbjadFourPhaseBridgeV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilAbjadFourPhaseBridgeV1.lean",
+      "sha256": "26665b0c626306799290c99e4e5a6e37ca0d30ff1a6ea80d3b59f9717b1525b7"
+    },
+    {
+      "module": "RHTranslatedKernelDominanceV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHTranslatedKernelDominanceV1.lean",
+      "sha256": "7171cd486d147d04e5b73e3c57f17432414614a3e64c9a9a404f191974637584"
+    },
+    {
+      "module": "RHMillenniumGateV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHMillenniumGateV10.lean",
+      "sha256": "35be83cad1e452e28a20acc3a134a3065777a94a9054db52ed72b36e3574d0b6"
+    },
+    {
+      "module": "RestrictedWeilCriterionKernelBridgeV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionKernelBridgeV10.lean",
+      "sha256": "7bae2476e9c247179e277cc23a19c726d0237ed4baf868d9cc6e984be77fdb62"
+    },
+    {
+      "module": "WeilZeroTwoPointV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilZeroTwoPointV11.lean",
+      "sha256": "cd6ae939527c9bb49962a0e2268b6f293431dce36eb8fdca10a88a7194623c6d"
+    },
+    {
+      "module": "RestrictedWeilCriterionResidueWitnessV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionResidueWitnessV11.lean",
+      "sha256": "e9ac061e5c42d321e7049f9d5c6f982fcd3d9c7d43c0da9981a485b6dc8b64ca"
+    },
+    {
+      "module": "RestrictedWeilCriterionZeroKernelV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionZeroKernelV10.lean",
+      "sha256": "0a22e34301eee552193aaccaa45e8b43378d0f2bf645ea9e58cde1a9de7fa46a"
+    },
+    {
+      "module": "RestrictedWeilCriterionLaplaceV10",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionLaplaceV10.lean",
+      "sha256": "9dfc79e3eefa03caafcb69459988fb12a4736e6bb02c061641df56a2c35d9251"
+    },
+    {
+      "module": "RestrictedWeilCriterionResidueCoefficientV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionResidueCoefficientV11.lean",
+      "sha256": "fef1a2766973c65fbec2a2c307cd3dc19d4c59d7894fe733322c9dd283f6389f"
+    },
+    {
+      "module": "WeilZeroKernelHermitianV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilZeroKernelHermitianV11.lean",
+      "sha256": "b9ece4cbae5e77c4782c3a86b098baf2eb3e03bcce04321797e07b91051ac9d6"
+    },
+    {
+      "module": "RHZeroKernelBoundV11",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHZeroKernelBoundV11.lean",
+      "sha256": "3eb7a754599023ae1e74d172ef01d3104d91bdce87b321c3396411a44fa5e986"
+    },
+    {
+      "module": "RHZeroKernelLaplaceV12",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHZeroKernelLaplaceV12.lean",
+      "sha256": "416cbdb15575d695df52d39c7a079014b14e3cc3dbb40a82a7a2814b89b322e7"
+    },
+    {
+      "module": "RHZeroKernelLaplaceAnalyticV12",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHZeroKernelLaplaceAnalyticV12.lean",
+      "sha256": "eb27c2567e53265b76ddc92854f2a43387f2ab6643017e605247f1e4229529d2"
+    },
+    {
+      "module": "RestrictedWeilCriterionFinalV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RestrictedWeilCriterionFinalV13.lean",
+      "sha256": "01e411338fbf6bff28be7988c5892620a1528791079f1758c76585eaeea97ec7"
+    },
+    {
+      "module": "RHRestrictedWeilBridgeV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHRestrictedWeilBridgeV13.lean",
+      "sha256": "1de2e1a44f6f78dea059d7012cc8371b370fe48ed896115c31a4288a75dd2b81"
+    },
+    {
+      "module": "WeilRHImpliesFinalSignV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilRHImpliesFinalSignV13.lean",
+      "sha256": "c3ab6a5b70c9d8c5572c66996adc2bc1568bcc64bf43615c15503b4d1165781b"
+    },
+    {
+      "module": "WeilWindowExhaustionV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilWindowExhaustionV1.lean",
+      "sha256": "519b51f431478f7990b15beb5ecff61def5b753ea3886b0daa71324f841f8d6c"
+    },
+    {
+      "module": "RHGramExpansionV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHGramExpansionV13.lean",
+      "sha256": "c6808f126a094d4de54baf17c415dedfaa617c8523c5b4535a8fe543f62f87b7"
+    },
+    {
+      "module": "RHNarrowDiagonalUpgradeV2",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHNarrowDiagonalUpgradeV2.lean",
+      "sha256": "2c8f9dd0c1ec972df8015b8d914058b1208ca52483f1dae261aa70bf6aa3d9b8"
+    },
+    {
+      "module": "RHDyadicDiagonalV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHDyadicDiagonalV13.lean",
+      "sha256": "bca7ff7ba0d90332c5f3857f4cc6efb5338f52ba1364369a5b9a1bfed67e2889"
+    },
+    {
+      "module": "RHHalfCapV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHalfCapV13.lean",
+      "sha256": "f68413cf6eb54c99857341161b4a5b9b3b9178dc073436e3ee091441920571c5"
+    },
+    {
+      "module": "RHThreeCellV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHThreeCellV13.lean",
+      "sha256": "a44e3f5396de5552df64fa1bd069bb46bba44aca205fdf76d4ea8042f6dbb164"
+    },
+    {
+      "module": "RHMomentIdentityV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHMomentIdentityV13.lean",
+      "sha256": "24e690fca48e674102c3426586552465a28f918eab384eade5f3f48e94317624"
+    },
+    {
+      "module": "RHMomentPiecesV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHMomentPiecesV13.lean",
+      "sha256": "69179be29d246e708f0943ac0ff933ac713c9823958a53c13192eafbb7ab4713"
+    },
+    {
+      "module": "RHMomentNumericsV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHMomentNumericsV13.lean",
+      "sha256": "2d57b05464ea576281f77b5c26230bd09fb4ad2cb091a3944e6991cbbd6c06d9"
+    },
+    {
+      "module": "RHNarrowSupportPositivityV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHNarrowSupportPositivityV13.lean",
+      "sha256": "1aac5b2ff35f1640d884844dbe53544dc3adb728234d201f747d0022814fbb16"
+    },
+    {
+      "module": "RHMomentGainV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHMomentGainV13.lean",
+      "sha256": "5e0402ebffcfd28641ce410da3065ee0fb5e2042e8f4145deb7fc8611eaedd98"
+    },
+    {
+      "module": "RHHalfCapGainV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHalfCapGainV13.lean",
+      "sha256": "955afdbe8b58fd503b32cea15ee64bda4c74799a783bebcaa4a72040e8d3c7db"
+    },
+    {
+      "module": "RHThresholdGainV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHThresholdGainV13.lean",
+      "sha256": "ea65ea5aca75c605806b8cc60ae2ca10c4efbd95fe79435a72c0e3f32188f1f5"
+    },
+    {
+      "module": "RHBonusGainV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHBonusGainV13.lean",
+      "sha256": "120256d9e02d6c159734cad4c54dca5fdccbaff9bb7dbe67583d3aa027363169"
+    },
+    {
+      "module": "RHThreeCellGainV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHThreeCellGainV13.lean",
+      "sha256": "f1ace8758d5ef6bfbd6ba56a6152278ad34a4f5d3d18d6366e1c6a2e729d5896"
+    },
+    {
+      "module": "RHHatPosDefV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatPosDefV13.lean",
+      "sha256": "5bce3460c375b98e51dfeb34ab1c137b8dfc26a4d7bd712a004aae6282891981"
+    },
+    {
+      "module": "RHHatKernelV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatKernelV13.lean",
+      "sha256": "6bf08c812d824ed5040b4b9a5702872976a5a42adf41ff559a85f15ac2d7faff"
+    },
+    {
+      "module": "RHThresholdClassV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHThresholdClassV13.lean",
+      "sha256": "6ac84d673afc31919bbb63af194f5c1a5953e5c60eb9ac658bf10c3bda181afd"
+    },
+    {
+      "module": "RHHatBudgetV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatBudgetV13.lean",
+      "sha256": "9e407081b1523a9a33d6312654428d4ee0d1ac75dc0916699e48ecdc314b4050"
+    },
+    {
+      "module": "RHHatCellsV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatCellsV13.lean",
+      "sha256": "08d63064767ef6df89498c9e9adbf5bfefcdbae4228bfbb2dca3b7da8f938b7a"
+    },
+    {
+      "module": "RHHatCellsWideV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatCellsWideV13.lean",
+      "sha256": "6b0471510d4a1569905e33b0d84ccca7a813773efa186cb8a9aa506e63991dbb"
+    },
+    {
+      "module": "RHCell4CapV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHCell4CapV13.lean",
+      "sha256": "9e5c960a7a92adbf9b7c5c7bde61643c08aa86fce4056c2527fccdbe8ae09106"
+    },
+    {
+      "module": "RHCell5CapV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHCell5CapV13.lean",
+      "sha256": "168336c9c302769cd4114ac0ee226bf991a2abde241ebf2c2483c818b4b853c5"
+    },
+    {
+      "module": "RHCell6CapV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHCell6CapV13.lean",
+      "sha256": "c43203a69db781eae52a75f2e1adbc2201715a62851315d6da99faae59ba3bce"
+    },
+    {
+      "module": "RHCell7CapV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHCell7CapV13.lean",
+      "sha256": "f6cd2fce34f7d67c9e4bdcbae34c596e4208f30ff08981bbb1b6ea84041283c4"
+    },
+    {
+      "module": "RHCellCapsV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHCellCapsV13.lean",
+      "sha256": "443865d12c41ee14b001f93424fa5a141292230bb6244956a711919372556810"
+    },
+    {
+      "module": "RHHatCoxBudgetV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatCoxBudgetV13.lean",
+      "sha256": "cffff679896dcc04207c9715c5b0156c7bf45494b9192be1adb99929bdd44422"
+    },
+    {
+      "module": "RHHatCoxClass693V13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHHatCoxClass693V13.lean",
+      "sha256": "a0d39432aa31729b7f3c87cfa9ce05a5ffc6868e3cb76210275830b9a783845b"
+    },
+    {
+      "module": "RHWindow693Over2000V1",
+      "source": "AEGISOverlay/RHWindow693Over2000V1.lean",
+      "sha256": "50890337d3e935338bcac316b14483d84d8b76aa9bce74b68ef9ce6ce2cc37b7"
+    },
+    {
+      "module": "RHFeshbachWeilClosureV2",
+      "source": "AEGISOverlay/RHFeshbachWeilClosureV2.lean",
+      "sha256": "58367d6205c4363b04970c0a8066e418e8d109fda3fc559f4c73cff0fdbb0b3f"
+    },
+    {
+      "module": "RHCofinalActualTerminalV1",
+      "source": "AEGISOverlay/RHCofinalActualTerminalV1.lean",
+      "sha256": "465438e02194068561d546f42c2ff1fc463984ae640e177b9d8c0d98dc835a69"
+    },
+    {
+      "module": "RHCofinalSchurAdapterV1",
+      "source": "AEGISOverlay/RHCofinalSchurAdapterV1.lean",
+      "sha256": "8cf10ed379170eca36573af9be085eb64f5c684ab7848333b57ba85cec68b05f"
+    },
+    {
+      "module": "RHKreinFactorV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHKreinFactorV13.lean",
+      "sha256": "ee97f9fcee046509f3a2539685cb191cb3c00a87f832478d32bebcdf91b1a4dc"
+    },
+    {
+      "module": "RHLocalKreinPartitionV1",
+      "source": "AEGISOverlay/RHLocalKreinPartitionV1.lean",
+      "sha256": "03a44640dfbd3708be67de4de4130554a7cdb718c65ee7389ffe6a61638beaf6"
+    },
+    {
+      "module": "AEGISOverlay.RHKreinMultiplicativeTransportV1",
+      "source": "AEGISOverlay/RHKreinMultiplicativeTransportV1.lean",
+      "sha256": "5bd4ed53aac93b7d68d6f7f977c05df0c35913c455e40a9acc7f736c5266fafe"
+    },
+    {
+      "module": "AEGISOverlay.RHTargetPacketMellinGeneralV2",
+      "source": "AEGISOverlay/RHTargetPacketMellinGeneralV2.lean",
+      "sha256": "d8f09733eff6bc69bbfdb4028d38bf6c980158e4e7cd53f8ce27710cef333f24"
+    },
+    {
+      "module": "AEGISOverlay.RHGenericSpectralShiftV1",
+      "source": "AEGISOverlay/RHGenericSpectralShiftV1.lean",
+      "sha256": "cfff1990a82c904cdd32fc1883e2dc863ec629e8822d343190a3e1c5db055f5b"
+    },
+    {
+      "module": "AEGISOverlay.RHCompactMellinEntireV1",
+      "source": "AEGISOverlay/RHCompactMellinEntireV1.lean",
+      "sha256": "9cb04d12a72e5708095cdde94facd6c30c26a5c6a91fed026aaa0071c23c5d72"
+    },
+    {
+      "module": "AEGISOverlay.RHWeilTiltComplementarityV1",
+      "source": "AEGISOverlay/RHWeilTiltComplementarityV1.lean",
+      "sha256": "aaa05fa09e28c47b3bf7ddbcea6e454b48ac95904840d4b2c6a5aadb3b5097c9"
+    },
+    {
+      "module": "AEGISOverlay.RHDetectingPacketV1",
+      "source": "AEGISOverlay/RHDetectingPacketV1.lean",
+      "sha256": "36ffe27c86bf53cfcf97728e4515d0a7e57f4f02880f7f59ba1ae3a15e625b54"
+    },
+    {
+      "module": "AEGISOverlay.RHDetectingPacketCriterionV1",
+      "source": "AEGISOverlay/RHDetectingPacketCriterionV1.lean",
+      "sha256": "7e353681ddb60ff06c9535e13fb5cc7a9f110ba6cd83c26534ce8576635f68ac"
+    },
+    {
+      "module": "AEGISOverlay.RHFixedPacketFourPhaseV1",
+      "source": "AEGISOverlay/RHFixedPacketFourPhaseV1.lean",
+      "sha256": "985888c2d6774c50899bd0ad0af790beb76d7a1d7fec0702b384e8ed07c76cdf"
+    },
+    {
+      "module": "RHThreeCellClassV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHThreeCellClassV13.lean",
+      "sha256": "9d76dd307d0eb4df449253a9ffed8c1235871b18bc140294679af44229a91245"
+    },
+    {
+      "module": "AEGISOverlay.RHNarrowFixedDetectorV1",
+      "source": "AEGISOverlay/RHNarrowFixedDetectorV1.lean",
+      "sha256": "3e85696dcc7f1de7034672cbdb56d495f417ccbb4fbe9c5429dfd364f362393c"
+    },
+    {
+      "module": "RHNineFacesV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHNineFacesV13.lean",
+      "sha256": "0ce36d14648e306e1c9871c088722d7aff460104c69574352c4969b63a039a73"
+    },
+    {
+      "module": "AEGISOverlay.RHCrossRepositoryFiveSpineV1",
+      "source": "AEGISOverlay/RHCrossRepositoryFiveSpineV1.lean",
+      "sha256": "ad872317966acdf6ad56d5d928e1f6889d45f015caecb209a3d6040cedf5a51f"
+    },
+    {
+      "module": "RHFeshbachScaledErrorV1",
+      "source": "AEGISOverlay/RHFeshbachScaledErrorV1.lean",
+      "sha256": "d7ff224dafe4a5bc715dff3ca0a0a4bacaf6dafd28ad26eef7f24e2153230c8a"
+    },
+    {
+      "module": "AEGISOverlay.RHPrimePowerBoundedV1",
+      "source": "AEGISOverlay/RHPrimePowerBoundedV1.lean",
+      "sha256": "618698d6f8993bd907945cb12a454ec62ba3777cfe75189391a332be09677ac9"
+    },
+    {
+      "module": "AEGISOverlay.RHBoundedConvolutionV1",
+      "source": "AEGISOverlay/RHBoundedConvolutionV1.lean",
+      "sha256": "d468cf1407d88d56e89ddf02ad3698420d6c7888b6939abf03193405f835ae70"
+    },
+    {
+      "module": "AEGISOverlay.RHPrimePowerKernelConnectorV1",
+      "source": "AEGISOverlay/RHPrimePowerKernelConnectorV1.lean",
+      "sha256": "c3cb2bd66ee8a4df6c65df22bed1b33948bcff6fd8642d8b7e924daf66517fe8"
+    },
+    {
+      "module": "RHSubexpBoundedPerturbationV1",
+      "source": "AEGISOverlay/RHSubexpBoundedPerturbationV1.lean",
+      "sha256": "fa15e157c848228a0473b8d3674d0d53963f8dbe6a24b1dcdcb73ddbb083d4ac"
+    },
+    {
+      "module": "RHDetectingPacketCriterionV1",
+      "source": "AEGISOverlay/RHDetectingPacketCriterionV1.lean",
+      "sha256": "7e353681ddb60ff06c9535e13fb5cc7a9f110ba6cd83c26534ce8576635f68ac"
+    },
+    {
+      "module": "RHFixedPacketFourPhaseV1",
+      "source": "AEGISOverlay/RHFixedPacketFourPhaseV1.lean",
+      "sha256": "985888c2d6774c50899bd0ad0af790beb76d7a1d7fec0702b384e8ed07c76cdf"
+    },
+    {
+      "module": "RHFixedPacketFrontierV1",
+      "source": "AEGISOverlay/RHFixedPacketFrontierV1.lean",
+      "sha256": "84d85ff62d10f33bcb84155da17e233b6be6536ae9600b36b698369493eab6e2"
+    },
+    {
+      "module": "RHKernelSubexponentialV1",
+      "source": "AEGISOverlay/RHKernelSubexponentialV1.lean",
+      "sha256": "6008b88c169efa21b82a70a055151f47cde15df032ee16454d7fd8d0e78c76c3"
+    },
+    {
+      "module": "RHKreinPairingV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHKreinPairingV13.lean",
+      "sha256": "72253dde1bd27e17c84889d23f02fbf2e235f77b2cdf5f672a7e9650748ec75d"
+    },
+    {
+      "module": "RHKreinCriticalLineBridgeV1",
+      "source": "AEGISOverlay/RHKreinCriticalLineBridgeV1.lean",
+      "sha256": "904c0d0132b19950986a6d1b79bdb407acdf3d1d1839336f52c6f8c1b43af28c"
+    },
+    {
+      "module": "RHKreinSymbolIntegrationV1",
+      "source": "AEGISOverlay/RHKreinSymbolIntegrationV1.lean",
+      "sha256": "88e9c16b5c4dff59b0f39d34f453667f69c3484b4544375944d844fb60382b63"
+    },
+    {
+      "module": "RHGlobalPrimeArchFrontierV1",
+      "source": "AEGISOverlay/RHGlobalPrimeArchFrontierV1.lean",
+      "sha256": "3bba9fa4906e020c0f4b1b60e994393ffadda133e0ce82dbc5f82aac1f268dda"
+    },
+    {
+      "module": "RHPrimeOnlyGrowthBridgeV1",
+      "source": "AEGISOverlay/RHPrimeOnlyGrowthBridgeV1.lean",
+      "sha256": "e00272075296623876b3488f05ebbe11b752be649f9e6e6767bffd415642cc4a"
+    },
+    {
+      "module": "RHPrimeOnlyReflectedBridgeV2",
+      "source": "AEGISOverlay/RHPrimeOnlyReflectedBridgeV2.lean",
+      "sha256": "89d234b40e87aab4a16f51953436224b631ba764e9f81e816a4171f8d8a6197f"
+    },
+    {
+      "module": "RHPrimeOnlyReflectedTailV3",
+      "source": "AEGISOverlay/RHPrimeOnlyReflectedTailV3.lean",
+      "sha256": "9abcbf772e50c74ef041cea038f229d0a35a6ebba28035cfda90706213a9f045"
+    },
+    {
+      "module": "RHFixedPacketEventualTailV1",
+      "source": "AEGISOverlay/RHFixedPacketEventualTailV1.lean",
+      "sha256": "3a0a205ccc283d6d63811ba15dea58ca5ca029992c724a1e5c10d2ff48e75085"
+    },
+    {
+      "module": "WeilSignedPrimeKernelV1",
+      "source": "WeilSignedPrimeKernelV1.lean",
+      "sha256": "75e8d71e068af8c14b7283117c4724897bdb20cbf4d3d5b68c2becc24f0d0963"
+    },
+    {
+      "module": "WeilLogTransportCanonicalV1",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilLogTransportCanonicalV1.lean",
+      "sha256": "6c68b84496c36ae278990dcaff63d963a286a9dcdd48182c4efed7f05f8b28b4"
+    },
+    {
+      "module": "RHNarrowMomentPacketV1",
+      "source": "AegisRH/Overlay/RHNarrowMomentPacketV1.lean",
+      "sha256": "35f49e78c303d777b8d3e4f35d18307fcd5d6bf812f3708cc39f33145a5a65e8"
+    },
+    {
+      "module": "RHNarrowFourBlockV2",
+      "source": "RHNarrowFourBlockV2.lean",
+      "sha256": "7ab7b647906cedba6e1bce094fb905e6f7c75c663e9fef7f786be9e2f0c38b3d"
+    },
+    {
+      "module": "RHNarrowArchV1",
+      "source": "RHNarrowArchV1.lean",
+      "sha256": "5ad91ff0fc1d949fe81c223b1a3705b334ac53a6f4f436d10807ec09265ec990"
+    },
+    {
+      "module": "WeilSignedKernelReductionV1",
+      "source": "WeilSignedKernelReductionV1.lean",
+      "sha256": "9fffeeb89ff294422ed535ad6181db79e3e6514dd989821946ae0a458392f0c4"
+    },
+    {
+      "module": "WeilGeneralSignedKernelBoundV1",
+      "source": "WeilGeneralSignedKernelBoundV1.lean",
+      "sha256": "89f965d661abda61586b20be61569cf5b85393195b158593968cdb6bc7671f66"
+    },
+    {
+      "module": "WeilSignedPrimeEventualBridgeV1",
+      "source": "WeilSignedPrimeEventualBridgeV1.lean",
+      "sha256": "3b47fd2e505f2758d9fcd026527374a877eb154ab379f17d60ba877e5c7ee33c"
+    },
+    {
+      "module": "RHBoundedKernelLaplaceV14",
+      "source": "RHBoundedKernelLaplaceV14.lean",
+      "sha256": "4132e800b19b62e84b52fd1838911f8cada1680a51943767ab2dce7b6f0eb485"
+    },
+    {
+      "module": "RHBoundedKernelCriterionV14",
+      "source": "RHBoundedKernelCriterionV14.lean",
+      "sha256": "b954717d56ffd5f98b4265e598506f2200dfa9c11b3e1014ba5124b28af0fe4c"
+    },
+    {
+      "module": "RHSignedPrimeActualKernelTailV5",
+      "source": "AEGISOverlay/RHSignedPrimeActualKernelTailV5.lean",
+      "sha256": "bc46a84b03a2b1118162fdf3bfffb8fc6ed2623ade5e79f044d870bd32bcd274"
+    },
+    {
+      "module": "RHPrimeDiscrepancyLogSubstitutionV4",
+      "source": "AEGISOverlay/RHPrimeDiscrepancyLogSubstitutionV4.lean",
+      "sha256": "9be5e4617f1aa47ee225fdec05cdcb6fb2ba6ea3930112204dace38199d73a73"
+    },
+    {
+      "module": "WeilSignedPrimeFiniteSupportV1",
+      "source": "WeilSignedPrimeFiniteSupportV1.lean",
+      "sha256": "6260bcb0e07bee390de255f98550f5088653b76b463e41fcba9594870d18d480"
+    },
+    {
+      "module": "WeilPrimeAbelReductionV1",
+      "source": "WeilPrimeAbelReductionV1.lean",
+      "sha256": "6b5543763d4f287046f7334e31684116d60ef7862f456e5e34e81a776822f5d3"
+    },
+    {
+      "module": "WeilPrimeDiscrepancyV1",
+      "source": "WeilPrimeDiscrepancyV1.lean",
+      "sha256": "8ff8324663304e4682352fd023e3fe1738a139fccdbe5c5662ad3c0d977106ef"
+    },
+    {
+      "module": "WeilPrimeDiscrepancyEstimateV1",
+      "source": "WeilPrimeDiscrepancyEstimateV1.lean",
+      "sha256": "0c9bf3c136e12a408e6d41957fcb9d325cc94207403a92fd7e696c3ebaa40d54"
+    },
+    {
+      "module": "RHSignedPrimeChebyshevFiniteBridgeV6",
+      "source": "AEGISOverlay/RHSignedPrimeChebyshevFiniteBridgeV6.lean",
+      "sha256": "6ae8014f877cc92f7480d5b3f78fe2e80e33b71b3e907b2336e5898c687c1e95"
+    },
+    {
+      "module": "RHSignedPrimeConvolutionIntegrabilityV7",
+      "source": "AEGISOverlay/RHSignedPrimeConvolutionIntegrabilityV7.lean",
+      "sha256": "780458ecff491dc82077bc4db6455957d4782206f1bd561aab35ccc46e4d8c2a"
+    },
+    {
+      "module": "RHSignedPrimeIntervalExtensionV8",
+      "source": "AEGISOverlay/RHSignedPrimeIntervalExtensionV8.lean",
+      "sha256": "2ac3866220c54ce29ef46b7d03205a977e48a83e3cc9e4e89a4d5b3e168c4442"
+    },
+    {
+      "module": "RHFourBlockPrimeEightV3",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHFourBlockPrimeEightV3.lean",
+      "sha256": "579174d9cc53e86d8dba8ab46e91e856f3d5e9dee48c361fc5f0b6b2b6524a9a"
+    },
+    {
+      "module": "RHDyadicWindowV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHDyadicWindowV13.lean",
+      "sha256": "97d1f829c8481b7a7ae4fc07e9c8df8ce5b6296c6102450c197b7f4965cd3baf"
+    },
+    {
+      "module": "RHDyadicTowerV13",
+      "source": ".aegis/sovereign-omega-v2/formal/bridges/lean/RHDyadicTowerV13.lean",
+      "sha256": "9384433201cdc81b810385a3d6e780e054e2b14b1d4401e15f173f5e3d389050"
+    },
+    {
+      "module": "RHCertifiedApproximationV1",
+      "source": "AEGISOverlay/RHCertifiedApproximationV1.lean",
+      "sha256": "fc15a8745a09c127e53d0ba3c9ded7955a759ead215c00dacb4d5edc7888da0f"
+    },
+    {
+      "module": "RHExistingProofFusionV1",
+      "source": "AEGISOverlay/RHExistingProofFusionV1.lean",
+      "sha256": "c47853480bd7ab418cb1ae825810bb18fc9ca813e0aece92f4cf377623c7e99f"
+    },
+    {
+      "module": "RHFeshbachScaledWeilV1",
+      "source": "AEGISOverlay/RHFeshbachScaledWeilV1.lean",
+      "sha256": "dd1df8f66b90803dac251654948039d581f34b8979a2ac23fc940f6b4dabe0b4"
+    }
+  ],
+  "root_candidates": [
+    "AEGIS.RHAssemblyV1.narrow_window_schur_family",
+    "AEGIS.RHAssemblyV1.narrow_window_schur_norm_family",
+    "AEGIS.RHFeshbachWeilClosureV2.riemannHypothesis_of_window_schur_families",
+    "AEGIS.RHFiniteActualGramJoinV1.every_packet_actual_finite_gram"
+  ],
+  "unresolved_producer": "∀ n : ℕ, 0 < n → ∀ g : WeilCompactSmoothGV1,\n  WeilMomentConditionsV1 g →\n  AEGIS.WeilWindowExhaustionV1.LogWindowContainsV1 g ((n : ℝ) * Real.pi) →\n  AEGIS.RHFeshbachWeilClosureV2.PacketSchurFamily g",
+  "generated_graph_location": "evidence-cofinal/assembly/RH_PROOF_GRAPH.json",
+  "scope": "Selected proof route; actual elaborated dependency DAG generated by CI, not inferred from descriptions"
+}

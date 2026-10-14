@@ -1,0 +1,29 @@
+{
+  "status": "CLOSURE_NOT_ACHIEVED; CONSTRUCTOR_AND_PROBE_EXECUTION_PENDING",
+  "obligation_type": "∀ n : ℕ, 0 < n → ∀ g : WeilCompactSmoothGV1,\n  WeilMomentConditionsV1 g →\n  AEGIS.WeilWindowExhaustionV1.LogWindowContainsV1 g ((n : ℝ) * Real.pi) →\n  AEGIS.RHFeshbachWeilClosureV2.PacketSchurFamily g",
+  "consumer": "AEGIS.RHFeshbachWeilClosureV2.riemannHypothesis_of_window_schur_families",
+  "attempts": [
+    {
+      "source": "AEGISOverlay/AEGIS_RH_Unconditional.lean",
+      "operation": "actual scalar Schur family with a=-Re B(g,g), energy, N=id, zero tail",
+      "domain": "certified 693/2000 log window",
+      "status": "written; kernel CI pending"
+    },
+    {
+      "source": "research/rh/assembly/RH_CLOSURE_PROBE.txt",
+      "operation": "apply narrow constructor using pi-window membership",
+      "status": "not yet executed; no predicted compiler result counted as observed"
+    },
+    {
+      "operation": "finite actual packet partition to exact mixed Weil Gram form",
+      "status": "verified at efc691 parent",
+      "remaining_consumer_inputs": [
+        "hdiag",
+        "hcross",
+        "hrow",
+        "hmargin"
+      ]
+    }
+  ],
+  "not_an_impossibility_claim": true
+}

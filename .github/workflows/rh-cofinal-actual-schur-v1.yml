@@ -12,6 +12,8 @@ on:
       - 'AEGISOverlay/RHFeshbachWeilClosureV2.lean'
       - 'AEGISOverlay/RHLocalKreinPartitionV1.lean'
       - 'AEGISOverlay/RHKreinMultiplicativeTransportV1.lean'
+      - 'AEGISOverlay/RHFiniteActualGramJoinV1.lean'
+      - 'AEGISOverlay/AEGIS_RH_Unconditional.lean'
       - 'AEGISOverlay/RHFeshbachScaledErrorV1.lean'
       - 'AEGISOverlay/RHFeshbachScaledWeilV1.lean'
       - '.github/workflows/rh-cofinal-actual-schur-v1.yml'
@@ -156,6 +158,13 @@ jobs:
           test "$(tar -tzf "$archive" | wc -l)" -eq 4
           tar -xzf "$archive" -C .
 
+      - name: Validate assembly evidence scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile research/rh/assembly/export_evidence.py
+          bash -n research/rh/assembly/RH_EXACT_HEAD_REPLAY.sh
+
       - name: Compile exact source import DAG and all three joined theorems
         shell: bash
         run: |
@@ -165,7 +174,7 @@ jobs:
           import hashlib, json, pathlib, shutil, subprocess
           root=pathlib.Path(".aegis/sovereign-omega-v2/formal/bridges/lean")
           overlay=pathlib.Path("AEGISOverlay")
-          targets=["RHMomentDecayCofinalJoinV1","RHCofinalActualTerminalV1","RHCofinalSchurAdapterV1","RHLocalKreinPartitionV1","AEGISOverlay.RHKreinMultiplicativeTransportV1","AEGISOverlay.RHCrossRepositoryFiveSpineV1","RHFeshbachScaledErrorV1","RHFeshbachScaledWeilV1"]
+          targets=["AEGISOverlay.AEGIS_RH_Unconditional","RHMomentDecayCofinalJoinV1","RHCofinalActualTerminalV1","RHCofinalSchurAdapterV1","RHLocalKreinPartitionV1","AEGISOverlay.RHKreinMultiplicativeTransportV1","AEGISOverlay.RHFiniteActualGramJoinV1","AEGISOverlay.RHCrossRepositoryFiveSpineV1","RHFeshbachScaledErrorV1","RHFeshbachScaledWeilV1"]
           deps={}; paths={}; seen=set(); active=set(); order=[]
           def locate(m):
               if m.startswith("AEGISOverlay."):
@@ -272,10 +281,17 @@ jobs:
           python3 scripts/verify_rh_overlay_axioms.py \
             AEGISOverlay/RHKreinMultiplicativeTransportV1.lean \
             evidence-cofinal/compile-AEGISOverlay_RHKreinMultiplicativeTransportV1.log
+          python3 scripts/verify_rh_overlay_axioms.py \
+            AEGISOverlay/AEGIS_RH_Unconditional.lean \
+            evidence-cofinal/compile-AEGISOverlay_AEGIS_RH_Unconditional.log
           for thm in every_moment_zero_packet_two_actual_weil_packets \
             every_packet_actual_two_block_zero_quadratic; do
             grep -F "AEGIS.RHKreinMultiplicativeTransportV1.$thm" \
               evidence-cofinal/compile-AEGISOverlay_RHKreinMultiplicativeTransportV1.log
+          done
+          for thm in packetSum_one_apply every_packet_actual_finite_gram localized_actual_weil_krein_atom localized_actual_weil_diagonal_32_over_25; do
+            grep -F "AEGIS.RHFiniteActualGramJoinV1.$thm" \
+              evidence-cofinal/compile-AEGISOverlay_RHFiniteActualGramJoinV1.log
           done
           grep -F "AEGIS.RHFeshbachScaledErrorV1.nonneg_of_invFourth_scaled_error" \
             evidence-cofinal/compile-RHFeshbachScaledErrorV1.log
@@ -283,6 +299,16 @@ jobs:
             grep -F "AEGIS.RHFeshbachScaledWeilV1.$thm" evidence-cofinal/compile-RHFeshbachScaledWeilV1.log
           done
           echo "SCALED_WEIL_JOIN=KERNEL_PASS; RH_UNCONDITIONAL=NOT_CLAIMED"
+
+      - name: Export actual proof dependencies and observed closure test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-cofinal/assembly
+          lake env lean research/rh/assembly/RHProofGraphExport.lean \
+            2>&1 | tee evidence-cofinal/assembly/graph-export.log
+          ! grep -F 'error:' evidence-cofinal/assembly/graph-export.log
+          python3 research/rh/assembly/export_evidence.py
 
       - name: Record exact-head receipt
         if: always()
