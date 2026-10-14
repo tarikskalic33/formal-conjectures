@@ -1,0 +1,925 @@
+{
+  "schema": "aegis-rh-source-closure-1",
+  "source_repo": "Aegis-Omega/AEGIS-OMEGA",
+  "source_head": "fb983fdc84a6bbeec6960c0e0c54b9695beba837",
+  "source_subtree": "bb4e3417a08238ac6ffd1d0b31ca63cdfab4c2ec",
+  "fork_repo": "tarikskalic33/formal-conjectures",
+  "base_head": "fed5269b549ec846a5c5d821ceca7af399b6b0fe",
+  "files": [
+    {
+      "module": "BombieriWeilTargetProbe",
+      "sha": "9942a2b51c8ded2dfe70076435faddca2ef74321",
+      "archive": "research/rh/aegis_source_4d7578e/lean/BombieriWeilTargetProbe.lean.src"
+    },
+    {
+      "module": "BoundedZeroFinitenessV1",
+      "sha": "11aa2ce7c4223b85a36a429233facbc0a862e35b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/BoundedZeroFinitenessV1.lean.src"
+    },
+    {
+      "module": "MellinDecayEstimateV1",
+      "sha": "948204a796d85cd9ff3a65dd558218211006f6ef",
+      "archive": "research/rh/aegis_source_4d7578e/lean/MellinDecayEstimateV1.lean.src"
+    },
+    {
+      "module": "MeromorphicIdentityPreconnectedV11",
+      "sha": "86342713dd7a998302ae8f5cbac49d2e83ea2b14",
+      "archive": "research/rh/aegis_source_4d7578e/lean/MeromorphicIdentityPreconnectedV11.lean.src"
+    },
+    {
+      "module": "NineFacesAcceptanceCheck",
+      "sha": "f6cbcadf36d0040377b98e79bd47ceb32cfdbe50",
+      "archive": "research/rh/aegis_source_4d7578e/lean/NineFacesAcceptanceCheck.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionFinalV13",
+      "sha": "2d69dd3344e4cc014643cdc70e3912bb3df38777",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionFinalV13.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionKernelBridgeV10",
+      "sha": "f17336332f25070f16152e420f8d8c44b60d254f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionKernelBridgeV10.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionLaplaceV10",
+      "sha": "391203427c15f5f1218a4e75e5c0d168a1356b70",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionLaplaceV10.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionPoleIsolationV10",
+      "sha": "d33b05639ab5cd1254578a16257a80897425ecc6",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionPoleIsolationV10.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionResidueCoefficientV11",
+      "sha": "5cd89d137524992348d43912438b82da49dd12b9",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionResidueCoefficientV11.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionResidueWitnessV11",
+      "sha": "6d9f5d8df77bcf21f61198867255cf4d02bb3b9d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionResidueWitnessV11.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionTargetWitnessV11",
+      "sha": "e0331945275e58e0b0c3c1236c32b4af54cb3b31",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionTargetWitnessV11.lean.src"
+    },
+    {
+      "module": "RestrictedWeilCriterionZeroKernelV10",
+      "sha": "04a6e49e81c593e939d25d81235a0e7cf057decb",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RestrictedWeilCriterionZeroKernelV10.lean.src"
+    },
+    {
+      "module": "RHBonusGainV13",
+      "sha": "566640692bab3175998271f4b94b8c3dbab992d0",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHBonusGainV13.lean.src"
+    },
+    {
+      "module": "RHDyadicDiagonalV13",
+      "sha": "d80ebc02cd36ddc02d25c19c6bd9c2cb46d7aa11",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHDyadicDiagonalV13.lean.src"
+    },
+    {
+      "module": "RHDyadicTowerV13",
+      "sha": "a7dbe8ff995e8cace45cdccfd60f05f59928129b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHDyadicTowerV13.lean.src"
+    },
+    {
+      "module": "RHDyadicWindowV13",
+      "sha": "37c336714e7043a1abc1fdc5054d7c6e3a96eafb",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHDyadicWindowV13.lean.src"
+    },
+    {
+      "module": "RHElevenBlockActualBridgeV1",
+      "sha": "a87a55c179e0933a0cf75373c6e59adba75d02b6",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHElevenBlockActualBridgeV1.lean.src"
+    },
+    {
+      "module": "RHElevenBlockComparisonV1",
+      "sha": "60577f559a755bb0bfdb6e29734160ea44e288e3",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHElevenBlockComparisonV1.lean.src"
+    },
+    {
+      "module": "RHFinalClosureSpineV1",
+      "sha": "58e52abd3e52d8087a64ec6624a41ce731285059",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFinalClosureSpineV1.lean.src"
+    },
+    {
+      "module": "RHFineDiagonalUpgradeV3",
+      "sha": "576d1f3a17851b20d6a5008d79f45e7c067f3e11",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFineDiagonalUpgradeV3.lean.src"
+    },
+    {
+      "module": "RHFineMomentPacketV3",
+      "sha": "709bd274400ec98c85756c33d002ae88bf0323f7",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFineMomentPacketV3.lean.src"
+    },
+    {
+      "module": "RHFourBlockActualBridgeV2",
+      "sha": "af77d02a41d993462b0613055f94a19fffc3d190",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockActualBridgeV2.lean.src"
+    },
+    {
+      "module": "RHFourBlockBoundObstructionV1",
+      "sha": "9318f46c5155c37792dccd22ae25ffab81b651ee",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockBoundObstructionV1.lean.src"
+    },
+    {
+      "module": "RHFourBlockCertificateLimitV13",
+      "sha": "e028cc832048c0794bc7f1aec7fa5fe42c9adc9a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockCertificateLimitV13.lean.src"
+    },
+    {
+      "module": "RHFourBlockComparisonV2",
+      "sha": "488d702efc2830dd21ee1fc25e2c892c97422366",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockComparisonV2.lean.src"
+    },
+    {
+      "module": "RHFourBlockConcreteV3",
+      "sha": "1dbb003a189e7ec7ba3c58265c7b8202214b740a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockConcreteV3.lean.src"
+    },
+    {
+      "module": "RHFourBlockMarginV1",
+      "sha": "cf36cf5b805e93ecea3b56e77f39f83e3e50575c",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFourBlockMarginV1.lean.src"
+    },
+    {
+      "module": "RHFourBlockPrimeEightV3",
+      "sha": "5a2394056d7505774f207ed8e3bbafb0e593ed99",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFourBlockPrimeEightV3.lean.src"
+    },
+    {
+      "module": "RHFourPacketZeroQuadraticV13",
+      "sha": "d770bc0cd5753075f3e5a56e8eed84bd2512a4c8",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourPacketZeroQuadraticV13.lean.src"
+    },
+    {
+      "module": "RHGramExpansionV13",
+      "sha": "684a7e8bf72a76f36b81a2d66c45413bfdbe89e9",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHGramExpansionV13.lean.src"
+    },
+    {
+      "module": "RHHalfCapGainV13",
+      "sha": "7c5fd4671941d61cf3be9945a22a00a0f52d10d8",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHHalfCapGainV13.lean.src"
+    },
+    {
+      "module": "RHHalfCapV13",
+      "sha": "802bd2f1112d4a0b727417738eb77422d2dd579a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHHalfCapV13.lean.src"
+    },
+    {
+      "module": "RHMillenniumGateV10",
+      "sha": "9d562ffd211c6dae8df802c9aec23f065115def6",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHMillenniumGateV10.lean.src"
+    },
+    {
+      "module": "RHMomentGainV13",
+      "sha": "a6e5d8943bbabdaf7bfe6fe9dcb4c72c1acd7cc9",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHMomentGainV13.lean.src"
+    },
+    {
+      "module": "RHMomentIdentityV13",
+      "sha": "4c1791a7fad5411f7495db036a4df7c029552efa",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHMomentIdentityV13.lean.src"
+    },
+    {
+      "module": "RHMomentNumericsV13",
+      "sha": "c7d8eb11ea5b434ecaa068fb7b9d69034a8eb8d3",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHMomentNumericsV13.lean.src"
+    },
+    {
+      "module": "RHMomentNumericsV14",
+      "sha": "98db31d2bb9305bdf4ab4062ed982304e1a8005e",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHMomentNumericsV14.lean.src"
+    },
+    {
+      "module": "RHMomentPiecesV13",
+      "sha": "cb6e39b79eb7f935be65c43bd44a573982d16060",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHMomentPiecesV13.lean.src"
+    },
+    {
+      "module": "RHNarrowDiagonalUpgradeV2",
+      "sha": "5861f8808015c4bee93efbbac5d032dd30522289",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNarrowDiagonalUpgradeV2.lean.src"
+    },
+    {
+      "module": "RHNarrowMomentPacketV1",
+      "sha": "08ad4e9610a544152a223417eafc28ff3434a678",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNarrowMomentPacketV1.lean.src"
+    },
+    {
+      "module": "RHNarrowRetainedSignV1",
+      "sha": "d42d307a2ceb92ae2b8f85437fa4d8b4dfc67d79",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNarrowRetainedSignV1.lean.src"
+    },
+    {
+      "module": "RHNarrowSupportPositivityV13",
+      "sha": "ee024cfdb0c05cfa3204ee5a9a499b1c1366417f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNarrowSupportPositivityV13.lean.src"
+    },
+    {
+      "module": "RHNineBlockActualBridgeV1",
+      "sha": "e3d884f6a1fe3ba12e7bd688d27971dd78ec7c70",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHNineBlockActualBridgeV1.lean.src"
+    },
+    {
+      "module": "RHNineBlockActualExpansionV1",
+      "sha": "03b9eeee10063d360da836f4188c304a9add6011",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHNineBlockActualExpansionV1.lean.src"
+    },
+    {
+      "module": "RHNineBlockComparisonV1",
+      "sha": "da46a0a80bf84cd98bb5fcc671b5b0f0a65af0e1",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHNineBlockComparisonV1.lean.src"
+    },
+    {
+      "module": "RHNineFacesV13",
+      "sha": "19da141ee9d81c490555364a687fccdca6ae21b5",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNineFacesV13.lean.src"
+    },
+    {
+      "module": "RHNinePacket33Over16V13",
+      "sha": "4534a6897933d259f2e790518083dfda9ae4e748",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNinePacket33Over16V13.lean.src"
+    },
+    {
+      "module": "RHRatio33Over16V13",
+      "sha": "52ddda7729faa6fd40687ebba55ed3b478c5f8ab",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHRatio33Over16V13.lean.src"
+    },
+    {
+      "module": "RHRationalGapNinePrimeBoundV1",
+      "sha": "6f0ce19532bb422649d764a0bea930e3756a8c59",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHRationalGapNinePrimeBoundV1.lean.src"
+    },
+    {
+      "module": "RHRationalGapTenPrimeBoundV1",
+      "sha": "c1771ca493a3292d962b77332437c2de3a693ac2",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHRationalGapTenPrimeBoundV1.lean.src"
+    },
+    {
+      "module": "RHRationalNinePacketConcreteV1",
+      "sha": "54ac309843e2a649f05474a4dec03e944af714f1",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHRationalNinePacketConcreteV1.lean.src"
+    },
+    {
+      "module": "RHRationalNinePacketPrimeWindowV1",
+      "sha": "7175f243640df980d9c2effc610cbb6748ffc29b",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHRationalNinePacketPrimeWindowV1.lean.src"
+    },
+    {
+      "module": "RHRationalTenPacketConcreteV1",
+      "sha": "313d35f2398fbd4b2a059d665ebb1cf6fb777489",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHRationalTenPacketConcreteV1.lean.src"
+    },
+    {
+      "module": "RHRatioWindowV13",
+      "sha": "18f83dac081526fb0bac77a4e2980849436e6e78",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHRatioWindowV13.lean.src"
+    },
+    {
+      "module": "RHRestrictedWeilBridgeV13",
+      "sha": "cda7c59f0bfa97ed9a8b5fb78791890a3dc3904b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHRestrictedWeilBridgeV13.lean.src"
+    },
+    {
+      "module": "RHTenBlockActualBridgeV1",
+      "sha": "d2893647df0c6c798e8b693f5880cd658daa2c3c",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHTenBlockActualBridgeV1.lean.src"
+    },
+    {
+      "module": "RHTenBlockActualExpansionV1",
+      "sha": "09b73288a74d126a3626ec8d15875ed5aa2282e6",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHTenBlockActualExpansionV1.lean.src"
+    },
+    {
+      "module": "RHTenBlockComparisonV1",
+      "sha": "2f3f2e386289b290331ba83dfb026fe2adc2d1bf",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHTenBlockComparisonV1.lean.src"
+    },
+    {
+      "module": "RHThreeCellClassV13",
+      "sha": "babdf3a671ea7a2cfcbacc693059ed38f11cb396",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHThreeCellClassV13.lean.src"
+    },
+    {
+      "module": "RHThreeCellGainV13",
+      "sha": "03263c914df499a62cb8b7b08b53c93957694265",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHThreeCellGainV13.lean.src"
+    },
+    {
+      "module": "RHThreeCellV13",
+      "sha": "a17c5b8a76d0618ed1736729ab63243e6486cece",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHThreeCellV13.lean.src"
+    },
+    {
+      "module": "RHThresholdClassV13",
+      "sha": "ce80ca2afdb85d2047c82a293e0cc586524a0603",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHThresholdClassV13.lean.src"
+    },
+    {
+      "module": "RHThresholdGainV13",
+      "sha": "32e1e1dae8bd7da8f2af1e3afdbcd526460e75b1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHThresholdGainV13.lean.src"
+    },
+    {
+      "module": "RHTranslatedKernelDominanceV1",
+      "sha": "8848cdf312417cd24b1312ef1aa09b793259d147",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHTranslatedKernelDominanceV1.lean.src"
+    },
+    {
+      "module": "RHWindowEighthGlobalizationV13",
+      "sha": "830e6e25b67c22ff8dc77a78eea2910bee2a518b",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHWindowEighthGlobalizationV13.lean.src"
+    },
+    {
+      "module": "RHWindowNineOver64GlobalizationV14",
+      "sha": "a9be154062cf131dd0c07cf6405babffc6b2290c",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHWindowNineOver64GlobalizationV14.lean.src"
+    },
+    {
+      "module": "RHWindowSevenOver32V1",
+      "sha": "83c8682c8c98cd43a7caf8b63cd859c48e05748e",
+      "archive": "research/rh/verified_archive_sources/RHWindowSevenOver32V1.lean.src"
+    },
+    {
+      "module": "RHZeroKernelBoundV11",
+      "sha": "87d79320ae5fbecddb916e82e3e600fa9c8c54f5",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHZeroKernelBoundV11.lean.src"
+    },
+    {
+      "module": "RHZeroKernelLaplaceAnalyticV12",
+      "sha": "49757c0413c2dd8f9362f33e159234dcf59f4bb4",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHZeroKernelLaplaceAnalyticV12.lean.src"
+    },
+    {
+      "module": "RHZeroKernelLaplaceV12",
+      "sha": "432e0cb10b3f7a12127ec1965d881b46550ea06d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHZeroKernelLaplaceV12.lean.src"
+    },
+    {
+      "module": "WeilAbjadFourPhaseBridgeV1",
+      "sha": "e631a19ff29eababf6546519a386f9014b71ba7f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAbjadFourPhaseBridgeV1.lean.src"
+    },
+    {
+      "module": "WeilActualZeroSummandWitnessV10",
+      "sha": "f6d388f4494d08ffe35e63ba8850c33203c09662",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilActualZeroSummandWitnessV10.lean.src"
+    },
+    {
+      "module": "WeilArchFiniteQuadraticV1",
+      "sha": "4f8ba8db61b696465a4b80a9a3006ce94245d42c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchFiniteQuadraticV1.lean.src"
+    },
+    {
+      "module": "WeilArchimedeanConvergenceV1",
+      "sha": "8c04ac6f254abb5a19c25f600e25ffb8af0c7f6d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchimedeanConvergenceV1.lean.src"
+    },
+    {
+      "module": "WeilArchimedeanCorrectionV10",
+      "sha": "99e9b6eb8a7aabbbf22e4e469833adebab82ba6c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchimedeanCorrectionV10.lean.src"
+    },
+    {
+      "module": "WeilArchimedeanCothTailV1",
+      "sha": "67606ca99e96ecd0a7cbd4861ca48fe9471ffa7b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchimedeanCothTailV1.lean.src"
+    },
+    {
+      "module": "WeilArchimedeanPacketWitnessV1",
+      "sha": "7c117e9ff2a1b5078e2a2c54e0100cf450f30eea",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchimedeanPacketWitnessV1.lean.src"
+    },
+    {
+      "module": "WeilArchSineKernelIntegerV1",
+      "sha": "7f16181960884f1a2254bc409f30b26158c0a59e",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchSineKernelIntegerV1.lean.src"
+    },
+    {
+      "module": "WeilArchSineKernelV1",
+      "sha": "cab69e4ec0e921977a25dfb79cdee7e4467839ff",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchSineKernelV1.lean.src"
+    },
+    {
+      "module": "WeilArchTailIntegralV1",
+      "sha": "ec35e6d8bbf7d3b1f175691f35164529542eeba3",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilArchTailIntegralV1.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationClosureV1",
+      "sha": "8a578da0d379d2a643c2ce436a97a4ff5e3531eb",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationClosureV1.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationExplicitFormulaV10",
+      "sha": "72e756c4386c6478cac301f4d1e82fbc9d6fe8f6",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationExplicitFormulaV10.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationMellinFactorV10",
+      "sha": "cc790562e0b89f34cdcb68b6d3b2040ebf1c054a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationMellinFactorV10.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationMellinV11",
+      "sha": "eaf488412c46a51d7f5f68c2432576ccd04e79fa",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationMellinV11.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationPoleAggregationV1",
+      "sha": "bb785359eda0b4e03cea65de65bc21c9a0a70191",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationPoleAggregationV1.lean.src"
+    },
+    {
+      "module": "WeilAutocorrelationRealityV1",
+      "sha": "84d389c16b46427d1432f16a3f76baf031fba67c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilAutocorrelationRealityV1.lean.src"
+    },
+    {
+      "module": "WeilCriterionCompactSmoothV1",
+      "sha": "48039592aa281da1aa514586e09aab09720dd679",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilCriterionCompactSmoothV1.lean.src"
+    },
+    {
+      "module": "WeilDiagonalConstantFromCothTailV1",
+      "sha": "717898a116c52ce8de0a91a1dd00479607e590d7",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDiagonalConstantFromCothTailV1.lean.src"
+    },
+    {
+      "module": "WeilDiagonalKernelReductionV21",
+      "sha": "9c0e36523a528ce1268fe6ec3bb42bc320b3a29b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDiagonalKernelReductionV21.lean.src"
+    },
+    {
+      "module": "WeilDigammaIntegralReductionV1_Control",
+      "sha": "d9d501b245dc4303c590a1619540b2d210ebfa02",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDigammaIntegralReductionV1_Control.lean.src"
+    },
+    {
+      "module": "WeilDigammaIntegralReductionV1",
+      "sha": "4d96c2be8104e05131bca08448dbe18513191f96",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDigammaIntegralReductionV1.lean.src"
+    },
+    {
+      "module": "WeilDigammaSeriesHalfPlaneV1",
+      "sha": "d4cf0622d8f9f98cb60691073e721725bb716d94",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDigammaSeriesHalfPlaneV1.lean.src"
+    },
+    {
+      "module": "WeilDigammaSeriesRealV1",
+      "sha": "75744f1593cb6b94bb43ae186a41ad7ad56825f7",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDigammaSeriesRealV1.lean.src"
+    },
+    {
+      "module": "WeilDisjointEnergyV2",
+      "sha": "5565d644ed0c436dcc4fee41074b758974e93df1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilDisjointEnergyV2.lean.src"
+    },
+    {
+      "module": "WeilExplicitFormulaV10",
+      "sha": "e7d4d31eb6053d5f7325f23071322580b441c8a0",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilExplicitFormulaV10.lean.src"
+    },
+    {
+      "module": "WeilFinalSignTranslationBoundV10",
+      "sha": "477907d51c31bfa21b820f7ae01d6a84d153d39c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFinalSignTranslationBoundV10.lean.src"
+    },
+    {
+      "module": "WeilFiniteDilationFilterV10",
+      "sha": "6970c598b8af0e25cc051567359f46cff63244bc",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFiniteDilationFilterV10.lean.src"
+    },
+    {
+      "module": "WeilFiniteDilationFilterV11",
+      "sha": "9be6f2b01a7caf976ab5f2bd4208f17bbb08908d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFiniteDilationFilterV11.lean.src"
+    },
+    {
+      "module": "WeilFiniteSourceCalculusV1",
+      "sha": "8098853100b7bdd7410e03f2347e7b40c3e94516",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFiniteSourceCalculusV1.lean.src"
+    },
+    {
+      "module": "WeilFixedLineArithmeticV10",
+      "sha": "b3849e4333230e251d3713cce2056956cc5e3ded",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineArithmeticV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineCompletedGammaV10",
+      "sha": "ebe723ef8ebd6cafd4c2dd43d805ad44c3801883",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineCompletedGammaV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineExplicitFormulaContractV2",
+      "sha": "45c80a60ab06688dbb25f5fb992dfc53b8d0843f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineExplicitFormulaContractV2.lean.src"
+    },
+    {
+      "module": "WeilFixedLineFubiniCoreV3",
+      "sha": "0142808a951121f0dea831a45438d75773d9dc4d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineFubiniCoreV3.lean.src"
+    },
+    {
+      "module": "WeilFixedLineFubiniSwapV4",
+      "sha": "e61d4ea8aa619d8856134d3c39fd17936d6f02ef",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineFubiniSwapV4.lean.src"
+    },
+    {
+      "module": "WeilFixedLineGammaAssemblyV10",
+      "sha": "426c3d185e816160cf7c26437a63f70772f08453",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineGammaAssemblyV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineGammaCoreV10",
+      "sha": "8996442368a775a34b0f651a398217d884729a4a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineGammaCoreV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineGammaFubiniV10",
+      "sha": "fd28a9b0f0bb5c79d544e3f8c190a4db28d1ee1f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineGammaFubiniV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineGammaXSpaceV10",
+      "sha": "3328fe14cee624ef11a4e79c3660f6be1b6282d3",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineGammaXSpaceV10.lean.src"
+    },
+    {
+      "module": "WeilFixedLineKernelIntegralV6",
+      "sha": "743d826ee6de8f6b0d48297f08f5796310db373d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineKernelIntegralV6.lean.src"
+    },
+    {
+      "module": "WeilFixedLineXSpaceTailV7",
+      "sha": "909936d435c36e56c09b9a8a1ca137a02d330024",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineXSpaceTailV7.lean.src"
+    },
+    {
+      "module": "WeilFixedLineZeroSideV10",
+      "sha": "91bdc1eaec1bfa6c84e9fc77e142c58fa97e4968",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilFixedLineZeroSideV10.lean.src"
+    },
+    {
+      "module": "WeilLogAutocorrelationV10",
+      "sha": "b5815fa6fd8c6956d762703691504b8bb873586c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilLogAutocorrelationV10.lean.src"
+    },
+    {
+      "module": "WeilLogChangeOfVariablesV1",
+      "sha": "73c1c5666ca4320b2eacb202b7262cd0ce389e37",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilLogChangeOfVariablesV1.lean.src"
+    },
+    {
+      "module": "WeilLogCoordinateIsometryV21",
+      "sha": "481b2dce81fdfc9ba44602058e602f8eccb56e14",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilLogCoordinateIsometryV21.lean.src"
+    },
+    {
+      "module": "WeilLogLiftCompactSupportV10",
+      "sha": "b6649ce91ff7e8cfab2a16f5da7b1aa8d97606fb",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilLogLiftCompactSupportV10.lean.src"
+    },
+    {
+      "module": "WeilLogTransportCanonicalV1",
+      "sha": "75e8f3c9d0d987785cfdec3279ad19e52757b96d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilLogTransportCanonicalV1.lean.src"
+    },
+    {
+      "module": "WeilMellinInversionV1",
+      "sha": "b88e90577394aa5cd800d5ea7c8fd411bc4f2468",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMellinInversionV1.lean.src"
+    },
+    {
+      "module": "WeilMellinWeightedFixedLineV2",
+      "sha": "8ea59852a6b9fc81de7cef4395b6aaf568b8a998",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMellinWeightedFixedLineV2.lean.src"
+    },
+    {
+      "module": "WeilMixedAlgebraV2",
+      "sha": "0478a41a967df5340a931f4452f1105078edff16",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMixedAlgebraV2.lean.src"
+    },
+    {
+      "module": "WeilMixedClosureV2",
+      "sha": "57263c1acd5f57bb45a0f9b5e47669ca6cf511b7",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMixedClosureV2.lean.src"
+    },
+    {
+      "module": "WeilMixedMellinFactorV10",
+      "sha": "d6ba9e1eb6c46e62cef257267c7368e1572f825d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMixedMellinFactorV10.lean.src"
+    },
+    {
+      "module": "WeilMomentAnnihilatorV1",
+      "sha": "0fe118c9a62b240beb3469805d50fb3ec1dccb4e",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMomentAnnihilatorV1.lean.src"
+    },
+    {
+      "module": "WeilMomentKillerConstructionV1",
+      "sha": "f599d884d0d59f7e652887fb9e055ce95ea54aa6",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMomentKillerConstructionV1.lean.src"
+    },
+    {
+      "module": "WeilMomentZeroDetectionV10",
+      "sha": "93d296a7b0e650ae1aaabeefd62e177d85cfac9f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilMomentZeroDetectionV10.lean.src"
+    },
+    {
+      "module": "WeilOffLineSeedV10",
+      "sha": "255cfa30537da17af7ee3f7fe64b6845808af246",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilOffLineSeedV10.lean.src"
+    },
+    {
+      "module": "WeilPairedHadamardFixedLineV1",
+      "sha": "68cecb9909b9ca270a34803b0fcf7f4b1697ad75",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPairedHadamardFixedLineV1.lean.src"
+    },
+    {
+      "module": "WeilPairedHadamardKernelTsumV2",
+      "sha": "bd87f1d650f85d5f6c3e7eab5a52863ee9ac248d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPairedHadamardKernelTsumV2.lean.src"
+    },
+    {
+      "module": "WeilPairedHadamardTsumFusionV1",
+      "sha": "f5bdb087535964b881403e5ad68565f0cdc4ea32",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPairedHadamardTsumFusionV1.lean.src"
+    },
+    {
+      "module": "WeilPairedMellinProfileV5",
+      "sha": "b1d74f57f9533fc1592c156a4fb61fe950a3cee5",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPairedMellinProfileV5.lean.src"
+    },
+    {
+      "module": "WeilPairedZeroEvaluationV9",
+      "sha": "af91865be83cf031bbc8e1dc38c840c54f2b9565",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPairedZeroEvaluationV9.lean.src"
+    },
+    {
+      "module": "WeilPoleTermV1",
+      "sha": "5fd2deba32811877aaac64837fb81c895f30e882",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPoleTermV1.lean.src"
+    },
+    {
+      "module": "WeilPrimeLineIdentityV1",
+      "sha": "4db96b150c658897e571a157acd29831c7838ec5",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPrimeLineIdentityV1.lean.src"
+    },
+    {
+      "module": "WeilPrimeSummabilityV1",
+      "sha": "5952cac81f515a5ac784cd51e9b3c187d1727d8a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilPrimeSummabilityV1.lean.src"
+    },
+    {
+      "module": "WeilReciprocalPairedTestV8",
+      "sha": "89127d6b57ec7376a027f8cacac091cfc6431dbf",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilReciprocalPairedTestV8.lean.src"
+    },
+    {
+      "module": "WeilRHImpliesFinalSignV13",
+      "sha": "7b00e26bcfd923f93386663aa7fb4c15085a293b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilRHImpliesFinalSignV13.lean.src"
+    },
+    {
+      "module": "WeilSeparatedArchBridgeV31",
+      "sha": "d6e44db91730618053a67977c9d32c3f5159bf9a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilSeparatedArchBridgeV31.lean.src"
+    },
+    {
+      "module": "WeilStrictStripSeedV11",
+      "sha": "6683b2dfebef8166545c12f53815701d8219dfd0",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilStrictStripSeedV11.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockAnalyticConstantsV21",
+      "sha": "92271bb57ba91d977f1c19573a55d7978e79a329",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockAnalyticConstantsV21.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockComplexV2",
+      "sha": "854b90da12ce0aaa4ce97d79cfaa6a2a2b91a31e",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockComplexV2.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockCrossAssemblyV30",
+      "sha": "25a01843658d02b5a62a1077b77885cce7e95b18",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockCrossAssemblyV30.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockCrossPrimeV28",
+      "sha": "51206472ec9347f16fa793585de193b2b9087703",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockCrossPrimeV28.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockCrossPrimeWindowV29",
+      "sha": "faf44e2953292416cf98b50cbd041a997ae4496f",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockCrossPrimeWindowV29.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockNormBridgeV21",
+      "sha": "96cc55e2402da367483f751ac382521622f0eeb1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockNormBridgeV21.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockPrimeEvaluationV30",
+      "sha": "1aa66fb90ef94aabdbb228c71fe95610c95ba1b7",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockPrimeEvaluationV30.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockRationalV1",
+      "sha": "7baba140b1cd6d44177b17000fbb93167edec3ba",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockRationalV1.lean.src"
+    },
+    {
+      "module": "WeilThreeBlockTranslatedPacketsV22",
+      "sha": "85d3ff56e185b306a370d0e30c0b991afd1d5b6b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilThreeBlockTranslatedPacketsV22.lean.src"
+    },
+    {
+      "module": "WeilTranslatedKernelBoundV11",
+      "sha": "9bd5935decf8e03011e8fd7fcb584b5e44662aef",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilTranslatedKernelBoundV11.lean.src"
+    },
+    {
+      "module": "WeilTranslatedZeroSeriesV10",
+      "sha": "8a7fb4166df522853aa1487336904fe3bf57fe38",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilTranslatedZeroSeriesV10.lean.src"
+    },
+    {
+      "module": "WeilTranslationGapInvariantV10",
+      "sha": "f04dc662e4fcdd3c108ba3be758843849535ce0b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilTranslationGapInvariantV10.lean.src"
+    },
+    {
+      "module": "WeilTwoPointPositivityV1",
+      "sha": "98d906659b860aac90267a3cc2578f6665621788",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilTwoPointPositivityV1.lean.src"
+    },
+    {
+      "module": "WeilWidthArchBudgetV26",
+      "sha": "0045d85ed311eb9e684ef1e9e23abe7a6e0df5d1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWidthArchBudgetV26.lean.src"
+    },
+    {
+      "module": "WeilWidthArchCorrelationV25",
+      "sha": "99e5e77ff0c44b0589df2a2a472e3f5dfe93f509",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWidthArchCorrelationV25.lean.src"
+    },
+    {
+      "module": "WeilWidthArchIntegralV27",
+      "sha": "281162e0e52425affbdfb052f8093bef5143cb96",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWidthArchIntegralV27.lean.src"
+    },
+    {
+      "module": "WeilWidthDiagonalArchFrontierV24",
+      "sha": "e3f056ba0345b3e0a0c0562b41c38d1ab6432526",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWidthDiagonalArchFrontierV24.lean.src"
+    },
+    {
+      "module": "WeilWidthPrimeVanishingV23",
+      "sha": "dcb7132c480738283c8c4d88ae0aba46c9f44907",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWidthPrimeVanishingV23.lean.src"
+    },
+    {
+      "module": "WeilWindowExhaustionV1",
+      "sha": "98e15e9320c68f7f956cf3012fa992e3fb211985",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilWindowExhaustionV1.lean.src"
+    },
+    {
+      "module": "WeilXiLogDerivDecompositionV10",
+      "sha": "656c63ee9ca75c02c3cdb382eb099740d23aeb08",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilXiLogDerivDecompositionV10.lean.src"
+    },
+    {
+      "module": "WeilZeroCarrierBridgeV10",
+      "sha": "c538186c1f71a012d9f0961ddcd1c2cfb89966b1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroCarrierBridgeV10.lean.src"
+    },
+    {
+      "module": "WeilZeroCarrierRebindV10",
+      "sha": "0c78e7e42b53e1c759d5a306d9b031c55f2d8b87",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroCarrierRebindV10.lean.src"
+    },
+    {
+      "module": "WeilZeroKernelHermitianV11",
+      "sha": "78c3644ec51f78b35a524355a3cf891d97f4c51c",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroKernelHermitianV11.lean.src"
+    },
+    {
+      "module": "WeilZeroSideIdentificationV1",
+      "sha": "49ff916bf877160b02635913e4f964f86190a63b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroSideIdentificationV1.lean.src"
+    },
+    {
+      "module": "WeilZeroSideInterfaceV1",
+      "sha": "7473dcc87365bfb30bde6fc660a99ff5bcc3581b",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroSideInterfaceV1.lean.src"
+    },
+    {
+      "module": "WeilZeroTranslationV11",
+      "sha": "6755931c48fabad03273660555b5d97e3e333474",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroTranslationV11.lean.src"
+    },
+    {
+      "module": "WeilZeroTwoPointV11",
+      "sha": "ca57381c3aa6f4682be8a335da8fb232604c8784",
+      "archive": "research/rh/aegis_source_4d7578e/lean/WeilZeroTwoPointV11.lean.src"
+    },
+    {
+      "module": "ZeroCountingBoundV1",
+      "sha": "f8ac3c31ee0afa85f35bbc9539ad842e3d3335ef",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroCountingBoundV1.lean.src"
+    },
+    {
+      "module": "ZeroCountingMellinSummabilityV1",
+      "sha": "01509b3933039aa595c83f366bbe90a44f2a4d81",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroCountingMellinSummabilityV1.lean.src"
+    },
+    {
+      "module": "ZeroCriticalStripV1",
+      "sha": "8dd25b1e5bf55d902fe5b57e8572e8e564d4c983",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroCriticalStripV1.lean.src"
+    },
+    {
+      "module": "ZeroFiniteTruncationV1",
+      "sha": "3d2fff0e0731e819c270e2cca50f071044bb8e5e",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroFiniteTruncationV1.lean.src"
+    },
+    {
+      "module": "ZeroHeightFiniteSumV1",
+      "sha": "94415f65ae85e1e9993916a22891ca2248d65d4d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroHeightFiniteSumV1.lean.src"
+    },
+    {
+      "module": "ZeroHeightLimitContractV1",
+      "sha": "5d0d065113d9076db4eab6cf4be7a9868eec56a4",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroHeightLimitContractV1.lean.src"
+    },
+    {
+      "module": "ZeroHeightShellMassV1",
+      "sha": "e7af2be4e5f0b1bbb1f605bbee19e919b92e5bd0",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroHeightShellMassV1.lean.src"
+    },
+    {
+      "module": "ZeroHeightSummabilityBridgeV1",
+      "sha": "f72516a9ee50f8b5457f4a99c55ddc296d15d8dd",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroHeightSummabilityBridgeV1.lean.src"
+    },
+    {
+      "module": "ZeroHeightTruncationV1",
+      "sha": "d276682f56e9638e99609ba57667904bd40b0007",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroHeightTruncationV1.lean.src"
+    },
+    {
+      "module": "ZeroLowerLocalizationV1",
+      "sha": "16e974aeb1dd830a0edaf6cdc75f5e45c7d1cd04",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroLowerLocalizationV1.lean.src"
+    },
+    {
+      "module": "ZeroMajorantSummabilityV1",
+      "sha": "4c100d1f84188deddd1e00dc6cb8aca851fc4eea",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroMajorantSummabilityV1.lean.src"
+    },
+    {
+      "module": "ZeroMultiplicityV1",
+      "sha": "d6ae78f4f359bde8841ab254838ed4fedfbfcc29",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroMultiplicityV1.lean.src"
+    },
+    {
+      "module": "ZeroNonpositiveIntegerV1",
+      "sha": "bdcd12283b71270bf645eab5422f5242e26cd143",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroNonpositiveIntegerV1.lean.src"
+    },
+    {
+      "module": "ZeroNonpositiveTrivialV1",
+      "sha": "e227c9c30351eb16fba8c0a0e45c6a71a70d45b1",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroNonpositiveTrivialV1.lean.src"
+    },
+    {
+      "module": "ZeroShellAnalyticSynthesisV1",
+      "sha": "257ef4b003206b816555acb0f72ff702e0daac65",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroShellAnalyticSynthesisV1.lean.src"
+    },
+    {
+      "module": "ZeroShellQuadraticBoundV1",
+      "sha": "45e7f91166b32832c54e6538041d1a5d12171b12",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroShellQuadraticBoundV1.lean.src"
+    },
+    {
+      "module": "ZeroTrivialClassificationV1",
+      "sha": "159170fbec1b1fa168bd0fb05f8c5b501d9ce1d6",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroTrivialClassificationV1.lean.src"
+    },
+    {
+      "module": "ZeroUpperLocalizationV1",
+      "sha": "7ea5a2a43c6d98fda39ba5491ecba67bebdbd19d",
+      "archive": "research/rh/aegis_source_4d7578e/lean/ZeroUpperLocalizationV1.lean.src"
+    }
+  ]
+}
