@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'research/rh/m8_kernel_v1/**'
+      - 'research/rh/finite_m8_v1/**'
       - '.github/workflows/rh-krein-m8-analytic-v1.yml'
   workflow_dispatch:
 permissions:
@@ -77,6 +78,25 @@ jobs:
         run: python3 research/rh/m8_kernel_v1/replay.py upstream
       - name: New M8 producer and strict endpoint axiom audit
         run: python3 research/rh/m8_kernel_v1/bind_pr52.py
+      - name: Compile exact finite-window M8 candidate and audit all theorem axioms
+        shell: bash
+        run: |
+          set -euo pipefail
+          src=research/rh/finite_m8_v1/RHKreinM8FiniteWindowV1.lean
+          test -s "$src"
+          test -s .lake/build/lib/lean/AEGISOverlay/RHKreinCorrectionM8BoundV1.olean
+          mkdir -p evidence-m8-kernel/finite-window .lake/build/lib/lean
+          git rev-parse HEAD > evidence-m8-kernel/finite-window/head.txt
+          git hash-object "$src" > evidence-m8-kernel/finite-window/source-blob.txt
+          sha256sum "$src" > evidence-m8-kernel/finite-window/source-sha256.txt
+          cp "$src" RHKreinM8FiniteWindowV1.lean
+          lake env lean -o .lake/build/lib/lean/RHKreinM8FiniteWindowV1.olean \
+            RHKreinM8FiniteWindowV1.lean 2>&1 | tee evidence-m8-kernel/finite-window/compile.log
+          python3 scripts/verify_rh_overlay_axioms.py \
+            RHKreinM8FiniteWindowV1.lean evidence-m8-kernel/finite-window/compile.log \
+            | tee evidence-m8-kernel/finite-window/axiom-audit.log
+          test -s .lake/build/lib/lean/RHKreinM8FiniteWindowV1.olean
+          test "$(grep -c '^#print axioms ' "$src")" -eq 8
       - name: Upload complete source and proof evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

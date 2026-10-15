@@ -14,9 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -/
 
-import RHExistingProofFusionV1
+import RHFeshbachCoreV1
+import FormalConjecturesUtil.FixedWindowLimitBridge
+import WeilRHImpliesFinalSignV13
+import RHFinalClosureSpineV1
+import WeilWindowExhaustionV1
 import WeilAutocorrelationExplicitFormulaV10
 import RHGramExpansionV13
+import RHWindow693Over2000V1
 import Mathlib
 
 /-!
@@ -156,7 +161,18 @@ theorem riemannHypothesis_of_window_schur_families
           ((n : ℝ) * Real.pi) →
         PacketSchurFamily g) :
     RiemannHypothesis := by
-  apply AEGIS.RHExistingProofFusionV1.rh_iff_pi_nat_windows.mpr
+  have hAll :
+      RiemannHypothesis ↔
+        ∀ L : ℝ, 0 < L →
+          AEGIS.WeilWindowExhaustionV1.WindowArithmeticNonpositiveV1 L :=
+    AEGIS.WeilRHImpliesFinalSignV13.rh_iff_final_sign_v13.trans
+      (AEGIS.RHFinalClosureV1.final_sign_residual_iff_weil_negativity_v1.trans
+        AEGIS.WeilWindowExhaustionV1.weil_compact_smooth_negativity_iff_all_windows_v1)
+  apply (hAll.trans
+    (FormalConjecturesUtil.FixedWindowLimitBridge.all_positive_windows_iff_pi_nat_windows
+      AEGIS.WeilWindowExhaustionV1.WindowArithmeticNonpositiveV1
+      (fun {R₁ R₂} hR hWin =>
+        AEGIS.WeilWindowExhaustionV1.windowArithmeticNonpositive_mono_v1 hR hWin))).mpr
   intro n hn g hm hw
   exact packet_weil_nonpositive g hm (h n hn g hm hw)
 
@@ -225,6 +241,42 @@ theorem actual_gram_zero_quadratic_nonnegative
     (actual_gram_arithmetic_nonpositive z gs D E hE c hc
       hdiag hcross hbudget)
 
+/--
+A concrete two-source sign assembly for the *actual* zero quadratic.
+
+The first route is the existing unconditional 693/2000 logarithmic window.
+The second route uses the existing V13 Gram/Gershgorin mixed-term budget.
+Neither branch assumes the sign of the output as an input, and this lemma
+does not claim these two certified classes exhaust all Weil packets.
+-/
+theorem actual_sign_of_certified_window_or_gram
+    (g : WeilCompactSmoothGV1)
+    (hm : WeilMomentConditionsV1 g)
+    (h :
+      AEGIS.WeilWindowExhaustionV1.LogWindowContainsV1 g (693 / 2000) ∨
+      ∃ (n : ℕ) (z : Fin (n + 1) → ℂ)
+        (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+        (D E : ℝ) (c : ℕ → ℝ),
+        g = AEGIS.RHGramExpansionV13.packetSum z gs ∧
+        0 ≤ E ∧
+        (∀ k, 0 ≤ c k) ∧
+        (∀ i, D * E ≤
+          -(AEGIS.WeilMixedAlgebraV2.B (gs i) (gs i)).re) ∧
+        (∀ i j, i ≠ j →
+          ‖AEGIS.WeilMixedAlgebraV2.B (gs i) (gs j)‖ ≤
+            c (Nat.dist i j) * E) ∧
+        2 * ∑ k ∈ Finset.Icc 1 n, c k ≤ D) :
+    0 ≤ (∑' rho : RiemannNontrivialZeroIndexV2,
+      WeilZeroIndexSummandV1 (WeilAutocorrelationV1 g) rho).re := by
+  rcases h with hw | ⟨n, z, gs, D, E, c, hrepr, hE, hc, hd, hx, hb⟩
+  · have hsign :=
+      AEGIS.RHWindow693Over2000V1.window_693_over_2000_arithmetic_nonpositive_v1
+        g hm hw
+    exact (AEGIS.WeilAutocorrelationExplicitFormulaV10.autocorrelation_arithmetic_nonpositive_iff_zero_nonnegative_v10
+      g hm).mp hsign
+  · subst g
+    exact actual_gram_zero_quadratic_nonnegative z gs D E hE c hc hd hx hb hm
+
 end AEGIS.RHFeshbachWeilClosureV2
 
 #print axioms AEGIS.RHFeshbachWeilClosureV2.nonneg_of_vanishing_error_eventually_bounded
@@ -234,3 +286,5 @@ end AEGIS.RHFeshbachWeilClosureV2
 #print axioms AEGIS.RHFeshbachWeilClosureV2.actual_gram_zero_quadratic_nonnegative
 #print axioms AEGIS.RHFeshbachWeilClosureV2.packet_weil_nonpositive
 #print axioms AEGIS.RHFeshbachWeilClosureV2.riemannHypothesis_of_window_schur_families
+
+#print axioms AEGIS.RHFeshbachWeilClosureV2.actual_sign_of_certified_window_or_gram

@@ -1,0 +1,2679 @@
+# Copyright 2026 The Formal Conjectures Authors.
+# Source-bound, fail-closed candidate replay; never marks the official RH target proved.
+name: RH adaptive trigram exact-head kernel replay
+
+on:
+  pull_request:
+    paths:
+      - 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+      - 'research/rh/m8_kernel_v1/**'
+      - 'research/rh/finite_m8_v1/**'
+      - '.github/workflows/rh-trigram-exact-head-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Same pins as rh-krein-m8-analytic-v1.yml; the provider is built by its existing recipe.
+env:
+  MATHLIB_SHA: 0df444a360eaa60ab8c11dca51a86af692955474
+  LEAN_TOOLCHAIN: leanprover/lean4:v4.33.1
+  LI_CRITERION_SHA: 35df682f3b709ffe5fbcfdd452dfa964bd622b87
+  LI_CRITERION_ORIGINAL_MATHLIB_SHA: de5ce8a9a66a4aa68a9bdbb35b63a06d34d9ca11
+  FACTORIZATION_SOURCE_BLOB: 10d38a54580ff72d698a30be64fe1c3c44f862a2
+
+# Eight sequential jobs prevent a 60-minute runner recycle from discarding the
+# previous verified source-bound Lean OLEAN prefix. Every stage audits the entire
+# SHA-1 Git source identity, Lean/Mathlib pins, and checkpoint SHA-256 hashes.
+jobs:
+  trigram-stage-0:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '0'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Restore existing source-bound Krein checkpoint from PR 83
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .rh-krein-full
+          key: rh-krein-full-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.MATHLIB_SHA }}-2c3d041b633147ec97c7ef753aa9d157a47bb9f5-${{ env.LI_CRITERION_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Compile and audit pinned Trigram source stage 1/6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 1/6 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-0-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 1/6 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-0-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+  trigram-stage-1:
+    needs: trigram-stage-0
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '1'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-0-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 2/6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 2/6 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-1-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 2/6 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-1-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+  trigram-stage-2:
+    needs: trigram-stage-1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '2'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-1-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 3/6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 3/6 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-2-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 3/6 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-2-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+  trigram-stage-3:
+    needs: trigram-stage-2
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '3'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-2-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 4/6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 4/6 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-3-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 4/6 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-3-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+  trigram-stage-4:
+    needs: trigram-stage-3
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '4'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-3-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 5/6
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 5/6 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-4-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 5/6 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-4-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+
+  trigram-stage-5:
+    needs: trigram-stage-4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '5'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-4-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 6/8
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 6/8 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-5-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 6/8 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-5-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+
+  trigram-stage-6:
+    needs: trigram-stage-5
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '6'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-5-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 7/8
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+3,TOTAL)
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 7/8 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-6-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 7/8 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-6-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30
+
+  trigram-stage-7:
+    needs: trigram-stage-6
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TRIGRAM_STAGE: '7'
+      EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout exact candidate SHA
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Reproduce existing PR55 fifteenth-cell correction from exact generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          gen=research/rh/m8_kernel_v1/cell15_direct/gen.py
+          model=research/rh/m8_kernel_v1/cell15_direct/model.py
+          out=research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean
+          test "$(git hash-object "$gen")" = 8fc5e3898b30a5047398663334baf083794e673d
+          test "$(git hash-object "$model")" = 834ba9df2213e01c9ec8668038aa7752552c8de2
+          python3 "$gen" "$out" 2>&1 | tee evidence-trigram/direct-correction-generation.log
+          test -s "$out"
+          sha256sum "$out" | tee evidence-trigram/direct-correction-sha256.txt
+      - name: Bind source to SHA and verify finite-cell certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-trigram
+          git rev-parse HEAD | tee evidence-trigram/head.txt
+          python3 - <<'PY' | tee evidence-trigram/source-closure.log
+          import json, pathlib, re, subprocess, sys
+          root = pathlib.Path('.')
+          f = root / 'research/rh/krein_reflective_v1/RHKreinTrigramAdaptiveV1.lean'
+          source = '\n'.join(p.read_text() for p in sorted(f.parent.glob('RHKreinTrigramAdaptive*.lean')))
+          ns = sorted(int(s) for s in re.findall(r'^theorem n([0-9]{4})\s*:', source, re.M))
+          cs = sorted(int(s) for s in re.findall(r'^theorem c([0-9]{4})\s*:', source, re.M))
+          required = [
+              'RHKreinCellBatchV1', 'RHKreinFifteenthCellDirectV1',
+              'RHKreinFifteenthCellReductionV1',
+              'RHKreinFifteenthCellDirectCorrectionV1',
+              'RHKreinFirstCellV1', 'RHKreinSecondCellReductionV1',
+              'RHKreinCellAnalyticBridgeV1'
+          ]
+          found = {}
+          for name in required:
+              paths = sorted(str(p) for p in root.rglob(name+'.lean')
+                             if '.lake' not in p.parts)
+              found[name] = paths
+          outcome = dict(
+              head_sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              file_blob=subprocess.check_output(['git','hash-object',str(f)],text=True).strip(),
+              n_cells=len(ns), c_checks=len(cs),
+              contiguous_cells=ns==list(range(375)),
+              expected_checks=cs==list(range(2,375)),
+              source_modules=found,
+              missing_modules=[n for n,p in found.items() if not p],
+              status='SOURCE_CLOSURE_PENDING')
+          if (outcome['contiguous_cells'] and outcome['expected_checks']
+                and not outcome['missing_modules']):
+              outcome['status']='SOURCE_CLOSURE_READY_FOR_LEAN'
+          pathlib.Path('evidence-trigram/source-closure.json').write_text(
+              json.dumps(outcome,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(outcome,sort_keys=True))
+          if outcome['status']!='SOURCE_CLOSURE_READY_FOR_LEAN':
+              sys.exit(1)
+          PY
+      - name: Install exact pinned Lean and Mathlib
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat lean-toolchain)" = 'leanprover/lean4:v4.33.1'
+          grep -Fq '0df444a360eaa60ab8c11dca51a86af692955474' lake-manifest.json
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v1.4.2/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake exe cache get
+          test "$(git -C .lake/packages/mathlib rev-parse HEAD)" = '0df444a360eaa60ab8c11dca51a86af692955474'
+          lean --version | tee evidence-trigram/lean-version.txt
+      # ZeroCountingBoundV1 and three Weil/Hadamard modules import Lc.* and Hadamard.*.
+      # Reuse the PR53 provider build: replay.py runs the pinned recipe from
+      # .baseline (workflow blob c29025bd) and copies the oleans into .lake/build.
+      - name: Checkout immutable PR51 source for the pinned provider recipe
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: e279d5765b2dc0cb8b4ec4f62b8db96b4dc69121
+          path: .baseline
+          persist-credentials: false
+      - name: Checkout exact external provider
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: nicholasbulka/li-criterion-rh-equivalence-lean
+          ref: ${{ env.LI_CRITERION_SHA }}
+          path: .li-provider
+          persist-credentials: false
+      - name: Restore pinned provider build
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .li-provider/.lake/build
+          key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+      - name: Build pinned LiCriterion/Hadamard provider with the PR53 recipe
+        run: python3 research/rh/m8_kernel_v1/replay.py provider
+      - name: Download and validate preceding source-bound OLEAN checkpoint
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: rh-trigram-stage-6-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint
+      - name: Compile and audit pinned Trigram source stage 8/8
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root=pathlib.Path('.')
+          tracked=subprocess.check_output(['git','ls-files','--','*.lean'],text=True).splitlines()
+          generated='research/rh/m8_kernel_v1/RHKreinFifteenthCellDirectCorrectionV1.lean'
+          if pathlib.Path(generated).is_file(): tracked.append(generated)
+          sources={p:pathlib.Path(p) for p in tracked if pathlib.Path(p).is_file()}
+          by_stem={}
+          for p in sources.values(): by_stem.setdefault(p.stem,[]).append(p)
+          order=[]; visiting=set(); visited=set()
+          def resolve(name):
+              # Exact PR53/PR52 import adapter. Existing bind_pr52.py already
+              # binds this name to the unchanged declaration-free source.
+              # #53 and #84 import the correction definitions under the bare name
+              # too; one source compiled under two module names collides, so the
+              # bare name gets the same declaration-free re-export adapter.
+              if name in ('AEGISOverlay.RHKreinCorrectionSymbolV1', 'RHKreinExplicitCorrectionV1'):
+                  p = pathlib.Path('research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean')
+                  expected = 'cb70597230e1cd1863bef40e0901c9e317dedf20'
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != expected:
+                      raise ValueError('PR53_CORRECTION_ADAPTER_DRIFT')
+                  return p
+              # The PR606 port left these four modules as header-only files.
+              # Their exact AEGIS 2c3d041b sources are tracked in this head.
+              header_only_ports = {
+                  'WeilThreeBlockPrimeEvaluationV30': '1aa66fb90ef94aabdbb228c71fe95610c95ba1b7',
+                  'WeilThreeBlockNormBridgeV21': '96cc55e2402da367483f751ac382521622f0eeb1',
+                  'WeilThreeBlockRationalV1': '7baba140b1cd6d44177b17000fbb93167edec3ba',
+                  'WeilThreeBlockTranslatedPacketsV22': '85d3ff56e185b306a370d0e30c0b991afd1d5b6b',
+              }
+              if name in header_only_ports:
+                  p = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (name + '.lean.src')
+                  if not p.is_file() or subprocess.check_output(
+                      ['git', 'hash-object', str(p)], text=True).strip() != header_only_ports[name]:
+                      raise ValueError(f'HEADER_ONLY_PORT_SOURCE_DRIFT {name}')
+                  return p
+              candidate=name.replace('.','/')+'.lean'
+              if candidate in sources: return sources[candidate]
+              # Known Lake and Lean package imports are resolved by Lake.
+              # Every other import is searched in tracked local source first;
+              # avoid brittle name prefixes that skip ZeroShell/other proofs.
+              if name.split('.')[0] in {
+                  'Mathlib','Batteries','Aesop','Qq','Plausible','Lean','Init',
+                  'Std','ImportGraph','ProofWidgets','LeanSearchClient','Lc',
+                  'Hadamard','FunctionsOfOneComplexVariable'}:
+                  return None
+              matches=by_stem.get(name.split('.')[-1],[])
+              if len(matches)>1:
+                  # Existing PR606 Source/ mirror files may be duplicated,
+                  # but only byte-identical Git blobs are interchangeable.
+                  blobs={subprocess.check_output(['git','hash-object',str(p)],
+                      text=True).strip() for p in matches}
+                  if len(blobs)!=1:
+                      raise ValueError(f'DIVERGENT_DUPLICATE_IMPORT {name}: {matches}')
+                  return sorted(matches,key=lambda p:(len(str(p)),str(p)))[0]
+              if not matches:
+                  # Existing source archive tracked in this same exact HEAD.
+                  # Fall back only when no ordinary Lean module owns the name.
+                  # PR53's AEGIS source pin includes RHKreinFactorV13 here.
+                  archived = pathlib.Path('research/rh/aegis_source_4d7578e/lean') / (
+                      name.split('.')[-1] + '.lean.src')
+                  if archived.is_file():
+                      if subprocess.check_output(
+                          ['git', 'ls-files', '--', str(archived)], text=True).strip() != str(archived):
+                          raise ValueError(f'UNTRACKED_ARCHIVE_SOURCE {name}')
+                      return archived
+              if len(matches)!=1: raise ValueError(f'IMPORT_NOT_UNIQUE {name}: {matches}')
+              return matches[0]
+          def visit(name):
+              if name in visited:return
+              if name in visiting:raise ValueError(f'IMPORT_CYCLE {name}')
+              path=resolve(name)
+              if path is None:return
+              visiting.add(name)
+              for dep in re.findall(r'^import\s+([\w.]+)',path.read_text(),re.M):visit(dep)
+              visiting.remove(name);visited.add(name);order.append((name,path))
+          visit('RHKreinTrigramAdaptiveV1')
+          pathlib.Path('evidence-trigram/ordered-modules.tsv').write_text(
+              ''.join(f'{name}\t{path}\n' for name,path in order))
+          pathlib.Path('evidence-trigram/import-closure.json').write_text(
+              json.dumps({'sha':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'modules':[{'name':name,'path':str(path)} for name,path in order]},indent=2)+'\n')
+          print(f'ROOT_SOURCE_CLOSURE_COUNT={len(order)}')
+          PY
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, shutil, subprocess, sys
+          STAGE=int(os.environ['TRIGRAM_STAGE'])
+          STEP=27
+          TOTAL=145
+          source_order=pathlib.Path('evidence-trigram/ordered-modules.tsv').read_text().splitlines()
+          if len(source_order)!=TOTAL: raise SystemExit(f'IMPORT_CLOSURE_DRIFT {len(source_order)} != {TOTAL}')
+          entries=[]
+          for line in source_order:
+              name,src=line.split('\t')
+              p=pathlib.Path(src)
+              blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              if subprocess.run(['git','ls-files','--error-unmatch',str(p)],
+                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0:
+                  expected=subprocess.check_output(['git','rev-parse',f'HEAD:{p}'],text=True).strip()
+                  if expected!=blob: raise SystemExit(f'SOURCE_DRIFT {name}')
+              entries.append(dict(name=name,source=str(p),blob=blob))
+          if entries[-1]['name']!='RHKreinTrigramAdaptiveV1':
+              raise SystemExit('TRIGRAM_TARGET_NOT_LAST')
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          if head!=os.environ['EXPECTED_SOURCE_HEAD']: raise SystemExit('EXACT_HEAD_MISMATCH')
+          recipe='research/rh/m8_kernel_v1/replay.py'
+          if subprocess.check_output(['git','hash-object',recipe],text=True).strip()!='f9c96beeda7d7f1ed6b1297cb4539495c44bcfbc':
+              raise SystemExit('PROVIDER_RECIPE_DRIFT')
+          pins=dict(head=head,toolchain=pathlib.Path('lean-toolchain').read_text().strip(),
+                    mathlib=os.environ['MATHLIB_SHA'],li_provider=os.environ['LI_CRITERION_SHA'],
+                    factorization=os.environ['FACTORIZATION_SOURCE_BLOB'],
+                    stage_plan='27x5+3x3+1-v4',source_order=entries)
+          if pins['toolchain']!=os.environ['LEAN_TOOLCHAIN']: raise SystemExit('LEAN_TOOLCHAIN_DRIFT')
+          if subprocess.check_output(['git','-C','.lake/packages/mathlib','rev-parse','HEAD'],text=True).strip()!=pins['mathlib']:
+              raise SystemExit('MATHLIB_PIN_DRIFT')
+          canonical=lambda v:json.dumps(v,sort_keys=True,separators=(',',':')).encode()
+          plan_root=hashlib.sha256(canonical(pins)).hexdigest()
+          checkpoint=pathlib.Path('trigram-checkpoint')
+          oleans=checkpoint/'oleans'
+          manifest=checkpoint/'manifest.json'
+          sha256=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+          start=STAGE*STEP if STAGE<5 else 135+(STAGE-5)*3
+          stop=min(start+STEP,135) if STAGE<5 else min(start+(4 if STAGE==7 else 3),TOTAL)
+          if STAGE==7 and stop!=TOTAL: raise SystemExit('TRIGRAM_FINAL_MODULE_MISSING')
+          records=[]
+          if STAGE:
+              if not manifest.is_file(): raise SystemExit('CHECKPOINT_MANIFEST_MISSING')
+              old=json.loads(manifest.read_text())
+              if old.get('schema')!='aegis.rh.trigram.checkpoint.v1' or old.get('plan_sha256')!=plan_root or old.get('end')!=start or old.get('stage')!=STAGE-1:
+                  raise SystemExit('CHECKPOINT_IDENTITY_MISMATCH')
+              records=old['modules']
+              if len(records)!=start: raise SystemExit('CHECKPOINT_PREFIX_MISMATCH')
+              expected_files=set()
+              for i,(record,entry) in enumerate(zip(records,entries[:start])):
+                  if record['name']!=entry['name'] or record['source_blob']!=entry['blob']:
+                      raise SystemExit(f'CHECKPOINT_SOURCE_MISMATCH {i}')
+                  rel=pathlib.Path(entry['name'].replace('.','/')+'.olean')
+                  cached=oleans/rel
+                  expected_files.add(cached.relative_to(oleans).as_posix())
+                  if not cached.is_file() or cached.stat().st_size!=record['bytes'] or sha256(cached)!=record['olean_sha256']:
+                      raise SystemExit(f'CHECKPOINT_OLEAN_MISMATCH {i}')
+                  dest=pathlib.Path('.lake/build/lib/lean')/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copyfile(cached,dest)
+              actual_files={p.relative_to(oleans).as_posix() for p in oleans.rglob('*.olean')}
+              if actual_files!=expected_files: raise SystemExit('CHECKPOINT_FILE_SET_MISMATCH')
+              print(f'TRIGRAM_CHECKPOINT_RESTORED={start}/{TOTAL}',flush=True)
+          else:
+              if checkpoint.exists(): raise SystemExit('STAGE_ZERO_CHECKPOINT_UNEXPECTED')
+              oleans.mkdir(parents=True)
+          existing={}
+          bound=pathlib.Path('.rh-krein-full')
+          if STAGE==0 and (bound/'source-blobs.txt').is_file():
+              if not (bound/'oleans.sha256').is_file(): raise SystemExit('KREIN_CHECKPOINT_HASH_MANIFEST_MISSING')
+              if subprocess.run(['sha256sum','--status','-c','oleans.sha256'],cwd=bound).returncode:
+                  raise SystemExit('KREIN_CHECKPOINT_CORRUPT')
+              pairs=[s.split() for s in (bound/'source-blobs.txt').read_text().splitlines()]
+              if any(len(x)!=2 for x in pairs): raise SystemExit('KREIN_CHECKPOINT_SOURCE_MANIFEST_INVALID')
+              existing=dict(pairs)
+              print(f'KREIN_CHECKPOINT_AVAILABLE={len(existing)}',flush=True)
+          for i in range(start,stop):
+              entry=entries[i]
+              name=entry['name']
+              rel=pathlib.Path(name.replace('.','/')+'.olean')
+              out=pathlib.Path('.lake/build/lib/lean')/rel
+              out.parent.mkdir(parents=True,exist_ok=True)
+              log=pathlib.Path('evidence-trigram')/f'module-{i:03d}.log'
+              precompiled=bound/'oleans'/(name+'.olean')
+              reuse=STAGE==0 and existing.get(name)==entry['blob'] and precompiled.is_file()
+              print(f'TRIGRAM_{"REUSE" if reuse else "COMPILE"} {i+1}/{TOTAL} {name}',flush=True)
+              if reuse:
+                  shutil.copyfile(precompiled,out)
+                  log.write_text('REUSED_EXACT_SOURCE_BOUND_KREIN_CHECKPOINT\n')
+              else:
+                  with log.open('w') as stream:
+                      proc=subprocess.run(['lake','env','lean','-o',str(out),entry['source']],stdout=stream,stderr=subprocess.STDOUT)
+                  if proc.returncode:
+                      print(f'FIRST_LEAN_FAILURE module={name} source={entry["source"]} blob={entry["blob"]}',flush=True)
+                      print('\n'.join(log.read_text(errors='replace').splitlines()[-55:]),flush=True)
+                      raise SystemExit(proc.returncode)
+                  if 'sorryAx' in log.read_text(errors='replace'):
+                      raise SystemExit(f'SORRY_AXIOM {name}')
+              if not out.is_file() or not out.stat().st_size: raise SystemExit(f'OLEAN_MISSING {name}')
+              cached=oleans/rel
+              cached.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(out,cached)
+              records.append(dict(name=name,source_blob=entry['blob'],olean_sha256=sha256(cached),bytes=cached.stat().st_size))
+          if len(records)!=stop: raise SystemExit('COMPLETED_PREFIX_INCORRECT')
+          if stop==TOTAL:
+              kernel=(pathlib.Path('evidence-trigram')/f'module-{TOTAL-1:03d}.log').read_text(errors='replace')
+              for theorem in ['finiteIntervalCertificate_trigram_v1','pointwiseCertificate_trigram_v1','zero_quadratic_margin_trigram_v1','arithmetic_sign_window_two_fifths_trigram_v1','window_two_fifths_trigram_v1','window_le_two_fifths_trigram_v1']:
+                  m=re.search(r"'AEGIS\.RHKreinTrigramAdaptiveV1\."+theorem+r"'\s+depends on axioms:\s*\[([^\]]*)\]",kernel)
+                  if not m: raise SystemExit(f'AXIOM_AUDIT_MISSING {theorem}')
+                  axioms={x.strip() for x in m.group(1).split(',') if x.strip()}
+                  if not axioms.issubset({'propext','Classical.choice','Quot.sound'}):
+                      raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
+                  print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
+          receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
+                       modules=records,unconditional_rh_proven=False)
+          manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
+          PY
+      - name: Save stage 8/8 immutable OLEAN checkpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-stage-7-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: trigram-checkpoint/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Archive stage 8/8 source, compilation, and axiom evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: rh-trigram-evidence-7-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}
+          path: evidence-trigram/
+          if-no-files-found: warn
+          retention-days: 30

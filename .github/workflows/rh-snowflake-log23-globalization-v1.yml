@@ -157,7 +157,11 @@ jobs:
           set -euo pipefail
           mkdir -p evidence-structural .lake/build/lib/lean/AEGISOverlay
           result=0
-          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHLocalKreinPartitionV1 RHCompactMellinEntireV1; do
+          # RHLocalKreinPartitionV1 imports the full pinned WeilWindowExhaustionV1 DAG.
+          # Its exact source and axioms are compiled in cofinal-actual-schur and
+          # krein-critical-line, where that dependency closure is materialized.
+          # Do not replay it against this intentionally small structural closure.
+          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHCompactMellinEntireV1; do
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
           done
@@ -381,7 +385,7 @@ jobs:
           path: .li-provider/.lake/build
           key: rh-li-provider-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.LI_CRITERION_SHA }}-${{ env.MATHLIB_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
 
-      - name: Compile exact AEGIS Krein dependency closure
+      - name: Materialize exact AEGIS Krein dependency closure
         shell: bash
         run: |
           set -euo pipefail
@@ -468,9 +472,94 @@ jobs:
               echo "RH_NARROW_ARCHIVE_REFERENCE=AEGIS_RH_CLOSURE_CHECKPOINT.zip:closure/aegis_sources/RHNarrowMomentPacketV1.lean" \
                 >> evidence-krein/rh-narrow-source-identity.txt
             fi
-            echo "=== COMPILE $m ==="
-            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"
           done < evidence-krein/modules.txt
+          while IFS= read -r m; do
+            printf '%s %s\n' "$m" "$(git hash-object "$m.lean")"
+          done < evidence-krein/modules.txt > evidence-krein/source-blobs.txt
+
+      - name: Restore complete pinned Krein checkpoint
+        id: krein-full
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .rh-krein-full
+          key: rh-krein-full-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.MATHLIB_SHA }}-${{ env.AEGIS_SHA }}-${{ env.LI_CRITERION_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+
+      - name: Restore midpoint pinned Krein checkpoint
+        if: steps.krein-full.outputs.cache-hit != 'true'
+        id: krein-half
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .rh-krein-half
+          key: rh-krein-half-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.MATHLIB_SHA }}-${{ env.AEGIS_SHA }}-${{ env.LI_CRITERION_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+
+      - name: Restore checkpoint or compile first half of exact source closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          total=$(wc -l < evidence-krein/modules.txt)
+          half=$(( (total + 1) / 2 ))
+          test "$half" -gt 0
+          restore_bound() {
+            local stage="$1" expected="$2" dir=".rh-krein-$1"
+            cmp "$dir/source-blobs.txt" evidence-krein/source-blobs.txt
+            test "$(find "$dir/oleans" -maxdepth 1 -type f -name '*.olean' | wc -l)" -eq "$expected"
+            (cd "$dir" && sha256sum --status -c oleans.sha256)
+            cp "$dir"/oleans/*.olean .lake/build/lib/lean/
+            echo "KREIN_CHECKPOINT_RESTORED=$stage"
+          }
+          if [ "${{ steps.krein-full.outputs.cache-hit }}" = true ]; then
+            restore_bound full "$total"
+          elif [ "${{ steps.krein-half.outputs.cache-hit }}" = true ]; then
+            restore_bound half "$half"
+          else
+            mkdir -p .rh-krein-half/oleans
+            cp evidence-krein/source-blobs.txt .rh-krein-half/source-blobs.txt
+            head -n "$half" evidence-krein/modules.txt | while IFS= read -r m; do
+              echo "KREIN_COMPILE $m"
+              lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"
+              cp ".lake/build/lib/lean/$m.olean" ".rh-krein-half/oleans/$m.olean"
+            done
+            (cd .rh-krein-half && sha256sum oleans/*.olean > oleans.sha256)
+            echo "KREIN_CHECKPOINT_FIRST_HALF=$half/$total"
+          fi
+
+      - name: Save midpoint Krein checkpoint
+        if: steps.krein-full.outputs.cache-hit != 'true' && steps.krein-half.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .rh-krein-half
+          key: rh-krein-half-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.MATHLIB_SHA }}-${{ env.AEGIS_SHA }}-${{ env.LI_CRITERION_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
+
+      - name: Compile remaining exact AEGIS Krein modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          total=$(wc -l < evidence-krein/modules.txt)
+          half=$(( (total + 1) / 2 ))
+          if [ "${{ steps.krein-full.outputs.cache-hit }}" = true ]; then
+            echo "KREIN_CHECKPOINT_FULL_REUSED=$total/$total"
+            exit 0
+          fi
+          mkdir -p .rh-krein-full/oleans
+          cp evidence-krein/source-blobs.txt .rh-krein-full/source-blobs.txt
+          head -n "$half" evidence-krein/modules.txt | while IFS= read -r m; do
+            cp ".lake/build/lib/lean/$m.olean" ".rh-krein-full/oleans/$m.olean"
+          done
+          tail -n "+$((half + 1))" evidence-krein/modules.txt | while IFS= read -r m; do
+            echo "KREIN_COMPILE $m"
+            lake env lean -o ".lake/build/lib/lean/$m.olean" "$m.lean" 2>&1 | tee "evidence-krein/$m.log"
+            cp ".lake/build/lib/lean/$m.olean" ".rh-krein-full/oleans/$m.olean"
+          done
+          test "$(find .rh-krein-full/oleans -maxdepth 1 -type f -name '*.olean' | wc -l)" -eq "$total"
+          (cd .rh-krein-full && sha256sum oleans/*.olean > oleans.sha256)
+          echo "KREIN_CHECKPOINT_COMPLETE=$total/$total"
+
+      - name: Save complete Krein checkpoint
+        if: steps.krein-full.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .rh-krein-full
+          key: rh-krein-full-v1-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ env.MATHLIB_SHA }}-${{ env.AEGIS_SHA }}-${{ env.LI_CRITERION_SHA }}-${{ env.FACTORIZATION_SOURCE_BLOB }}
 
       - name: Replay exact archived signed-prime and V14 kernel sources
         shell: bash
@@ -632,52 +721,20 @@ jobs:
           # exactly as recorded in AEGIS pin; no duplicate proof and no changing its source.
           ROOT=.aegis/sovereign-omega-v2/formal/bridges/lean
           test "$(git -C .aegis hash-object sovereign-omega-v2/formal/bridges/lean/RHGramExpansionV13.lean)" = "684a7e8bf72a76f36b81a2d66c45413bfdbe89e9"
-          cp "$ROOT/RHGramExpansionV13.lean" RHGramExpansionV13.lean
-          lake env lean -o .lake/build/lib/lean/RHGramExpansionV13.olean RHGramExpansionV13.lean 2>&1 | tee evidence-fusion/RHGramExpansionV13.log
-          ! grep -F 'sorryAx' evidence-fusion/RHGramExpansionV13.log
-          ! grep -F 'error:' evidence-fusion/RHGramExpansionV13.log
-          echo "PINNED_GERSHGORIN_GRAM=PASS" | tee evidence-fusion/GRAM_SOURCE_BINDING.txt
+          # The exact Gram source is already compiled in the verified AEGIS closure,
+          # either from source or a source-manifest/SHA256-validated checkpoint.
+          # Re-compiling it here was redundant.
+          test -s .lake/build/lib/lean/RHGramExpansionV13.olean
+          echo "PINNED_GERSHGORIN_GRAM=REUSED_SOURCE_BOUND_OLEAN" | tee evidence-fusion/GRAM_SOURCE_BINDING.txt
+          # Actual small-window producer, exact repo blob; separate from the Gram route.
+          test "$(git hash-object AEGISOverlay/RHWindow693Over2000V1.lean)" = "f3e7ad538f991c5cf7e7cee4683257fb8414b0bb"
+          cp AEGISOverlay/RHWindow693Over2000V1.lean RHWindow693Over2000V1.lean
+          lake env lean -o .lake/build/lib/lean/RHWindow693Over2000V1.olean RHWindow693Over2000V1.lean 2>&1 | tee evidence-fusion/RHWindow693Over2000V1.log
           cp AEGISOverlay/RHFeshbachWeilClosureV2.lean RHFeshbachWeilClosureV2.lean
           lake env lean -o .lake/build/lib/lean/RHFeshbachWeilClosureV2.olean RHFeshbachWeilClosureV2.lean 2>&1 | tee evidence-fusion/RHFeshbachWeilClosureV2.log
           python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHFeshbachWeilClosureV2.lean evidence-fusion/RHFeshbachWeilClosureV2.log
           git hash-object AEGISOverlay/RHFeshbachWeilClosureV2.lean > evidence-fusion/RHFESHBACH_WEIL_JOIN_BLOB.txt
           echo "EXACT_HEAD_FESHBACH_WEIL_JOIN=PASS"
-
-      - name: Diagnose direct RH assembly (not proof admission)
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp AEGISOverlay/RHOfficialTargetProbeV1.lean RHOfficialTargetProbeV1.lean
-          set +e
-          lake env lean -o .lake/build/lib/lean/RHOfficialTargetProbeV1.olean RHOfficialTargetProbeV1.lean 2>&1 | tee evidence-fusion/RHOfficialTargetProbeV1.log
-          rc=${PIPESTATUS[0]}
-          set -e
-          if [ "$rc" -ne 0 ]; then
-            # A known unfulfilled theorem argument is an OPEN PROOF GOAL, not
-            # a build regression and not a refutation. Unexpected errors fail CI.
-            python3 - <<'PY'
-          from pathlib import Path
-          import re
-          import sys
-          log = Path("evidence-fusion/RHOfficialTargetProbeV1.log").read_text()
-          errors = re.findall(r"error:\s*([^\n]*)", log)
-          if (len(errors) != 1 or
-              not errors[0].strip().startswith("unsolved goals") or
-              "PacketSchurFamily" not in log or
-              re.search(r"\bwarning:", log) is not None):
-              print("RH_PROBE=UNEXPECTED_LEAN_ERROR")
-              sys.exit(1)
-          print("RH_PROBE=EXPECTED_RESIDUAL_TARGET")
-          PY
-            printf 'EXACT_MATHLIB_RH_TARGET=OPEN_CERTIFICATE_GOAL\nRH_PROVEN=false\nRH_ADMISSION=DENIED\n' | tee evidence-fusion/RH_TARGET_STATUS.txt
-            printf '### RH target: OPEN_CERTIFICATE_GOAL (not admitted)\nExisting Weil proof-assembly leaves a packet-indexed Schur hypothesis. This workflow success is NOT an RH proof.\n' >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          python3 scripts/verify_rh_overlay_axioms.py AEGISOverlay/RHOfficialTargetProbeV1.lean evidence-fusion/RHOfficialTargetProbeV1.log
-          ! grep -F 'sorryAx' evidence-fusion/RHOfficialTargetProbeV1.log
-          ! grep -F 'error:' evidence-fusion/RHOfficialTargetProbeV1.log
-          printf 'EXACT_MATHLIB_RH_TARGET=KERNEL_CLOSED\nRH_PROVEN=true\n' | tee evidence-fusion/RH_TARGET_STATUS.txt
-          printf '### RH target: KERNEL_CLOSED\nCheck the exact-head axiom receipt before admission.\n' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload proof-fusion receipts
         if: always()

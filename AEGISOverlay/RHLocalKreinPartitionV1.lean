@@ -16,6 +16,7 @@ limitations under the License.
 
 import RHKreinFactorV13
 import WeilCriterionCompactSmoothV1
+import WeilWindowExhaustionV1
 
 /-!
 # Exact local decomposition through the Krein factor
@@ -198,11 +199,13 @@ theorem kreinAtom_finite_partition {ι : Type*} (s : Finset ι)
   simpa only [heq] using
     (kreinAtom_finset_sum s (fun i x => χ i x * φ x) (fun i => (hχ i).mul hφ)).2
 
-/-- The actual packet moments supply the compact factor to which the partitions apply. -/
-theorem actual_packet_has_compact_krein_factor (g : WeilCompactSmoothGV1)
+/-- Strong exact version: the moment-zero Krein factor retains the
+    *original* support interval, for later finite Gram localization. -/
+theorem actual_packet_has_supported_krein_factor (g : WeilCompactSmoothGV1)
     (hm : WeilMomentConditionsV1 g) (a b : ℝ) (hab : a ≤ b)
     (hs : tsupport (lift g.1) ⊆ Icc a b) :
-    ∃ φ : ℝ → ℂ, ContDiff ℝ ∞ φ ∧ HasCompactSupport φ ∧ lift g.1 = kreinAtom φ := by
+    ∃ φ : ℝ → ℂ, ContDiff ℝ ∞ φ ∧
+      tsupport φ ⊆ Icc a b ∧ lift g.1 = kreinAtom φ := by
   have hG : ContDiff ℝ ∞ (lift g.1) :=
     (Complex.ofRealCLM.contDiff.comp (contDiff_id.div_const 2).exp).mul
       (g.2.1.comp Real.contDiff_exp)
@@ -214,8 +217,144 @@ theorem actual_packet_has_compact_krein_factor (g : WeilCompactSmoothGV1)
     exact hm.2
   obtain ⟨φ, hφ, hsφ, heq⟩ :=
     moment_zero_parametrization (lift g.1) a b hab hG hs hminus hplus
-  refine ⟨φ, hφ, isCompact_Icc.of_isClosed_subset (isClosed_tsupport _) hsφ, ?_⟩
+  refine ⟨φ, hφ, hsφ, ?_⟩
   exact funext heq
+
+/-- Preserve the original public theorem signature, now via the stronger
+    interval-supported construction. -/
+theorem actual_packet_has_compact_krein_factor (g : WeilCompactSmoothGV1)
+    (hm : WeilMomentConditionsV1 g) (a b : ℝ) (hab : a ≤ b)
+    (hs : tsupport (lift g.1) ⊆ Icc a b) :
+    ∃ φ : ℝ → ℂ, ContDiff ℝ ∞ φ ∧ HasCompactSupport φ ∧ lift g.1 = kreinAtom φ := by
+  obtain ⟨φ, hφ, hsφ, heq⟩ :=
+    actual_packet_has_supported_krein_factor g hm a b hab hs
+  exact ⟨φ, hφ, isCompact_Icc.of_isClosed_subset (isClosed_tsupport _) hsφ, heq⟩
+
+/-- Every admissible moment-zero packet has an actual compact Krein
+factor, without requiring the caller to supply a support interval.
+The interval is obtained from the existing log-window exhaustion theorem. -/
+theorem every_moment_zero_packet_has_compact_krein_factor
+    (g : WeilCompactSmoothGV1)
+    (hm : WeilMomentConditionsV1 g) :
+    ∃ φ : ℝ → ℂ,
+      ContDiff ℝ ∞ φ ∧ HasCompactSupport φ ∧
+        lift g.1 = kreinAtom φ := by
+  obtain ⟨L, hL, hwindow⟩ :=
+    AEGIS.WeilWindowExhaustionV1.logLift_has_finite_window_v1 g
+  change tsupport (lift g.1) ⊆ Icc (-L) L at hwindow
+  exact actual_packet_has_compact_krein_factor
+    g hm (-L) L (by linarith) hwindow
+
+/-- A smooth cutoff gives an exact two-atom splitting for *every*
+moment-zero Weil packet, with independently vanishing exponential moments.
+Neither an externally supplied support interval nor a positivity hypothesis
+is needed. In particular, cutoff derivative terms cancel exactly. -/
+theorem every_moment_zero_packet_two_atom_partition
+    (g : WeilCompactSmoothGV1) (hm : WeilMomentConditionsV1 g)
+    (χ : ℝ → ℂ) (hχ : ContDiff ℝ ∞ χ) :
+    ∃ φ : ℝ → ℂ,
+      ContDiff ℝ ∞ φ ∧ HasCompactSupport φ ∧
+      lift g.1 = (fun x =>
+        kreinAtom (fun y => χ y * φ y) x +
+        kreinAtom (fun y => (1 - χ y) * φ y) x) ∧
+      HasCompactSupport (fun y => χ y * φ y) ∧
+      HasCompactSupport (fun y => (1 - χ y) * φ y) ∧
+      ((∫ x : ℝ, (Real.exp (-x / 2) : ℂ) *
+          kreinAtom (fun y => χ y * φ y) x) = 0 ∧
+        (∫ x : ℝ, (Real.exp (x / 2) : ℂ) *
+          kreinAtom (fun y => χ y * φ y) x) = 0) ∧
+      ((∫ x : ℝ, (Real.exp (-x / 2) : ℂ) *
+          kreinAtom (fun y => (1 - χ y) * φ y) x) = 0 ∧
+        (∫ x : ℝ, (Real.exp (x / 2) : ℂ) *
+          kreinAtom (fun y => (1 - χ y) * φ y) x) = 0) := by
+  obtain ⟨φ, hφ, hc, hfactor⟩ :=
+    every_moment_zero_packet_has_compact_krein_factor g hm
+  refine ⟨φ, hφ, hc, ?_, hc.mul_left, hc.mul_left, ?_⟩
+  · rw [hfactor]
+    exact (kreinAtom_partition_two φ χ hφ hχ).symm
+  · exact kreinAtom_partition_moments φ χ hφ hχ hc
+
+/-- No externally supplied log window is needed for a finite smooth
+partition of an arbitrary moment-zero packet. Every localized Krein atom
+retains both moments and compact support; all cutoff commutators cancel
+in the exact finite reconstruction. This theorem asserts no Gram sign. -/
+theorem every_moment_zero_packet_finite_krein_partition
+    {ι : Type*} (s : Finset ι)
+    (g : WeilCompactSmoothGV1) (hm : WeilMomentConditionsV1 g)
+    (χ : ι → ℝ → ℂ)
+    (hχ : ∀ i, ContDiff ℝ ∞ (χ i))
+    (hpart : ∀ x : ℝ, ∑ i ∈ s, χ i x = 1) :
+    ∃ φ : ℝ → ℂ,
+      ContDiff ℝ ∞ φ ∧ HasCompactSupport φ ∧
+      lift g.1 = (fun x => ∑ i ∈ s,
+        kreinAtom (fun y => χ i y * φ y) x) ∧
+      (∀ i ∈ s,
+        HasCompactSupport (fun y => χ i y * φ y) ∧
+        tsupport (kreinAtom (fun y => χ i y * φ y)) ⊆
+          tsupport (fun y => χ i y * φ y) ∧
+        (∫ x : ℝ, (Real.exp (-x / 2) : ℂ) *
+          kreinAtom (fun y => χ i y * φ y) x) = 0 ∧
+        (∫ x : ℝ, (Real.exp (x / 2) : ℂ) *
+          kreinAtom (fun y => χ i y * φ y) x) = 0) := by
+  classical
+  obtain ⟨φ, hφ, hcφ, heq⟩ :=
+    every_moment_zero_packet_has_compact_krein_factor g hm
+  have hpartφ : ∀ x, φ x ≠ 0 → ∑ i ∈ s, χ i x = 1 := by
+    intro x _
+    exact hpart x
+  refine ⟨φ, hφ, hcφ, ?_, ?_⟩
+  · rw [heq]
+    exact kreinAtom_finite_partition s φ χ hφ hχ hpartφ
+  · intro i _
+    have hci : HasCompactSupport (fun y => χ i y * φ y) :=
+      hcφ.mul_left
+    obtain ⟨hminus, hplus⟩ :=
+      kreinAtom_moments _ ((hχ i).mul hφ) hci
+    exact ⟨hci, kreinAtom_support _, hminus, hplus⟩
+
+/-- Construct a genuine *finite* family of compact Krein atoms from an
+    arbitrary moment-zero Weil packet and a smooth interval partition.
+    All component moments vanish, and the original log-lift is recovered
+    exactly. This assertion does not assume or assert positivity of
+    the mixed Weil Gram terms. -/
+theorem actual_packet_finite_krein_decomposition {ι : Type*}
+    (s : Finset ι) (g : WeilCompactSmoothGV1)
+    (hm : WeilMomentConditionsV1 g) (a b : ℝ) (hab : a ≤ b)
+    (hs : tsupport (lift g.1) ⊆ Icc a b)
+    (χ : ι → ℝ → ℂ)
+    (hχ : ∀ i, ContDiff ℝ ∞ (χ i))
+    (hpart : ∀ x ∈ Icc a b, ∑ i ∈ s, χ i x = 1) :
+    ∃ φ : ℝ → ℂ,
+      ContDiff ℝ ∞ φ ∧
+      tsupport φ ⊆ Icc a b ∧
+      lift g.1 = (fun x => ∑ i ∈ s,
+        kreinAtom (fun y => χ i y * φ y) x) ∧
+      (∀ i ∈ s,
+        HasCompactSupport (fun y => χ i y * φ y) ∧
+        tsupport (kreinAtom (fun y => χ i y * φ y)) ⊆
+          tsupport (fun y => χ i y * φ y) ∧
+        (∫ x : ℝ, (Real.exp (-x / 2) : ℂ) *
+          kreinAtom (fun y => χ i y * φ y) x) = 0 ∧
+        (∫ x : ℝ, (Real.exp (x / 2) : ℂ) *
+          kreinAtom (fun y => χ i y * φ y) x) = 0) := by
+  classical
+  obtain ⟨φ, hφ, hsφ, heq⟩ :=
+    actual_packet_has_supported_krein_factor g hm a b hab hs
+  have hpartφ : ∀ x, φ x ≠ 0 → ∑ i ∈ s, χ i x = 1 := by
+    intro x hx
+    have hmem : x ∈ Function.support φ := hx
+    have ht : x ∈ tsupport φ := subset_closure hmem
+    exact hpart x (hsφ ht)
+  refine ⟨φ, hφ, hsφ, ?_, ?_⟩
+  · rw [heq]
+    exact kreinAtom_finite_partition s φ χ hφ hχ hpartφ
+  · intro i _hi
+    have hcφ : HasCompactSupport φ :=
+      isCompact_Icc.of_isClosed_subset (isClosed_tsupport _) hsφ
+    have hci : HasCompactSupport (fun y => χ i y * φ y) := hcφ.mul_left
+    obtain ⟨hmminus, hmplus⟩ :=
+      kreinAtom_moments _ ((hχ i).mul hφ) hci
+    exact ⟨hci, kreinAtom_support _, hmminus, hmplus⟩
 
 #print axioms AEGIS.RHLocalKreinPartitionV1.kreinAtom_support
 #print axioms AEGIS.RHLocalKreinPartitionV1.kreinAtom_moments
@@ -224,5 +363,10 @@ theorem actual_packet_has_compact_krein_factor (g : WeilCompactSmoothGV1)
 #print axioms AEGIS.RHLocalKreinPartitionV1.kreinAtom_partition_moments
 #print axioms AEGIS.RHLocalKreinPartitionV1.kreinAtom_finite_partition
 #print axioms AEGIS.RHLocalKreinPartitionV1.actual_packet_has_compact_krein_factor
+#print axioms AEGIS.RHLocalKreinPartitionV1.actual_packet_has_supported_krein_factor
+#print axioms AEGIS.RHLocalKreinPartitionV1.every_moment_zero_packet_has_compact_krein_factor
+#print axioms AEGIS.RHLocalKreinPartitionV1.every_moment_zero_packet_two_atom_partition
+#print axioms AEGIS.RHLocalKreinPartitionV1.every_moment_zero_packet_finite_krein_partition
+#print axioms AEGIS.RHLocalKreinPartitionV1.actual_packet_finite_krein_decomposition
 
 end AEGIS.RHLocalKreinPartitionV1
