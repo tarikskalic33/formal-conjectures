@@ -30,5 +30,6 @@
     }
   ],
   "needs_exact_head_kernel_replay": true,
-  "rh_unconditional_claim": false
+  "rh_unconditional_claim": null,
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

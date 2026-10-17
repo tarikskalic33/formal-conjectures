@@ -5,7 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
-from rh_official_target_gate import GOAL, classify
+from rh_official_target_gate import GOAL, classify, rh_admission_from_disposition
 
 SOURCE = """import FormalConjecturesUtil
 namespace RiemannHypothesis
@@ -23,6 +23,14 @@ FormalConjectures/Millennium/RiemannHypothesis.lean:81:8: warning: declaration u
 """
 
 class TargetGateTests(unittest.TestCase):
+    def test_unverified_legal_target_does_not_emit_false(self):
+        self.assertIsNone(rh_admission_from_disposition("OPEN_UNIVERSAL_ZERO_QUADRATIC"))
+        self.assertIsNone(rh_admission_from_disposition("COMPILED_AWAITING_AXIOM_AUDIT"))
+        self.assertIsNone(rh_admission_from_disposition("AXIOM_AUDIT_FAILED"))
+
+    def test_only_closed_official_type_is_positive(self):
+        self.assertIs(rh_admission_from_disposition("FORMAL_RH_CLOSED"), True)
+
     def test_exact_residual_is_open_not_success(self):
         self.assertEqual(classify(SOURCE, EXPECTED, 1)[0], "OPEN_UNIVERSAL_ZERO_QUADRATIC")
     def test_proved_693_window_remainder_stays_open(self):

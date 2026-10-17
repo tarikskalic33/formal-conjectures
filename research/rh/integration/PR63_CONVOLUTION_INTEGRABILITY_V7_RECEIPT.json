@@ -25,5 +25,6 @@
   "added_sorry": false,
   "theorem_statements_preexisting_unchanged": true,
   "admission": "SOURCE_CANDIDATE_EXACT_HEAD_LEAN_REPLAY_REQUIRED",
-  "rh_unconditional_claim": false
+  "rh_unconditional_claim": null,
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

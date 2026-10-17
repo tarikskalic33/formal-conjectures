@@ -381,22 +381,57 @@ jobs:
           end AEGISFormalConjecturesRHV13UnconditionalProbe
           LEAN
 
+          # A nonzero Lean exit is a failed RH closure, not a green diagnostic.
+          printf 'UNCONDITIONAL_RH_RESULT=NOT_VERIFIED\n' > evidence/UNCONDITIONAL_RH_DISPOSITION.txt
           set +e
-          lake env lean AEGISFormalConjecturesRHV13UnconditionalProbe.lean \
+          lake env lean -o .lake/build/lib/lean/AEGISFormalConjecturesRHV13UnconditionalProbe.olean \
+            AEGISFormalConjecturesRHV13UnconditionalProbe.lean \
             > evidence/aegis-formalconjectures-v13-unconditional.log 2>&1
           rc=$?
           set -e
           cat evidence/aegis-formalconjectures-v13-unconditional.log
-          test "$rc" -ne 0
-          python3 - evidence/aegis-formalconjectures-v13-unconditional.log <<'PY'
+          if test "$rc" -ne 0; then
+            python3 - evidence/aegis-formalconjectures-v13-unconditional.log <<'PY'
           import pathlib,re,sys
           log=pathlib.Path(sys.argv[1]).read_text()
           errors=re.findall(r'^.*\berror:\s*(.*)$',log,re.M)
           goals=re.findall(r'^\s*⊢\s*(.*)$',log,re.M)
           expected='AEGIS.RHMillenniumGateV10.UniversalZeroQuadraticNonnegativeV10'
-          if errors!=['unsolved goals'] or goals!=[expected] or 'sorryAx' in log:
-              raise SystemExit('FORENSIC_REVIEW_REQUIRED: unexpected unconditional probe diagnostics')
-          print('UNCONDITIONAL_PROBE_RESIDUAL=EXACT_UNIVERSAL_ZERO_QUADRATIC')
+          disposition=('OPEN_UNIVERSAL_ZERO_QUADRATIC'
+                       if errors==['unsolved goals'] and goals==[expected]
+                       else 'COMPILER_FAILURE_OR_CHANGED_FRONTIER')
+          pathlib.Path('evidence/UNCONDITIONAL_RH_DISPOSITION.txt').write_text(
+              'UNCONDITIONAL_RH_RESULT='+disposition+'\n')
+          print('UNCONDITIONAL_RH_RESULT='+disposition)
+          PY
+            exit 1
+          fi
+          # The candidate has the canonical Mathlib RH type. Audit its own
+          # proof term, not the upstream catalog declaration containing sorry.
+          cat > AEGISFormalConjecturesRHV13UnconditionalAxiomAudit.lean <<'LEAN'
+          import AEGISFormalConjecturesRHV13UnconditionalProbe
+          #print axioms AEGISFormalConjecturesRHV13UnconditionalProbe.exact_external_target_unconditional_v13
+          LEAN
+          lake env lean AEGISFormalConjecturesRHV13UnconditionalAxiomAudit.lean \
+            > evidence/aegis-formalconjectures-v13-unconditional-axioms.log 2>&1
+          cat evidence/aegis-formalconjectures-v13-unconditional-axioms.log
+          python3 - evidence/aegis-formalconjectures-v13-unconditional-axioms.log <<'PY'
+          import pathlib,re,sys
+          log=pathlib.Path(sys.argv[1]).read_text()
+          name='AEGISFormalConjecturesRHV13UnconditionalProbe.exact_external_target_unconditional_v13'
+          if re.search(r'(?m)^.*\berror(?:\([^)]*\))?:',log) or 'sorryAx' in log:
+              raise SystemExit('UNCONDITIONAL_RH_AXIOM_AUDIT_FAILED')
+          found=re.search(r"'"+re.escape(name)+r"' depends on axioms:\s*\[([^\]]*)\]",log)
+          zero=("'"+name+"' does not depend on any axioms") in log
+          if found:
+              actual={x.strip() for x in found.group(1).split(',') if x.strip()}
+              if not actual <= {'propext','Classical.choice','Quot.sound'}:
+                  raise SystemExit('UNCONDITIONAL_RH_UNEXPECTED_AXIOMS '+repr(sorted(actual)))
+          elif not zero:
+              raise SystemExit('UNCONDITIONAL_RH_AXIOM_PROBE_MISSING')
+          pathlib.Path('evidence/UNCONDITIONAL_RH_DISPOSITION.txt').write_text(
+              'UNCONDITIONAL_RH_RESULT=PINNED_RH_TYPE_KERNEL_CLOSED\n')
+          print('UNCONDITIONAL_RH_RESULT=PINNED_RH_TYPE_KERNEL_CLOSED')
           PY
 
       - name: Emit exact diagnostic disposition
@@ -418,13 +453,18 @@ jobs:
           AEGIS_GATE_TARGETS=$AEGIS_TARGETS
           V13_RESULT_AXIOM_AUDIT=REQUIRED_STANDARD_AXIOMS_ONLY
           AEGIS_LOCAL_CLOSURE_COUNT=$count
-          FORMAL_CONJECTURES_TARGET_USES_SORRYAX=EXPECTED_CURRENT_UPSTREAM_STATE
+          UPSTREAM_RH_SOURCE_BASELINE=UNMODIFIED_SORRY_CATALOG
           AEGIS_GATE_COMPILED_IN_FORMAL_CONJECTURES_ENV=REQUIRED
           V13_CRITERION_TO_EXTERNAL_TARGET=REQUIRED_GREEN
-          UNCONDITIONAL_EXTERNAL_TARGET=EXPECTED_RED_ON_UNIVERSAL_ZERO_QUADRATIC
-          RH_PROVEN=FALSE
+          UNCONDITIONAL_EXTERNAL_TARGET=SEE_UNCONDITIONAL_RH_RESULT_AND_AXIOM_LOG
+          RH_ADMISSION_SOURCE=EXACT_HEAD_LEAN_OFFICIAL_THEOREM_AND_AXIOM_AUDIT
           AUTHORITY_EFFECT=NONE
           EOF
+          if test -f evidence/UNCONDITIONAL_RH_DISPOSITION.txt; then
+            cat evidence/UNCONDITIONAL_RH_DISPOSITION.txt >> evidence/DISPOSITION.txt
+          else
+            printf 'UNCONDITIONAL_RH_RESULT=NOT_RUN\n' >> evidence/DISPOSITION.txt
+          fi
 
       - name: Upload exact target evidence
         if: always()

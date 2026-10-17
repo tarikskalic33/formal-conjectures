@@ -143,9 +143,107 @@ for start in reversed(order):
     components.append(members)
 dag = sorted({(component[n], component[d]) for n, deps in adj.items() for d in deps
               if component[n] != component[d]})
+# The root list is a bounded integration scope, not the whole historical corpus.
+# These previously established stronger lanes MUST remain visible on every
+# subsequent replay. Fail a narrowed audit rather than quietly restarting the
+# search from a single optimized hselect/Schur terminal.
+mandatory_producers = {
+    "AEGIS.RHKreinMultiplicativeTransportV1.every_moment_zero_packet_finite_actual_weil_partition",
+    "AEGIS.RHKreinMultiplicativeTransportV1.every_packet_actual_two_block_zero_quadratic",
+    "AEGIS.RHActualUniversalFineGramV1.every_moment_zero_packet_actual_fine_gram_with_support",
+    "AEGIS.RHActualMixedDefectV1.fine_cluster_nine_exact_counterpart",
+    "AEGIS.RHActualElevenLatticeV1.actual_eleven_lattice_arithmetic_nonpositive",
+    "AEGIS.RHActualElevenLatticeV1.actual_eleven_lattice_optimized_q16_coercive",
+    "AEGIS.RHTimeSliceWeilV1.fsTwoThreeShiftGroup_dense",
+    "AEGIS.RHTimeSliceWeilV1.fsTwoThreeDetectorSign_iff_riemannHypothesis",
+    "AEGIS.RHBaguaActualWeilV1.bagua_complementary_phase_coupling_margin",
+    "AEGIS.RHLogThreeSignedPrimeProducerV1.actual_signed_prime_gap_two_log_three",
+    "AEGIS.RHSignedPrimeIntervalExtensionV8.eventual_signed_prime_equals_combined_v8",
+    "AEGIS.RHExistingProofFusionV1.complementary_packets_and_signed_dictionary",
+    "AEGIS.RHNineFacesV13.nine_faces_of_rh_v13",
+    "AEGIS.RHNarrowDetectingTrigramDenseV1.dense_narrow_detector_iff_riemannHypothesis",
+    "AEGIS.RHGlobalizationChainV13.rh_of_vanishing_error_on_exhaustion",
+    "AEGIS.RHCofinalActualTerminalV1.riemannHypothesis_of_cofinal_lower_certificates",
+    "AEGIS.RHOptimizedSchurGlobalJoinV1.riemannHypothesis_of_optimized_actual_row_producer",
+}
+missing_mandatory = mandatory_producers - set(terms["roots"])
+missing_resolved = set(terms["roots"]) - rows.keys()
+if missing_mandatory or missing_resolved:
+    raise RuntimeError("RH_PROOF_GRAPH_ROOT_COVERAGE_REGRESSION "
+                       + repr({"missing_mandatory": sorted(missing_mandatory),
+                               "missing_resolved": sorted(missing_resolved)}))
+root_coverage = {
+    "scope": "selected current-branch import DAG only; NOT an exhaustive cross-branch audit",
+    "root_count": len(terms["roots"]),
+    "resolved_root_count": len(terms["roots"]) - len(missing_resolved),
+    "mandatory_stronger_roots": sorted(mandatory_producers),
+    "mandatory_stronger_roots_resolved": True,
+    "historical_repository_and_archive_exhaustiveness": False,
+}
+
 root_axioms = {root: rows[root]["axioms"] for root in terms["roots"]}
+allowed_axioms = {"propext", "Classical.choice", "Quot.sound"}
 for root, axioms in root_axioms.items():
-    assert set(axioms) <= {"propext", "Classical.choice", "Quot.sound"}, (root, axioms)
+    assert set(axioms) <= allowed_axioms, (root, axioms)
+
+# Never use only the hand-selected roots to decide whether an imported,
+# reachable proof of the official proposition exists. The Lean exporter has
+# already resolved the transitive proof dependencies and collected axioms
+# for every reachable declaration. An unlisted theorem can be a valid proof.
+# This scan still does NOT claim to cover *unreachable* declarations, branches,
+# other repositories or historical archives.
+def is_admissible_closed_rh(row):
+    # The Lean kernel's definitional-equality result is authoritative.
+    # Legacy root text matching is retained only for selected proof DAG rows.
+    is_canonical = (
+        row.get("type_defeq_riemann_hypothesis") is True
+        or row["type_expr"].strip() in
+        ("RiemannHypothesis", "_root_.RiemannHypothesis")
+    )
+    return (is_canonical and row["has_body"] and not row["is_axiom"]
+            and set(row["axioms"]) <= allowed_axioms)
+
+# Independent source of truth: all kernel-imported constants, including
+# theorems not referenced by any of the 66 roots. The Lean exporter records
+# their actual axiom dependencies, so the upstream 'sorry' target is rejected.
+env_rh_census = json.loads((OUT / "environment-rh-candidates.json").read_text())
+if env_rh_census["inspected_count"] < len(rows):
+    raise RuntimeError("RH_IMPORTED_ENVIRONMENT_CENSUS_INCOMPLETE")
+if env_rh_census.get("defeq_target_type") != "RiemannHypothesis":
+    raise RuntimeError("RH_SEMANTIC_TARGET_TYPE_SCAN_MISSING")
+if env_rh_census.get("semantic_theorems_checked", 0) <= 0:
+    raise RuntimeError("RH_SEMANTIC_THEOREM_SCAN_EMPTY")
+env_rh_candidates = env_rh_census["declarations"]
+if any(r.get("type_defeq_riemann_hypothesis") is not True for r in env_rh_candidates):
+    raise RuntimeError("RH_SEMANTIC_MATCH_UNWITNESSED")
+env_rh_by_name = {row["identifier"]: row for row in env_rh_candidates}
+closed_rh_from_dependencies = sorted(
+    name for name, row in rows.items() if is_admissible_closed_rh(row))
+closed_rh_from_environment = sorted(
+    row["identifier"] for row in env_rh_candidates
+    if is_admissible_closed_rh(row))
+closed_rh_declarations = sorted(
+    set(closed_rh_from_dependencies) | set(closed_rh_from_environment))
+closed_rh_roots = sorted(set(terms["roots"]) & set(closed_rh_declarations))
+rh_assessment = (
+    "CLOSED_CANONICAL_RH_REACHABLE_DECLARATION_KERNEL_AND_AXIOM_PASS"
+    if closed_rh_declarations else
+    "CANONICAL_RH_CLOSURE_NOT_FOUND_IN_IMPORTED_ENVIRONMENT"
+)
+# null is *unknown outside the inspected graph*, never proof of absence.
+rh_proven_in_reachable_graph = True if closed_rh_declarations else None
+rh_closure_scan = {
+    "scope": "all currently imported kernel constants plus the full 66-root dependency DAG",
+    "reachable_declaration_count": len(rows),
+    "imported_environment_declaration_count": env_rh_census["inspected_count"],
+    "imported_environment_rh_type_candidates": len(env_rh_candidates),
+    "closed_canonical_rh_from_imported_environment": closed_rh_from_environment,
+    "closed_canonical_rh_from_root_dependencies": closed_rh_from_dependencies,
+    "closed_canonical_rh_declarations": closed_rh_declarations,
+    "closed_canonical_rh_selected_roots": closed_rh_roots,
+    "not_scanned": "unimported source files, other refs, repos, archives",
+    "negative_result_is_global_nonexistence_claim": False,
+}
 
 for row in rows.values():
     module = row["module"]
@@ -159,7 +257,9 @@ for row in rows.values():
 
 graph = {"status": "selected_root_elaborated_type_and_available_proof_dependency_closure",
          "scope_limit": "Selected terminal/constructor/Gram route; not an all-history repository census",
-         "exact_replay_sha": head, "modules": modules,
+         "exact_replay_sha": head, "modules": modules, "root_coverage": root_coverage,
+         "rh_closure_scan": rh_closure_scan,
+         "imported_environment_rh_candidates": env_rh_candidates,
          "roots": terms["roots"], "root_axioms": root_axioms,
          "declarations": list(rows.values()), "missing_environment_constants": missing,
          "strongly_connected_components": components,
@@ -172,7 +272,7 @@ probe_file = ROOT / "RH_CLOSURE_PROBE.lean"
 negative_probe_file = ROOT / "RH_CLOSURE_NEGATIVE_PI_PROBE.lean"
 
 blocker = json.loads((META / "RH_BLOCKER.json").read_text())
-blocker["status"] = "CONSTRUCTOR_KERNEL_PASS; UNIVERSAL_CLOSURE_NOT_ACHIEVED"
+blocker["status"] = "CONSTRUCTOR_KERNEL_PASS; " + rh_assessment
 blocker["attempts"][0]["status"] = "KERNEL_AND_STANDARD_AXIOM_AUDIT_PASS"
 blocker["attempts"][1].update(
     operation="Compile established narrow-window constructor; separately reject pi-window misuse",
@@ -189,11 +289,23 @@ blocker["observed_failing_test"] = {"command": "lake env lean RH_CLOSURE_NEGATIV
 write("RH_BLOCKER.json", blocker)
 
 passport = json.loads((META / "RH_EVIDENCE_PASSPORT.json").read_text())
-passport.update(verification_status="SELECTED_ROOTS_KERNEL_AND_AXIOM_PASS; UNCONDITIONAL_RH_CLOSURE_NOT_ACHIEVED",
+event = json.loads(pathlib.Path(os.environ["GITHUB_EVENT_PATH"]).read_text()) if os.environ.get("GITHUB_EVENT_PATH") else {}
+passport.update(verification_status="SELECTED_ROOTS_KERNEL_AND_AXIOM_PASS; " + rh_assessment,
+                RH_PROVEN_UNCONDITIONALLY=rh_proven_in_reachable_graph,
+                final_theorem_signature="RiemannHypothesis" if closed_rh_declarations else None,
+                final_theorem_axioms={name: (rows.get(name) or env_rh_by_name[name])["axioms"]
+                                      for name in closed_rh_declarations}
+                    if closed_rh_declarations else None,
+                closed_rh_roots_in_selected_graph=closed_rh_roots,
+                closed_rh_declarations_in_reachable_graph=closed_rh_from_dependencies,
+                closed_rh_declarations_in_imported_environment=closed_rh_from_environment,
+                rh_closure_scan=rh_closure_scan,
+                root_coverage=root_coverage,
+                unconditional_proof_scope="All compiled/imported kernel declarations; null means unverified outside this environment",
                 exact_replay_sha=head, new_candidate_axioms=root_axioms,
                 active_repository="tarikskalic33/formal-conjectures",
-                active_pull_request=88,
-                active_branch=os.environ.get("GITHUB_HEAD_REF", "research/rh-actual-proof-assembly-20261014"),
+                active_pull_request=(event.get("pull_request") or {}).get("number"),
+                active_branch=os.environ.get("GITHUB_HEAD_REF") or None,
                 proof_graph_status=graph["status"],
                 workflow_run_id=os.environ.get("GITHUB_RUN_ID"),
                 workflow_job=os.environ.get("GITHUB_JOB"),
@@ -226,14 +338,30 @@ for root, axioms in root_axioms.items():
         book += "- [`" + root + "`](" + url + "): `" + ", ".join(axioms) + "`.\n"
     else:
         book += "- `" + root + "`: `" + ", ".join(axioms) + "`.\n"
-book += "\nRH_PROVEN_UNCONDITIONALLY=false. The mixed-defect/universal-family obligation "
-book += "is recorded with its complete formal type in RH_BLOCKER.json.\n"
+book += "\n## Canonical RH proof admission (observed, not pre-set)\n"
+book += "Selected-root status: `" + rh_assessment + "`.\n"
+book += "Closed canonical RH roots in the selected set: `" + repr(closed_rh_roots) + "`.\n"
+book += "Closed canonical RH declarations in the full 66-root dependency DAG: `" + repr(closed_rh_from_dependencies) + "`.\n"
+book += "Closed canonical RH declarations anywhere in the imported Lean environment: `" + repr(closed_rh_from_environment) + "`.\n"
+book += "Imported Lean constant census: `" + str(env_rh_census["inspected_count"]) + "`, candidates with exact RH type: `" + str(len(env_rh_candidates)) + "`.\n"
+book += "The RH_PROVEN_UNCONDITIONALLY field is true only if a compiled "
+book += "axiom-clean, non-axiom declaration in this reachable DAG has EXACT type "
+book += "RiemannHypothesis. Otherwise it is null (unknown outside this DAG), "
+book += "never a hard-coded false assertion.\n"
+book += "\nStronger producer coverage: `" + str(root_coverage["root_count"]) + "` roots, " + str(len(mandatory_producers)) + " mandatory lanes retained; NOT an all-branch census.\n"
+book += "The previously described producer obligation is retained in RH_BLOCKER.json "
+book += "as a candidate route, NOT as a global impossibility or closure verdict.\n"
 (OUT / "RH_PROOFBOOK.md").write_text(book)
 shutil.copyfile(META / "RH_EXACT_HEAD_REPLAY.sh", OUT / "RH_EXACT_HEAD_REPLAY.sh")
 shutil.copyfile(probe_file, OUT / "RH_CLOSURE_PROBE.lean")
 shutil.copyfile(negative_probe_file, OUT / "RH_CLOSURE_NEGATIVE_PI_PROBE.lean")
 print("ASSEMBLY_KERNEL_ROOTS", len(terms["roots"]))
+print("STRONGER_PRODUCER_ROOT_COVERAGE", "PASS", len(mandatory_producers))
 print("ASSEMBLY_PROOF_GRAPH_DECLARATIONS", len(rows))
 print("ASSEMBLY_NARROW_PROBE_PASS", probe.returncode)
 print("ASSEMBLY_PI_NEGATIVE_PROBE_ACTUAL_TYPE_MISMATCH", negative_probe.returncode)
-print("UNCONDITIONAL_RH_CLOSURE_NOT_ACHIEVED")
+print("CANONICAL_RH_IMPORTED_ENVIRONMENT_DECLARATIONS_CHECKED", env_rh_census["inspected_count"])
+print("CANONICAL_RH_IMPORTED_ENVIRONMENT_TYPE_CANDIDATES", len(env_rh_candidates))
+print("CANONICAL_RH_REACHABLE_DAG_DECLARATIONS_CHECKED", len(rows))
+print("CANONICAL_RH_CLOSED_REACHABLE_DECLARATIONS", closed_rh_declarations)
+print("CANONICAL_RH_SELECTED_ROOT_ASSESSMENT", rh_assessment)

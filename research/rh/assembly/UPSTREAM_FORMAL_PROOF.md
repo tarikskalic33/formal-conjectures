@@ -1,7 +1,8 @@
 # RH external formal-proof submission
 
 Status: preparation only. No upstream PR has been opened and no formal RH proof
-is asserted by this packet. RH_PROVEN_UNCONDITIONALLY remains false.
+is asserted by this packet. This preparation file does not set RH proof
+admission: the status must come from an exact-head kernel proof-type and axiom audit.
 
 ## Exact upstream target
 

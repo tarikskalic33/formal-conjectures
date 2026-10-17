@@ -28,6 +28,7 @@
   "axioms_added": 0,
   "sorry_added": false,
   "requires_prime_only_subexponential_growth_for_RH": true,
-  "rh_proven": false,
-  "no_authority_change": true
+  "rh_proven": null,
+  "no_authority_change": true,
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

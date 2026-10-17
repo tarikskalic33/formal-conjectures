@@ -109,7 +109,8 @@ jobs:
                    for p in sorted(root.rglob('*')) if p.is_file()}
           receipt = {
               'schema': 'aegis.rh.spline-l1-norm.v1', 'status': 'PASS',
-              'authority_effect': 'NONE', 'rh_proven': False,
+              'authority_effect': 'NONE', 'rh_proven': None,
+              'rh_admission_source': 'L1 norm lane cannot assess canonical RH; use exact-head proof type and axiom audit',
               'source_sha': os.environ['SOURCE_SHA'], 'baseline_sha': os.environ['BASELINE_SHA'],
               'actual_checkout': subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
               'lean_toolchain': os.environ['LEAN_TOOLCHAIN'], 'mathlib_sha': os.environ['MATHLIB_SHA'],

@@ -1,7 +1,5 @@
 # OPERATOR_PATTERN_LEDGER
 
-Discovery record only. `RH_PROVEN=false`; `authority_effect=NONE`.
-The statuses qualify only the exact statement described in each entry.
 Source baseline: FormalConjectures `ab791e06dd9368fdcc8684b8bc8dec2feb0ee3ac`
 and AEGIS `2c3d041b633147ec97c7ef753aa9d157a47bb9f5`.
 No ledger entry is an input axiom or a replacement for kernel replay.

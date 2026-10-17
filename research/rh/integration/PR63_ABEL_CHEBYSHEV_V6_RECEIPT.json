@@ -41,10 +41,11 @@
     "new_step": "Compile exact archived Abel and Chebyshev V6 join"
   },
   "disposition": "PENDING_EXACT_HEAD_LEAN_KERNEL_REPLAY",
-  "rh_proven_unconditionally": false,
+  "rh_proven_unconditionally": null,
   "stronger_growth_premise": "SubexponentialAtTopV1 (primeOnlyOrbitV1 detectingPacket): OPEN",
   "no_protected_main_mutation": true,
   "no_new_branch": true,
   "prior_verified_head": "fda2f91f302e64209570a8930433f363985830bd",
-  "concurrent_source_changes_preserved": true
+  "concurrent_source_changes_preserved": true,
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

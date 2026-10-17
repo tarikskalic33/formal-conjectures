@@ -149,7 +149,8 @@ def main() -> None:
         "reused_count": len(reused),
         "audited_recompiled": len(always_recompile & available),
         "modules": receipts,
-        "rh_proven_unconditionally": False,
+        "rh_proven_unconditionally": None,
+        "rh_proof_admission_source": "Not assessed by source-bound olean cache restoration; require exact-head kernel theorem type and axiom audit",
     }, indent=2) + "\n")
     print(
         "EXACT_SOURCE_BOUND_OLEAN_REUSE",

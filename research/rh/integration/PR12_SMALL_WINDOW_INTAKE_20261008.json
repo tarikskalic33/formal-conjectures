@@ -15,7 +15,8 @@
   "lean_toolchain": "leanprover/lean4:v4.33.1",
   "mathlib_sha": "0df444a360eaa60ab8c11dca51a86af692955474",
   "largest_preexisting_window": "693/2000",
-  "unconditional_RH_claim": false,
+  "unconditional_RH_claim": null,
   "external_authority_effect": "NONE",
-  "exact_head_evidence": "CI exact-head checkout, Lean logs, #print axioms, immutable Git blob identity"
+  "exact_head_evidence": "CI exact-head checkout, Lean logs, #print axioms, immutable Git blob identity",
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

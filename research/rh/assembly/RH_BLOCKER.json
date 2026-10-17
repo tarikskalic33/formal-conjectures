@@ -1,18 +1,30 @@
 {
-  "status": "CLOSURE_NOT_ACHIEVED; CONSTRUCTOR_AND_PROBE_EXECUTION_PENDING",
-  "obligation_type": "\u2200 n : \u2115, 0 < n \u2192 \u2200 g : WeilCompactSmoothGV1,\n  WeilMomentConditionsV1 g \u2192\n  AEGIS.WeilWindowExhaustionV1.LogWindowContainsV1 g ((n : \u211d) * Real.pi) \u2192\n  AEGIS.RHFeshbachWeilClosureV2.PacketSchurFamily g",
+  "status": "TRACKED_CANDIDATE_OBLIGATION; NOT_A_GLOBAL_RH_PROOF_VERDICT",
+  "obligation_type": "∀ n : ℕ, 0 < n → ∀ g : WeilCompactSmoothGV1,\n  WeilMomentConditionsV1 g →\n  AEGIS.WeilWindowExhaustionV1.LogWindowContainsV1 g ((n : ℝ) * Real.pi) →\n  AEGIS.RHFeshbachWeilClosureV2.PacketSchurFamily g",
   "consumer": "AEGIS.RHFeshbachWeilClosureV2.riemannHypothesis_of_window_schur_families",
   "attempts": [
     {
       "source": "AEGISOverlay/AEGIS_RH_Unconditional.lean",
       "operation": "actual scalar Schur family with a=-Re B(g,g), energy, N=id, zero tail",
       "domain": "certified 693/2000 log window",
-      "status": "written; kernel CI pending"
+      "status": "EXACT_SOURCE_KERNEL_PASS_ON_PR88",
+      "evidence": {
+        "head_sha": "aacdd511877e3e725dbee05b1167ee38b681ab31",
+        "run_id": 38799949777,
+        "job_id": 116646068051,
+        "claim": "narrow_window_schur_family compiled with standard axioms; scoped to the 693/2000 log window"
+      }
     },
     {
       "source": "research/rh/assembly/RH_CLOSURE_PROBE.txt",
       "operation": "apply narrow constructor using pi-window membership",
-      "status": "not yet executed; no predicted compiler result counted as observed"
+      "status": "EXACT_SOURCE_PROBE_COMPILED_ON_PR88",
+      "evidence": {
+        "head_sha": "aacdd511877e3e725dbee05b1167ee38b681ab31",
+        "run_id": 38799949777,
+        "job_id": 116646068051,
+        "claim": "RH_CLOSURE_PROBE.lean compiled successfully; does not discharge arbitrary pi-window premises"
+      }
     },
     {
       "operation": "finite actual packet partition to exact mixed Weil Gram form",
@@ -34,9 +46,17 @@
     {
       "source": "AEGISOverlay/RHActualUniversalFineGramV1.lean",
       "operation": "eliminate supplied partition using compact finite subcover and smooth partition of unity; retain exact mixed defect",
-      "status": "CANDIDATE_KERNEL_PENDING"
+      "status": "EXACT_SOURCE_KERNEL_PASS_ON_PR88",
+      "evidence": {
+        "head_sha": "aacdd511877e3e725dbee05b1167ee38b681ab31",
+        "run_id": 38799949777,
+        "job_id": 116646068051,
+        "claim": "every_moment_zero_packet_actual_fine_gram_with_support compiled with permitted axioms; mixed-defect sign not inferred"
+      }
     }
   ],
   "not_an_impossibility_claim": true,
-  "mixed_defect_obligation_type": "\u2200 g : WeilCompactSmoothGV1, WeilMomentConditionsV1 g \u2192\n  \u2203 (n : \u2115) (gs : Fin (n + 1) \u2192 WeilCompactSmoothGV1),\n    (\u2200 i, WeilMomentConditionsV1 (gs i)) \u2227\n    (\u2200 i, (5671 / 3200 : \u211d) * AEGIS.WeilDisjointEnergyV2.energy (gs i).1 \u2264\n      -(AEGIS.WeilMixedAlgebraV2.B (gs i) (gs i)).re) \u2227\n    g = AEGIS.RHGramExpansionV13.packetSum (fun _ => (1 : \u2102)) gs \u2227\n    (WeilExplicitRightSideV1 (WeilAutocorrelationV1 g)).re =\n      (\u2211 i, \u2211 j, AEGIS.WeilMixedAlgebraV2.B (gs i) (gs j)).re \u2227\n    AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs \u2264\n      (5671 / 3200 : \u211d) * (\u2211 i, AEGIS.WeilDisjointEnergyV2.energy (gs i).1)"
+  "mixed_defect_obligation_type": "∀ g : WeilCompactSmoothGV1, WeilMomentConditionsV1 g →\n  ∃ (n : ℕ) (gs : Fin (n + 1) → WeilCompactSmoothGV1),\n    (∀ i, WeilMomentConditionsV1 (gs i)) ∧\n    (∀ i, (5671 / 3200 : ℝ) * AEGIS.WeilDisjointEnergyV2.energy (gs i).1 ≤\n      -(AEGIS.WeilMixedAlgebraV2.B (gs i) (gs i)).re) ∧\n    g = AEGIS.RHGramExpansionV13.packetSum (fun _ => (1 : ℂ)) gs ∧\n    (WeilExplicitRightSideV1 (WeilAutocorrelationV1 g)).re =\n      (∑ i, ∑ j, AEGIS.WeilMixedAlgebraV2.B (gs i) (gs j)).re ∧\n    AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs ≤\n      (5671 / 3200 : ℝ) * (∑ i, AEGIS.WeilDisjointEnergyV2.energy (gs i).1)",
+  "proof_status_authority": "Only an exact kernel-accepted theorem with canonical RiemannHypothesis type and permitted axioms establishes the unconditional result. A tracked unsolved route does not negate a stronger theorem elsewhere.",
+  "evidence_semantics": "A pending or failed module replay is not a negation of RH. A verified local theorem is not a global RH conclusion. Preserve each theorem's precise hypotheses and source-bound scope."
 }

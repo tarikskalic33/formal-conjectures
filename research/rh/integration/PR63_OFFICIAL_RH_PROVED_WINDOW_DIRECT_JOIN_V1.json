@@ -10,7 +10,7 @@
   "large_window_premise": "∀ L : ℝ, (693 / 2000 : ℝ) < L → WindowArithmeticNonpositiveV1 L",
   "status": "OPEN_LARGE_WINDOW_PREMISE",
   "exact_head_replay": "PENDING",
-  "rh_unconditionally_proven": false,
+  "rh_unconditionally_proven": null,
   "new_axioms": 0,
   "sorry_added": false,
   "main_untouched": true,
@@ -23,5 +23,6 @@
     ".github/workflows/aegis-rh-deepmind-target-direct-v1.yml",
     "scripts/rh_official_target_gate.py",
     "scripts/test_rh_official_target_gate.py"
-  ]
+  ],
+  "rh_admission_provenance": "Historical source-intake receipt only; canonical RH admission must be established by an exact-head Lean kernel proof-type and axiom audit"
 }

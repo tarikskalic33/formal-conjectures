@@ -1,0 +1,294 @@
+{
+  "schema": "aegis-rh-cross-repo-source-transfer-v1",
+  "created_on": "2026-10-16",
+  "source_repository": "Aegis-Omega/AEGIS-OMEGA",
+  "destination_repository": "tarikskalic33/formal-conjectures",
+  "destination_existing_pr": 89,
+  "destination_branch": "proof/rh-optimized-schur-deepmind-handoff-v1",
+  "destination_baseline_head": "9630c163c2ba552c730f65b69bc666ed49ed0421",
+  "source_anchors": {
+    "four_packet_v3": "f707302f79c6a5ce7f5efb84492151234cff5bc7",
+    "four_packet_v4_elaboration_repair": "91250b2ba324ae025f433643f666332573eb415d",
+    "signed_four_block_preflight": "9061a95afcb69e8b3243ef3e621b0ae0ebabd340",
+    "restricted_weil_criterion": "4d7578ef3df6ae4d1bcd6e2eaefeb2f7f5309afe",
+    "pr721_source_census": "fb983fdc84a6bbeec6960c0e0c54b9695beba837"
+  },
+  "transferred_bytes_verified": [
+    {
+      "path": "research/rh/aegis_pr631_91250b2/lean/RHFourBlockPrimeEightV3.lean.src",
+      "source_blob": "f0905517b12b25eab1e8b9162755afd6ec9c6870",
+      "result": "MATCH",
+      "classification": "source_only_candidate"
+    },
+    {
+      "path": "research/rh/RH_FOUR_PACKET_CONCRETE_V3.md",
+      "source_blob": "d05c5f5ee859b4a661545b2e765097874098f328",
+      "result": "MATCH",
+      "classification": "math_analysis_not_kernel"
+    },
+    {
+      "path": "docs/research/RH_SIGNED_FOUR_BLOCK_V1_PREFLIGHT.md",
+      "source_blob": "db71e0e1318fdbcbff873418cc89738942381ebf",
+      "result": "MATCH",
+      "classification": "finite_preflight"
+    },
+    {
+      "path": "research/rh/aegis_pr594_f707302_original/test_four_packet_concrete_v3.py",
+      "source_blob": "a063099ef1722cdc7506c8d5162d58a621c535f7",
+      "result": "MATCH",
+      "classification": "original_test_source_not_executed"
+    },
+    {
+      "path": "research/rh/aegis_pr660_9061a95_original/rh_signed_four_block_preflight_v1.py",
+      "source_blob": "ff571521e61a62377430e526e7936a3efd8ce87e",
+      "result": "MATCH",
+      "classification": "original_diagnostic_source_not_executed"
+    }
+  ],
+  "already_in_fork_no_duplicate": [
+    {
+      "module": "RHFourBlockConcreteV3",
+      "blob": "1dbb003a189e7ec7ba3c58265c7b8202214b740a",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHFourBlockConcreteV3.lean.src",
+      "parity": "EXACT_F707"
+    },
+    {
+      "module": "RHFourBlockPrimeEightV3",
+      "blob": "5a2394056d7505774f207ed8e3bbafb0e593ed99",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFourBlockPrimeEightV3.lean.src",
+      "parity": "EXACT_F707"
+    },
+    {
+      "module": "RHFineMomentPacketV3",
+      "blob": "709bd274400ec98c85756c33d002ae88bf0323f7",
+      "source_f707_blob": "27de7445fa119b5616acff8bfca00689a8bf3f10",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHFineMomentPacketV3.lean.src",
+      "parity": "FORK_ELABORATION_ADAPTED"
+    },
+    {
+      "module": "RHNarrowDiagonalUpgradeV2",
+      "blob": "5861f8808015c4bee93efbbac5d032dd30522289",
+      "archive": "research/rh/aegis_source_4d7578e/lean/RHNarrowDiagonalUpgradeV2.lean.src"
+    },
+    {
+      "module": "RHElevenBlockActualBridgeV1",
+      "blob": "a87a55c179e0933a0cf75373c6e59adba75d02b6",
+      "archive": "research/rh/aegis_pr721_fb983fd/lean/RHElevenBlockActualBridgeV1.lean.src"
+    }
+  ],
+  "existing_wider_integration": {
+    "source_manifest_count": 183,
+    "proof_atlas_roots": 66,
+    "parent_pr": 88,
+    "destination_pr": 89
+  },
+  "safety": {
+    "new_branch": false,
+    "modified_existing_formal_theorem": false,
+    "modified_source_pins": false,
+    "modified_workflow": false,
+    "modified_protected_main": false,
+    "admission": false,
+    "authority_effect": "NONE"
+  },
+  "evidence_states": {
+    "github_blob_identity": "PASS",
+    "pr89_head_after_import_before_receipt": "043c9494bd6c668dbf624cbaf9fa01bba164fb88",
+    "upstream_replay_v4": "FAILURE_ZERO_STEPS_REPORTED_NEEDS_HOSTED_VERIFICATION",
+    "destination_lean_kernel": "NOT_RUN_FOR_RECOVERED_SOURCES",
+    "destination_axiom_audit": "NOT_RUN_FOR_TRANSFER",
+    "rh_unconditional": null,
+    "authority_effect": "NONE",
+    "rh_proof_admission_source": "Exact-head Lean kernel proof-type and axiom audit; transfer receipt does not decide mathematical proof status"
+  },
+  "next_replay": [
+    "materialize the PR631 corrected source instead of the historical PR721 blob in a separate temporary namespace/check-out with source-pinned dependencies",
+    "compile RHFourBlockPrimeEightV3, RHNarrowDiagonalUpgradeV2, RHFineMomentPacketV3, RHFourBlockConcreteV3 in dependency order",
+    "require real executed hosted steps with pinned Lean 4.33.1 and Mathlib 0df444a360eaa60ab8c11dca51a86af692955474",
+    "fail closed on missing or nonstandard #print axioms and sorryAx",
+    "compare current head checkouts; do not infer kernel PASS from source identity"
+  ],
+  "recovered_after_first_transfer": [
+    {
+      "source_pr": 686,
+      "source_head": "70eace587bfabcc502c30647bcce75d7db3c16b3",
+      "archive": "research/rh/aegis_recovered_20261016/pr686/WeilAutocorrelationPrimeWindowsV1.lean.src",
+      "source_blob": "2d897c3d20e89ee75bef8484e79e8af501ce9814",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_local_kernel_reported_hosted_not_run"
+    },
+    {
+      "source_pr": 687,
+      "source_head": "36d3e3dbf79a78a10286e0097717c7081200164c",
+      "archive": "research/rh/aegis_recovered_20261016/pr687/WeilThreeBlockPrimeWindowsV22.lean.src",
+      "source_blob": "1a5347b8bf351e2a5b033e1e7e0a895f530e71e4",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_local_kernel_reported_hosted_not_run"
+    },
+    {
+      "source_pr": 688,
+      "source_head": "5b0357b8f054d19f94e67e80f2773a44f0747461",
+      "archive": "research/rh/aegis_recovered_20261016/pr688/ZeroNegativeIntegerClassificationV1.lean.src",
+      "source_blob": "34966a5dd78d20a3096b0be1e32fc691374035ce",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_local_kernel_reported_hosted_not_run"
+    },
+    {
+      "source_pr": 689,
+      "source_head": "b169a55fe3dcc0060ac4f7131c3d68ab83a76f1f",
+      "archive": "research/rh/aegis_recovered_20261016/pr689/ZeroRadialTruncationV1.lean.src",
+      "source_blob": "712531567f4e18c54413d9d99fd9ede01ed6859c",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_local_kernel_reported_concat_parent"
+    },
+    {
+      "source_pr": 690,
+      "source_head": "3c1e89037019c8149c0056fce9b07e8d53d6421b",
+      "archive": "research/rh/aegis_recovered_20261016/pr690/ZetaDivisorSupportBridgeV1.lean.src",
+      "source_blob": "1188255e500e3d581e21a469621087401e3021d1",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_local_kernel_reported_hosted_not_run"
+    },
+    {
+      "source_pr": 693,
+      "source_head": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "archive": "research/rh/aegis_recovered_20261016/pr693/EpsteinGaussCriticalLineV1.lean.src",
+      "source_blob": "d2850a9f0f008bef44451a8f790a3a376f63a124",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_source_replay_not_run_here"
+    },
+    {
+      "source_pr": 693,
+      "source_head": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "archive": "research/rh/aegis_recovered_20261016/pr693/EpsteinWeilXSpaceIdentityV1.lean.src",
+      "source_blob": "101476488aded736e88d9caa834e672a2be47778",
+      "source_destination_blob_match": "PASS",
+      "classification": "lean_source_replay_not_run_here"
+    },
+    {
+      "source_pr": 693,
+      "source_head": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "archive": "research/rh/aegis_recovered_20261016/pr693/EPSTEIN_LATTICE_WEIL_CONTROL_V1.md",
+      "source_blob": "da3e1b24481610e4ae3eb750ac8c098658dc90e5",
+      "source_destination_blob_match": "PASS",
+      "classification": "numerical_diagnostic_only"
+    },
+    {
+      "source_pr": 693,
+      "source_head": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "archive": "research/rh/aegis_recovered_20261016/pr693/epstein_d20_arb_xspace_certificate.py",
+      "source_blob": "bc79122d3d964eb370b09da8fda8c5715bab4fe4",
+      "source_destination_blob_match": "PASS",
+      "classification": "arb_script_not_executed_here"
+    },
+    {
+      "source_pr": 699,
+      "source_head": "0c1477fb032bb979a1bc61efd23caa4cacfe376c",
+      "archive": "research/rh/aegis_recovered_20261016/pr699/krein_certificate_receipt_v2.py",
+      "source_blob": "9cc83c08fee155dfe09d4bad7551e048fc54d04a",
+      "source_destination_blob_match": "PASS",
+      "classification": "receipt_validator_not_math_proof"
+    },
+    {
+      "source_pr": 699,
+      "source_head": "0c1477fb032bb979a1bc61efd23caa4cacfe376c",
+      "archive": "research/rh/aegis_recovered_20261016/pr699/test_krein_certificate_receipt_v2.py",
+      "source_blob": "33166922f6e235fa5a6d9fcddc29bc3d5c11c913",
+      "source_destination_blob_match": "PASS",
+      "classification": "test_source_not_run_here"
+    },
+    {
+      "source_pr": 699,
+      "source_head": "0c1477fb032bb979a1bc61efd23caa4cacfe376c",
+      "archive": "research/rh/aegis_recovered_20261016/pr699/KREIN_CERTIFICATE_RECEIPT_V2_L0.98.json",
+      "source_blob": "7ce5d5d520ed1ec7fd71fd7f14dd3b26153f0a33",
+      "source_destination_blob_match": "PASS",
+      "classification": "receipt_metadata"
+    },
+    {
+      "source_pr": 699,
+      "source_head": "0c1477fb032bb979a1bc61efd23caa4cacfe376c",
+      "archive": "research/rh/aegis_recovered_20261016/pr699/KREIN_CERTIFICATE_RECEIPT_V2_L1.0.json",
+      "source_blob": "76f114d291af417b3b07b8c8d0eaa1081a7da849",
+      "source_destination_blob_match": "PASS",
+      "classification": "receipt_metadata"
+    }
+  ],
+  "recovery_summary": {
+    "initial_transfers": 5,
+    "additional_transfers": 13,
+    "total_new_archived_files": 18,
+    "previously_present_exact_sources": 3,
+    "old_183_source_manifest": "UNCHANGED",
+    "existing_pr89": "REUSED",
+    "proof_terms": "UNCHANGED",
+    "upstream_mathlib_pin": "UNCHANGED",
+    "source_identity": "PASS",
+    "native_added_proof_imports": "NONE",
+    "current_head_kernel_replay": "NOT_RUN",
+    "automatic_github_actions": "EXISTING_WORKFLOWS_TRIGGER_ON_PR_COMMITS; NO_NEW_WORKFLOWS_ADDED"
+  },
+  "reverified_zero_step_jobs": [
+    {
+      "source_pr": 594,
+      "head": "f707302f79c6a5ce7f5efb84492151234cff5bc7",
+      "workflow": "RH Emergency Lean Replay",
+      "run": 35673539920,
+      "job": 106772442462,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_LEAN_RESULT"
+    },
+    {
+      "source_pr": 594,
+      "head": "f707302f79c6a5ce7f5efb84492151234cff5bc7",
+      "workflow": "Kernel One",
+      "run": 35673539992,
+      "job": 106575114255,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_LEAN_RESULT"
+    },
+    {
+      "source_pr": 631,
+      "head": "91250b2ba324ae025f433643f666332573eb415d",
+      "workflow": "RH Emergency Lean Replay",
+      "run": 35782192062,
+      "job": 106930158580,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_LEAN_RESULT"
+    },
+    {
+      "source_pr": 631,
+      "head": "91250b2ba324ae025f433643f666332573eb415d",
+      "workflow": "Kernel One",
+      "run": 35782192052,
+      "job": 106930157954,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_LEAN_RESULT"
+    },
+    {
+      "source_pr": 693,
+      "head": "4f93fffcea401e8ede433cc27d525ff7ad1579e3",
+      "workflow": "epstein-lattice-weil-control",
+      "run": 36257090839,
+      "job": 108445814785,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_PYTHON_RESULT"
+    },
+    {
+      "source_pr": 699,
+      "head": "0c1477fb032bb979a1bc61efd23caa4cacfe376c",
+      "workflow": "exact-head",
+      "run": 36501776711,
+      "job": 109194045428,
+      "steps": 0,
+      "conclusion": "failure",
+      "classification": "PRE_EXECUTION_NO_TEST_RESULT"
+    }
+  ],
+  "future_replay_boundary": "All 13 recovered files are source/provenance archives, not imported into live Lean build. Dependencies must be resolved and executed on exact head before promotion. Zero-step failures do not imply theorem errors. PR689 fragment relies on concatenation with verified parent source."
+}

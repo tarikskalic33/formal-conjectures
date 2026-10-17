@@ -346,7 +346,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -680,7 +680,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -1014,7 +1014,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -1348,7 +1348,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -1682,7 +1682,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -2017,7 +2017,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -2352,7 +2352,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY
@@ -2687,7 +2687,7 @@ jobs:
                       raise SystemExit(f'UNEXPECTED_AXIOMS {theorem}: {sorted(axioms)}')
                   print(f'AXIOM_AUDIT_PASS {theorem}: {sorted(axioms)}',flush=True)
           receipt=dict(schema='aegis.rh.trigram.checkpoint.v1',head=head,plan_sha256=plan_root,stage=STAGE,end=stop,
-                       modules=records,unconditional_rh_proven=False)
+                       modules=records,unconditional_rh_proven=None)
           manifest.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
           print(f'TRIGRAM_CHECKPOINT_SAVED={stop}/{TOTAL} PLAN_SHA256={plan_root}',flush=True)
           PY

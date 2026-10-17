@@ -70,7 +70,7 @@ jobs:
           set -euo pipefail
           python3 scripts/verify_rh_pr721_source_closure.py --out /tmp/pr721-kernel --compile-smoke
           grep -F '"kernel": "THREE_SOS_MODULES_PASS"' /tmp/pr721-kernel/receipt.json
-          echo "PR721_SOURCE=SHA_VERIFIED; THREE_SOS=KERNEL_VERIFIED; RH_UNCONDITIONAL=NOT_CLAIMED"
+          echo "PR721_SOURCE=SHA_VERIFIED; THREE_SOS=KERNEL_VERIFIED; RH_ADMISSION_SOURCE=SEPARATE_EXACT_HEAD_CANONICAL_KERNEL_AUDIT"
       - name: Compile original eleven-block complex comparison bridge
         shell: bash
         run: |
@@ -107,7 +107,7 @@ jobs:
               "research/rh/aegis_pr721_fb983fd/lean/$mod.lean.src" \
               "/tmp/pr721-eleven-bridge/$mod.compile.log"
           done
-          echo 'PR721_ELEVEN_COMPARISON_BRIDGE=KERNEL_PASS; RH_UNCONDITIONAL=NOT_CLAIMED'
+          echo 'PR721_ELEVEN_COMPARISON_BRIDGE=KERNEL_PASS; RH_ADMISSION_SOURCE=SEPARATE_EXACT_HEAD_CANONICAL_KERNEL_AUDIT'
       - name: Preserve eleven-block complex bridge replay
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

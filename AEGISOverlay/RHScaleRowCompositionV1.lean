@@ -207,6 +207,169 @@ theorem actual_nine_macro_nonpositive_of_signed_cross_rows
   simpa using h
 
 
+
+
+/-! ## Exact signed near/interblock separation of the genuine Weil form
+
+This identity refines the earlier generic row decomposition by operating on
+the actual complex-Weil B entries. It retains all ordered off-diagonal
+entries with their original signs. In particular, the interblock component
+cannot be omitted after recomposition.
+-/
+
+/-- Actual signed interactions between atoms assigned to the same macro block. -/
+def actualIntraBlockSignedDefect
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (block : Fin (n + 1) → ℕ) : ℝ :=
+  ∑ i : Fin (n + 1),
+    ∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+      if block i = block j then (B (gs i) (gs j)).re else 0
+
+/-- Actual signed interactions between different macro blocks. -/
+def actualInterBlockSignedDefect
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (block : Fin (n + 1) → ℕ) : ℝ :=
+  ∑ i : Fin (n + 1),
+    ∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+      if block i ≠ block j then (B (gs i) (gs j)).re else 0
+
+/-- Exact decomposition, not a Schur estimate. For any grouping of any
+finite genuine Weil atoms, the original signed mixed defect equals
+the internal signed interactions plus all cross-block signed interactions. -/
+theorem actual_mixed_defect_eq_block_signed_split
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (block : Fin (n + 1) → ℕ) :
+    AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs =
+      actualIntraBlockSignedDefect gs block +
+        actualInterBlockSignedDefect gs block := by
+  have hsplit (i : Fin (n + 1)) :
+      (∑ j, (B (gs i) (gs j)).re) =
+        (B (gs i) (gs i)).re +
+          ∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+            (B (gs i) (gs j)).re := by
+    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
+  have hdef :
+      AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs =
+        ∑ i, ∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+          (B (gs i) (gs j)).re := by
+    unfold AEGIS.RHActualMixedDefectV1.actualMixedDefect
+    rw [Complex.re_sum]
+    simp_rw [Complex.re_sum]
+    simp_rw [hsplit]
+    rw [Finset.sum_add_distrib]
+    ring
+  calc
+    AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs =
+        ∑ i, ∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+          (B (gs i) (gs j)).re := hdef
+    _ = ∑ i, ((∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+        if block i = block j then (B (gs i) (gs j)).re else 0) +
+      (∑ j ∈ (Finset.univ : Finset (Fin (n + 1))).erase i,
+        if block i ≠ block j then (B (gs i) (gs j)).re else 0)) := by
+      apply Finset.sum_congr rfl
+      intro i _
+      exact actual_row_eq_near_add_far block
+        (fun i j => (B (gs i) (gs j)).re) i
+    _ = actualIntraBlockSignedDefect gs block +
+        actualInterBlockSignedDefect gs block := by
+      unfold actualIntraBlockSignedDefect actualInterBlockSignedDefect
+      rw [Finset.sum_add_distrib]
+
+/-- A source-true global criterion after any regrouping. Local internal
+control and cross-macro control MUST be paid jointly; regrouping alone
+cannot change the sign of B on the reconstructed packet. -/
+theorem actual_sign_of_block_signed_split
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (block : Fin (n + 1) → ℕ)
+    (hinternal : actualIntraBlockSignedDefect gs block ≤
+      -(∑ i, (B (gs i) (gs i)).re) -
+        actualInterBlockSignedDefect gs block) :
+    (B (packetSum (fun _ => (1 : ℂ)) gs)
+      (packetSum (fun _ => (1 : ℂ)) gs)).re ≤ 0 := by
+  have hbudget :
+      AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs ≤
+        -(∑ i, (B (gs i) (gs i)).re) := by
+    rw [actual_mixed_defect_eq_block_signed_split gs block]
+    linarith
+  have hgram :
+      (B (packetSum (fun _ => (1 : ℂ)) gs)
+         (packetSum (fun _ => (1 : ℂ)) gs)).re =
+        (∑ i, ∑ j, B (gs i) (gs j)).re := by
+    rw [B_packetSum]
+    simp
+  unfold AEGIS.RHActualMixedDefectV1.actualMixedDefect at hbudget
+  rw [hgram]
+  linarith
+
+/-! ## Exact signed recomposition: replace row-wise loss by a single total budget
+
+On the already-formed macro packets, local 9/64 control pays every
+intra-macro interaction. The only global certificate is the ACTUAL total
+signed inter-macro defect, not a symmetric Schur row or an absolute norm.
+This is strictly more flexible than per-row control but does not assert
+that arbitrary packets admit a certified macro decomposition.
+-/
+
+/-- Global true-Weil coercivity on a finite family of local 9/64 macro
+packets from ONE summed signed cross-macro bound. No pairwise row
+majorant, positivity of mixed coefficients, or equal-energy constraint.
+The full actual signed defect is the only external analytic input. -/
+theorem actual_nine_macro_coercive_of_total_signed_defect
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (center : Fin (n + 1) → ℝ) (gap : ℝ)
+    (hm : ∀ i, WeilMomentConditionsV1 (gs i))
+    (hwin : ∀ i, AEGIS.RHDyadicDiagonalV13.HalfWidthAt
+      (gs i) (9 / 64) (center i))
+    (htotal :
+      AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs ≤
+        ((1 / 10 : ℝ) - gap) * (∑ i, energy (gs i).1)) :
+    (B (packetSum (fun _ => (1 : ℂ)) gs)
+      (packetSum (fun _ => (1 : ℂ)) gs)).re ≤
+      -gap * (∑ i, energy (gs i).1) := by
+  have hd (i : Fin (n + 1)) :
+      (1 / 10 : ℝ) * energy (gs i).1 ≤
+        -(B (gs i) (gs i)).re := by
+    have h := AEGIS.RHWindowNineOver64GlobalizationV14.nine_over_64_coercive
+      (gs i) (center i) (hwin i) (hm i)
+    change (B (gs i) (gs i)).re ≤
+      -(1 / 10 : ℝ) * energy (gs i).1 at h
+    linarith
+  have hs :
+      (∑ i, (1 / 10 : ℝ) * energy (gs i).1) ≤
+      ∑ i, -(B (gs i) (gs i)).re :=
+    Finset.sum_le_sum (fun i _ => hd i)
+  have hdiag :
+      (1 / 10 : ℝ) * (∑ i, energy (gs i).1) ≤
+        -(∑ i, (B (gs i) (gs i)).re) := by
+    rw [Finset.mul_sum]
+    simpa only [Finset.sum_neg_distrib] using hs
+  have hgram :
+      (B (packetSum (fun _ => (1 : ℂ)) gs)
+         (packetSum (fun _ => (1 : ℂ)) gs)).re =
+        (∑ i, ∑ j, B (gs i) (gs j)).re := by
+    rw [B_packetSum]
+    simp
+  unfold AEGIS.RHActualMixedDefectV1.actualMixedDefect at htotal
+  rw [← hgram] at htotal
+  nlinarith
+
+/-- The signed-total version can prove a nonpositive complete Gram even
+when no per-row Schur certificate satisfies the 1/20 threshold. -/
+theorem actual_nine_macro_nonpositive_of_total_signed_defect
+    {n : ℕ} (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+    (center : Fin (n + 1) → ℝ)
+    (hm : ∀ i, WeilMomentConditionsV1 (gs i))
+    (hwin : ∀ i, AEGIS.RHDyadicDiagonalV13.HalfWidthAt
+      (gs i) (9 / 64) (center i))
+    (htotal :
+      AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs ≤
+        (1 / 10 : ℝ) * (∑ i, energy (gs i).1)) :
+    (B (packetSum (fun _ => (1 : ℂ)) gs)
+      (packetSum (fun _ => (1 : ℂ)) gs)).re ≤ 0 := by
+  have h := actual_nine_macro_coercive_of_total_signed_defect
+    gs center 0 hm hwin (by simpa using htotal)
+  simpa using h
+
 /-! ## Lossless Q16.16 accumulation, exactly as integer time-tick arithmetic
 
 Integer-valued actual pair-cost certificates are accumulated as Nat
@@ -774,6 +937,10 @@ end AEGIS.RHScaleRowCompositionV1
 
 #print axioms AEGIS.RHScaleRowCompositionV1.actual_nine_macro_coercive_of_signed_cross_rows
 #print axioms AEGIS.RHScaleRowCompositionV1.actual_nine_macro_nonpositive_of_signed_cross_rows
+#print axioms AEGIS.RHScaleRowCompositionV1.actual_nine_macro_coercive_of_total_signed_defect
+#print axioms AEGIS.RHScaleRowCompositionV1.actual_nine_macro_nonpositive_of_total_signed_defect
+#print axioms AEGIS.RHScaleRowCompositionV1.actual_mixed_defect_eq_block_signed_split
+#print axioms AEGIS.RHScaleRowCompositionV1.actual_sign_of_block_signed_split
 #print axioms AEGIS.RHScaleRowCompositionV1.q16_nat_row_eq_near_add_far
 #print axioms AEGIS.RHScaleRowCompositionV1.actual_fine_gram_q16_coercive_of_two_scale_integer_row
 #print axioms AEGIS.RHScaleRowCompositionV1.actual_fine_gram_q16_signed_of_two_scale_integer_row

@@ -49,11 +49,13 @@
     "Discharge the actual global four-phase arithmetic sign on dense log2/log3 samples without assuming RH."
   ],
   "admission": {
-    "RH_PROVEN_UNCONDITIONALLY": false,
+    "RH_PROVEN_UNCONDITIONALLY": null,
     "required_final_target": "theorem unconditional_riemannHypothesis : RiemannHypothesis := by ...",
     "fail_closed": true,
     "axioms_no_sorryAx": true,
-    "no_main_merge_by_this_change": true
+    "no_main_merge_by_this_change": true,
+    "admission_status_source": "Exact-head Lean kernel proof-type and axiom census from evidence-cofinal/assembly/RH_EVIDENCE_PASSPORT.json; checkpoint is never an admission verdict",
+    "unverified_status": "null means not assessed by this static checkpoint; never interpret as a mathematical counterproof"
   },
   "continuous_execution": "Work from this checkpoint; inspect only changed source/import closure, logs, then test smallest remaining analytical obligation. Do not reopen branches or run identical historical proof searches."
 }

@@ -38,7 +38,7 @@ jobs:
           from pathlib import Path
           record = json.loads(Path("research/rh/AEGIS_DIRICHLET_QUASI_BRIDGE_V1.json").read_text())
           source = Path("AEGISOverlay/DirichletEulerQuasiBridgeV1.lean").read_text()
-          assert record["rh_proven_unconditionally"] is False
+          assert record["rh_proven_unconditionally"] is None
           assert record["proof_authority"] == "CONDITIONAL_ONLY"
           assert record["external_comparator"]["import_strategy"].startswith("NONE:")
           assert "import Mathlib" in source

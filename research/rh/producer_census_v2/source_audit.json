@@ -2,7 +2,7 @@
   "schema": "AEGIS_RH_SOURCE_PRODUCER_CENSUS_V2",
   "observed_date_utc": "2026-09-27",
   "status": "EXPANDED_BOUNDED_SOURCE_INSPECTION",
-  "rh_proven": false,
+  "rh_proven": null,
   "authority_effect": "NONE",
   "unconditional_global_sign_producer_found": false,
   "source_inspections": [
@@ -61,7 +61,7 @@
       "path": "harness/sdk/weil_convergence_bridge.py",
       "declaration": "request_global_weil_claim",
       "classification": "EVIDENCE_ONLY_SOFTWARE",
-      "finding": "Function always sets closed=False, global_weil_positivity_proven=False, rh_proven=False. Hash commitments do not prove approximation or contribution semantics.",
+      "finding": "Historical source hardcodes negative closure, global-positivity and RH status flags. Hash commitments do not prove approximation or contribution semantics.",
       "premises": [
         "Unintegrated density,continuity,coverage theorem artifacts"
       ],
@@ -109,7 +109,7 @@
       "path": "sovereign-omega-v2/python/rh_spectral_operator_registry.py",
       "declaration": "validate_registry",
       "classification": "EVIDENCE_ONLY_SOFTWARE",
-      "finding": "Validator enforces open spectral targets and rh_proven=False, not a constructed positive operator.",
+      "finding": "Historical validator hardcodes an unproved RH disposition for its open spectral targets, not a constructed positive operator.",
       "premises": [
         "At least4 open construction premises for S2"
       ],
@@ -230,5 +230,6 @@
     "No new compilation is claimed for inspected remote sources. Existing proof replay authority remains bound to its exact prior source and logs.",
     "This receipt closes branch-pagination omissions and selected named-producer gaps; it does not establish mathematical impossibility or exhaustive search of all available source contents.",
     "Current full branch inventory is complete only at the API reads represented here; later refs require refresh."
-  ]
+  ],
+  "rh_admission_source": "Bounded historical producer census is not an exact-head RH proof-type audit"
 }

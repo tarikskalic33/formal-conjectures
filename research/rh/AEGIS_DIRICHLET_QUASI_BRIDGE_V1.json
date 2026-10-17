@@ -2,7 +2,7 @@
   "schema": "aegis.rh.dirichlet-quasi-bridge.v1",
   "created_date_utc": "2026-10-08",
   "authority_effect": "NONE",
-  "rh_proven_unconditionally": false,
+  "rh_proven_unconditionally": null,
   "admission": "NOT_ADMITTED",
   "source_identity": {
     "repository": "tarikskalic33/formal-conjectures",
@@ -104,5 +104,6 @@
     "copyright_run_id": 37709265055,
     "copyright_conclusion": "success",
     "check_semantics": "Replays the source blob at the tested exact head only. Any newer head needs its own fresh replay."
-  }
+  },
+  "rh_admission_source": "Not assessed by this conditional Dirichlet-quasi source receipt; require exact-head official Lean RH target and axiom audit"
 }

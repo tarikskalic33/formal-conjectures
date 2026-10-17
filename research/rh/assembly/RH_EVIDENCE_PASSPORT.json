@@ -1,6 +1,6 @@
 {
-  "verification_status": "CANDIDATE_KERNEL_PENDING; UNCONDITIONAL_RH_CLOSURE_NOT_ACHIEVED",
-  "RH_PROVEN_UNCONDITIONALLY": false,
+  "verification_status": "CANDIDATE_KERNEL_PENDING; CANONICAL_RH_CLOSURE_NOT_ASSESSED_BY_THIS_STATIC_SNAPSHOT",
+  "RH_PROVEN_UNCONDITIONALLY": null,
   "canonical_target": "RiemannHypothesis",
   "final_theorem_signature": null,
   "final_theorem_axioms": null,
@@ -76,5 +76,6 @@
     "pull_request": 88,
     "branch": "research/rh-actual-proof-assembly-20261014",
     "exact_sha": "generated from actual git HEAD by CI receipt"
-  }
+  },
+  "unconditional_proof_scope": "Null means not assessed by this static snapshot; compiled selected-root proof status is generated at run time from exact Lean proof types and axiom dependencies."
 }

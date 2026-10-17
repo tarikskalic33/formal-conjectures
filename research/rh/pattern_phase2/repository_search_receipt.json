@@ -136,7 +136,7 @@
     {
       "path": "sovereign-omega-v2/python/tests/test_guinand_weil_moment_restriction.py",
       "sha": "56ab4921ceea294ebf3d5dd092225b2c2ed53fde",
-      "result": "Arb finite moment restriction explicitly leaves MOMENT_BASIS_IDENTIFICATION_NOT_MACHINE_FORMALIZED and rh_proven false."
+      "result": "Arb finite moment restriction explicitly leaves MOMENT_BASIS_IDENTIFICATION_NOT_MACHINE_FORMALIZED and no canonical RH proof admission was recorded in that bounded source inspection."
     },
     {
       "repo": "Aegis-Omega/AegisOmega",

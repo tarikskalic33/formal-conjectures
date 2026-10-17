@@ -163,7 +163,7 @@ jobs:
           # Its exact source and axioms are compiled in cofinal-actual-schur and
           # krein-critical-line, where that dependency closure is materialized.
           # Do not replay it against this intentionally small structural closure.
-          for m in RHMultiGeneratorComplementarityV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHCompactMellinEntireV1; do
+          for m in RHMultiGeneratorComplementarityV1 RHSnowflakeCompactFrameV1 RHEulerOperatorObstructionV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHBoxFourierComplementarityV1 RHGenericSpectralShiftV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHCompactMellinEntireV1; do
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-structural/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-structural/$m.log"; then result=1; fi
           done
@@ -628,7 +628,7 @@ jobs:
           set -euo pipefail
           result=0
           mkdir -p .lake/build/lib/lean/AEGISOverlay
-          for m in RHKreinFiniteIntervalKernelV1 RHKreinFourierTaylorBoundV1 RHKreinFiniteCertificateDataV1 RHMultiGeneratorComplementarityV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHPrimePowerKernelConnectorV1 RHBoxFourierComplementarityV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHGenericSpectralShiftV1 RHCompactMellinEntireV1 RHWeilTiltComplementarityV1 RHDetectingPacketV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1; do
+          for m in RHKreinFiniteIntervalKernelV1 RHKreinFourierTaylorBoundV1 RHKreinFiniteCertificateDataV1 RHMultiGeneratorComplementarityV1 RHPrimePowerBoundedV1 RHBoundedConvolutionV1 RHPrimePowerKernelConnectorV1 RHBoxFourierComplementarityV1 RHKreinSplineSupportV1 RHKreinSplineContinuityV1 RHKreinSplineFourierIntegrableV1 RHKreinSplineDerivativesV1 RHKreinDigammaLowerBoundV1 RHKreinDigammaMonotonicityV1 RHGenericSpectralShiftV1 RHCompactMellinEntireV1 RHWeilTiltComplementarityV1 RHSnowflakeActualMellinFrameV1 RHDetectingPacketV1 RHFixedPacketFourPhaseV1 RHDetectingPacketCriterionV1; do
             if ! lake env lean -o ".lake/build/lib/lean/AEGISOverlay/$m.olean" "AEGISOverlay/$m.lean" 2>&1 | tee "evidence-krein/$m.log"; then result=1; fi
             if ! python3 scripts/verify_rh_overlay_axioms.py "AEGISOverlay/$m.lean" "evidence-krein/$m.log"; then result=1; fi
           done

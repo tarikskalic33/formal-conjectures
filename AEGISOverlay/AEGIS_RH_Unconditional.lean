@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -/
 import RHFeshbachWeilClosureV2
+import AEGISOverlay.RHOptimizedSchurGlobalJoinV1
+import AEGISOverlay.RHFourLogThreeWeightedRHBridgeV1
 
 /-!
 Construction candidate on the existing certified narrow-window class.
@@ -29,6 +31,7 @@ namespace AEGIS.RHAssemblyV1
 open AEGIS.RHFeshbachWeilClosureV2
 open AEGIS.WeilMixedAlgebraV2
 open AEGIS.WeilDisjointEnergyV2
+open AEGIS.RHGramExpansionV13
 
 def narrow_window_schur_family
     (g : WeilCompactSmoothGV1) (hm : WeilMomentConditionsV1 g)
@@ -101,7 +104,26 @@ theorem narrow_window_schur_norm_family
   change Tendsto (fun _ : ℕ => energy g.1) atTop (𝓝 (energy g.1))
   exact tendsto_const_nhds
 
+
+def ActualGlobalSignedWeilBudget : Prop :=
+  ∀ (g : WeilCompactSmoothGV1), WeilMomentConditionsV1 g →
+    ∃ (n : ℕ) (gs : Fin (n + 1) → WeilCompactSmoothGV1),
+      g = packetSum (fun _ => (1 : ℂ)) gs ∧
+      AEGIS.RHActualMixedDefectV1.actualMixedDefect n gs ≤
+        -(∑ i, (B (gs i) (gs i)).re)
+
+theorem actual_global_signed_weil_iff_RiemannHypothesis :
+    ActualGlobalSignedWeilBudget ↔ RiemannHypothesis := by
+  exact AEGIS.RHOptimizedSchurGlobalJoinV1.rh_iff_one_actual_sharp_signed_budget.symm
+
+theorem riemannHypothesis_of_actual_global_signed_weil
+    (hcert : ActualGlobalSignedWeilBudget) :
+    RiemannHypothesis := by
+  exact actual_global_signed_weil_iff_RiemannHypothesis.mp hcert
+
 end AEGIS.RHAssemblyV1
 
 #print axioms AEGIS.RHAssemblyV1.narrow_window_schur_family
 #print axioms AEGIS.RHAssemblyV1.narrow_window_schur_norm_family
+#print axioms AEGIS.RHAssemblyV1.actual_global_signed_weil_iff_RiemannHypothesis
+#print axioms AEGIS.RHAssemblyV1.riemannHypothesis_of_actual_global_signed_weil

@@ -56,6 +56,34 @@ theorem every_moment_zero_packet_actual_fine_gram_with_support
       n g hm L hL.le hs χ hχ hpart center hcut
   exact ⟨n, gs, center, hmom, hdiag, hwidth, hpacket, hgram⟩
 
+
+/-- Construct all real Weil Gram entries for an arbitrary compactly supported
+moment-zero packet at any positive fine cutoff radius. The exact radius
+passes to each localized atom; no mixed interaction is discarded. -/
+theorem every_moment_zero_packet_actual_fine_gram_at_radius
+    (g : WeilCompactSmoothGV1) (hm : WeilMomentConditionsV1 g)
+    (r : ℝ) (hr : 0 < r) (hrFine : r ≤ 1 / 256) :
+    ∃ (n : ℕ) (gs : Fin (n + 1) → WeilCompactSmoothGV1)
+      (center : Fin (n + 1) → ℝ),
+      (∀ i, WeilMomentConditionsV1 (gs i)) ∧
+      (∀ i, (5671 / 3200 : ℝ) * energy (gs i).1 ≤
+        -(B (gs i) (gs i)).re) ∧
+      (∀ i, AEGIS.RHDyadicDiagonalV13.HalfWidthAt
+        (gs i) r (center i)) ∧
+      g = packetSum (fun _ => (1 : ℂ)) gs ∧
+      (WeilExplicitRightSideV1 (WeilAutocorrelationV1 g)).re =
+        (∑ i, ∑ j, B (gs i) (gs j)).re := by
+  obtain ⟨L, hL, hs⟩ :=
+    AEGIS.WeilWindowExhaustionV1.logLift_has_finite_window_v1 g
+  obtain ⟨n, χ, center, hχ, hpart, hcut⟩ :=
+    AEGIS.RHFiniteFinePartitionV1.exists_finite_smooth_local_partition
+      L r hr
+  obtain ⟨gs, hmom, hdiag, hwidth, hpacket, hgram⟩ :=
+    AEGIS.RHActualLocalGramCoercivityV1.every_packet_actual_fine_coercive_gram_at_radius
+      n g hm L hL.le hs χ hχ hpart center
+      r (le_of_lt hr) hrFine hcut
+  exact ⟨n, gs, center, hmom, hdiag, hwidth, hpacket, hgram⟩
+
 /-- Original public theorem, recovered without reconstructing a second partition. -/
 theorem every_moment_zero_packet_actual_fine_gram
     (g : WeilCompactSmoothGV1) (hm : WeilMomentConditionsV1 g) :
@@ -1133,6 +1161,7 @@ end AEGIS.RHActualUniversalFineGramV1
 #print axioms AEGIS.RHActualUniversalFineGramV1.actual_mixed_defect_le_of_signed_symmetric_row
 #print axioms AEGIS.RHActualUniversalFineGramV1.actual_fine_gram_coercive_of_signed_real_row_certificate
 
+#print axioms AEGIS.RHActualUniversalFineGramV1.every_moment_zero_packet_actual_fine_gram_at_radius
 #print axioms AEGIS.RHActualUniversalFineGramV1.every_moment_zero_packet_actual_fine_gram_with_support
 
 #print axioms AEGIS.RHActualUniversalFineGramV1.actual_sign_of_one_fine_mixed_budget

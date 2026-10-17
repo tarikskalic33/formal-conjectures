@@ -63,6 +63,14 @@ def classify(source: str, log: str, lean_exit: int, axioms_log: str | None = Non
         return "AXIOM_AUDIT_FAILED", []
     return "FORMAL_RH_CLOSED", []
 
+def rh_admission_from_disposition(status: str) -> bool | None:
+    """Proof admission is three-valued: True only after kernel+axiom success.
+
+    None is unverified, not a counterproof and not a pre-set False.
+    """
+    return True if status == "FORMAL_RH_CLOSED" else None
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--source", type=Path, required=True)
@@ -91,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             if status == "OPEN_PROVED_WINDOW_COMPLEMENT" else None
         ),
         "disposition": status,
-        "rh_proven_unconditionally": status == "FORMAL_RH_CLOSED",
+        "rh_proven_unconditionally": rh_admission_from_disposition(status),
     }
     args.receipt.parent.mkdir(parents=True, exist_ok=True)
     args.receipt.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -26,11 +26,17 @@ on:
       - 'AEGISOverlay/RHFiniteFinePartitionV1.lean'
       - 'AEGISOverlay/RHActualUniversalFineGramV1.lean'
       - 'AEGISOverlay/RHScaleRowCompositionV1.lean'
+      - 'AEGISOverlay/RHOptimizedSchurGlobalJoinV1.lean'
+      - 'AEGISOverlay/RHHexagram64MellinWeilFusionV1.lean'
+      - 'AEGISOverlay/RHFourLogThreeActualPrimeV1.lean'
+      - 'AEGISOverlay/RHMellinDetectorCenteredV1.lean'
       - 'AEGISOverlay/RHArchRow29V1.lean'
       - 'AEGISOverlay/RHGlobalizationChainV13.lean'
       - 'AEGISOverlay/AEGIS_RH_Unconditional.lean'
       - 'AEGISOverlay/RHFeshbachScaledErrorV1.lean'
       - 'AEGISOverlay/RHFeshbachScaledWeilV1.lean'
+      - 'research/rh/assembly/RHProofGraphExport.lean'
+      - 'research/rh/assembly/export_evidence.py'
       - '.github/workflows/rh-cofinal-actual-schur-v1.yml'
   workflow_dispatch:
 
@@ -64,6 +70,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Reject hardcoded negative RH verdicts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/rh_static_verdict_gate.py
+          python3 scripts/test_rh_official_target_gate.py
 
       - name: Install pinned Lean and Mathlib cache
         shell: bash
@@ -228,6 +241,7 @@ jobs:
               "RHMomentNumericsV14": "98db31d2bb9305bdf4ab4062ed982304e1a8005e",
               "RHWindowNineOver64GlobalizationV14": "a9be154062cf131dd0c07cf6405babffc6b2290c",
               "RHFineMomentPacketV3": "709bd274400ec98c85756c33d002ae88bf0323f7",
+              "RHFourBlockPrimeEightV3": "5a2394056d7505774f207ed8e3bbafb0e593ed99",
               "RHRationalNinePacketPrimeWindowV1": "7175f243640df980d9c2effc610cbb6748ffc29b",
               "RHFineDiagonalUpgradeV3": "576d1f3a17851b20d6a5008d79f45e7c067f3e11",
               "RHRationalGapNinePrimeBoundV1": "6f0ce19532bb422649d764a0bea930e3756a8c59",
@@ -249,6 +263,37 @@ jobs:
                   raise RuntimeError("MODULE_IDENTITY_COLLISION " + name)
               dst.write_bytes(src.read_bytes())
               print("EXACT_ORIGINAL_V14_SOURCE", name, sha)
+              if name == "RHFourBlockPrimeEightV3":
+                  # Keep the archived PR721 original immutable. Only this staged
+                  # compilation copy receives the type-explicit Lean 4.33.1 repair.
+                  source = dst.read_text(encoding="utf-8")
+                  repairs = [
+                      ("  have hp := farthest_mixed_nat_zero_v3 g a hw 8 (by norm_num)\n",
+                       "  have hp8 :\n"
+                       "      mixed (translatePacket g 0) (translatePacket g (3 * Real.log 2)) (8 : ℝ) = 0 := by\n"
+                       "    simpa only [Nat.cast_ofNat] using\n"
+                       "      farthest_mixed_nat_zero_v3 g a hw 8 (by norm_num)\n"),
+                      ("  rw [hp, farthest_mixed_reciprocal_center_v3, hv]\n",
+                       "  rw [hp8, farthest_mixed_reciprocal_center_v3 g, hv]\n"),
+                  ]
+                  for before, after in repairs:
+                      if source.count(before) != 1:
+                          raise RuntimeError("PR721_LEAN_REPAIR_SOURCE_DRIFT " + name)
+                      source = source.replace(before, after, 1)
+                  dst.write_text(source, encoding="utf-8")
+                  repaired_blob = subprocess.check_output(
+                      ["git", "hash-object", str(dst)], text=True).strip()
+                  receipt = {
+                      "module": name,
+                      "archived_original_blob": sha,
+                      "compiled_repair_blob": repaired_blob,
+                      "repairs": len(repairs),
+                      "head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                  }
+                  pathlib.Path("evidence-cofinal").mkdir(exist_ok=True)
+                  pathlib.Path("evidence-cofinal/prime-eight-lean-repair.json").write_text(
+                      json.dumps(receipt, indent=2) + "\n")
+                  print("PR721_SOURCE_BOUND_LEAN_REPAIR", repaired_blob)
           PY
 
       - name: Reproduce pinned trigram fifteenth-cell correction
@@ -287,7 +332,7 @@ jobs:
           import hashlib, json, pathlib, shutil, subprocess
           root=pathlib.Path(".aegis/sovereign-omega-v2/formal/bridges/lean")
           overlay=pathlib.Path("AEGISOverlay")
-          targets=["AEGISOverlay.RHBaguaWalshV1","AEGISOverlay.RHBaguaActualWeilV1","AEGISOverlay.RHTimeSliceWeilV1","AEGISOverlay.RHLogThreeSignedPrimeProducerV1","AEGISOverlay.RHNarrowDetectingTrigramDenseV1","AEGISOverlay.AEGIS_RH_Unconditional","RHMomentDecayCofinalJoinV1","RHCofinalActualTerminalV1","RHCofinalSchurAdapterV1","RHLocalKreinPartitionV1","AEGISOverlay.RHKreinMultiplicativeTransportV1","AEGISOverlay.RHFiniteActualGramJoinV1","AEGISOverlay.RHActualNarrowGramSignV1","AEGISOverlay.RHActualLocalGramCoercivityV1","AEGISOverlay.RHActualElevenLatticeV1","AEGISOverlay.RHActualElevenSpectralV1","AEGISOverlay.RHActualMixedDefectV1","AEGISOverlay.RHActualUniversalFineGramV1","AEGISOverlay.RHScaleRowCompositionV1","AEGISOverlay.RHArchRow29V1","AEGISOverlay.RHGlobalizationChainV13","AEGISOverlay.RHCrossRepositoryFiveSpineV1","RHFeshbachScaledErrorV1","RHFeshbachScaledWeilV1"]
+          targets=["AEGISOverlay.RHMellinDetectorCenteredV1","AEGISOverlay.RHBaguaWalshV1","AEGISOverlay.RHBaguaActualWeilV1","AEGISOverlay.RHTimeSliceWeilV1","AEGISOverlay.RHLogThreeSignedPrimeProducerV1","AEGISOverlay.RHNarrowDetectingTrigramDenseV1","AEGISOverlay.AEGIS_RH_Unconditional","RHMomentDecayCofinalJoinV1","RHCofinalActualTerminalV1","RHCofinalSchurAdapterV1","RHLocalKreinPartitionV1","AEGISOverlay.RHKreinMultiplicativeTransportV1","AEGISOverlay.RHFiniteActualGramJoinV1","AEGISOverlay.RHActualNarrowGramSignV1","AEGISOverlay.RHActualLocalGramCoercivityV1","AEGISOverlay.RHActualElevenLatticeV1","AEGISOverlay.RHActualElevenSpectralV1","AEGISOverlay.RHActualMixedDefectV1","AEGISOverlay.RHActualUniversalFineGramV1","AEGISOverlay.RHScaleRowCompositionV1","AEGISOverlay.RHOptimizedSchurGlobalJoinV1","AEGISOverlay.RHHexagram64MellinWeilFusionV1","AEGISOverlay.RHFourLogThreeActualPrimeV1","AEGISOverlay.RHBaguaRotatingTwoPairMellinV1","AEGISOverlay.RHArchRow29V1","AEGISOverlay.RHGlobalizationChainV13","AEGISOverlay.RHCrossRepositoryFiveSpineV1","RHFeshbachScaledErrorV1","RHFeshbachScaledWeilV1","RHFourBlockPrimeEightV3","RHFineMomentPacketV3","RHNarrowDiagonalUpgradeV2","RHFourBlockConcreteV3"]
           deps={}; paths={}; seen=set(); active=set(); order=[]
           def locate(m):
               # Trigram uses an existing declaration-free adapter for two
@@ -336,7 +381,8 @@ jobs:
               # AEGIS checkout ONLY for these manifest-pinned modules.
               # Stage above already verifies each source Git blob.
               if m in ("RHMomentNumericsV14", "RHWindowNineOver64GlobalizationV14",
-                       "RHFineMomentPacketV3", "RHRationalNinePacketPrimeWindowV1",
+                       "RHFineMomentPacketV3", "RHFourBlockPrimeEightV3",
+                        "RHRationalNinePacketPrimeWindowV1",
                        "RHFineDiagonalUpgradeV3", "RHRationalGapNinePrimeBoundV1",
                        "RHRationalGapTenPrimeBoundV1") and p.is_file():
                   return p
@@ -406,15 +452,40 @@ jobs:
           assert hashlib.sha256(archived).hexdigest()=="b5c8c8ee464027694d711a9882135fa76b0e8261e5dcfda8259dae98915196f1", "archived Lean text changed"
           def git_blob(path):
               return subprocess.check_output(["git","hash-object",str(path)],text=True).strip()
+          # The legacy AEGIS checkout is still pinned for provenance, but
+          # RHFourBlockPrimeEightV3 resolves from the manifest-verified PR721
+          # archived blob. Do not silently fall back to the AEGIS checkout.
+          prime_module = "RHFourBlockPrimeEightV3"
+          prime_selected = paths.get(prime_module)
+          prime_expected = pathlib.Path("RHFourBlockPrimeEightV3.lean")
+          if prime_selected != str(prime_expected):
+              raise RuntimeError(f"WRONG_FOUR_BLOCK_SOURCE {prime_selected}")
+          prime_sha = git_blob(prime_selected)
+          # Check the staged fixed proof against this run's exact PR721
+          # archive-bound transformation; the original source SHA stays pinned.
+          prime_repair = json.loads(pathlib.Path(
+              "evidence-cofinal/prime-eight-lean-repair.json").read_text())
+          if (prime_repair.get("archived_original_blob") !=
+                  "5a2394056d7505774f207ed8e3bbafb0e593ed99" or
+                  prime_repair.get("compiled_repair_blob") != prime_sha or
+                  prime_repair.get("head") !=
+                  subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()):
+              raise RuntimeError(f"PR721_COMPILED_SOURCE_IDENTITY_MISMATCH {prime_sha}")
+          print("FOUR_BLOCK_PR721_REPAIRED_SOURCE_SELECTED", prime_module, prime_sha)
           pinned={
               "AEGISOverlay/RHTargetPacketMellinGeneralV2.lean":"9d87f75caa8711fc858bc594d4701fa8cab8ab17",
               "AEGISOverlay/RHNarrowFixedDetectorV1.lean":"21ea9492a375e45526f2be0d7076a7ba09661e57",
+              "AEGISOverlay/RHHexagram64MellinWeilFusionV1.lean":"22b7b266355b4b0a21a7c17a2bc9846488c9d79f",
               "AegisRH/PR606/Source/WeilTranslationGapInvariantV10.lean":"45b6d528d6bb85e04da115dac85c4a897ae2d432",
               "AegisRH/PR606/Source/WeilFiniteDilationFilterV10.lean":"3fac46ae976087f75248662af12966dd04ea6770",
               "AegisRH/PR606/Source/WeilOffLineSeedV10.lean":"36a9554f02786b7dd6de41ac9a649f9aad5d36ee",
               "research/rh/aegis_source_4d7578e/lean/WeilOffLineSeedV10.lean.src":"255cfa30537da17af7ee3f7fe64b6845808af246",
               ".aegis/sovereign-omega-v2/formal/bridges/lean/WeilFiniteDilationFilterV10.lean":"6970c598b8af0e25cc051567359f46cff63244bc",
               ".aegis/sovereign-omega-v2/formal/bridges/lean/RHNineFacesV13.lean":"19da141ee9d81c490555364a687fccdca6ae21b5",
+              ".aegis/sovereign-omega-v2/formal/bridges/lean/RHFourBlockPrimeEightV3.lean":"f0905517b12b25eab1e8b9162755afd6ec9c6870",
+              ".aegis/sovereign-omega-v2/formal/bridges/lean/RHFourBlockConcreteV3.lean":"1dbb003a189e7ec7ba3c58265c7b8202214b740a",
+              ".aegis/sovereign-omega-v2/formal/bridges/lean/RHNarrowDiagonalUpgradeV2.lean":"5861f8808015c4bee93efbbac5d032dd30522289",
+              ".aegis/sovereign-omega-v2/formal/bridges/lean/RHFourBlockActualBridgeV2.lean":"af77d02a41d993462b0613055f94a19fffc3d190",
               "research/rh/m8_kernel_v1/CorrectionSymbolAdapter.lean":"cb70597230e1cd1863bef40e0901c9e317dedf20",
               "research/rh/m8_kernel_v1/RHKreinM8AnalyticV1.lean":"27c3d8c4c1ebf3d08887af75fd60ecfd39d4db63",
               "research/rh/m8_kernel_v1/RHKreinCorrectionM8BoundV1.lean":"50d60b68282b9f17d25a4f9cacaa50e09ba892dc",
@@ -550,6 +621,25 @@ jobs:
             AEGISOverlay/RHScaleRowCompositionV1.lean \
             evidence-cofinal/compile-AEGISOverlay_RHScaleRowCompositionV1.log
           python3 scripts/verify_rh_overlay_axioms.py \
+            AEGISOverlay/RHOptimizedSchurGlobalJoinV1.lean \
+            evidence-cofinal/compile-AEGISOverlay_RHOptimizedSchurGlobalJoinV1.log
+           python3 scripts/verify_rh_overlay_axioms.py \
+             AEGISOverlay/RHHexagram64MellinWeilFusionV1.lean \
+             evidence-cofinal/compile-AEGISOverlay_RHHexagram64MellinWeilFusionV1.log
+           for fusion_theorem in mellin_packetSum_exact every_moment_zero_packet_actual_mellin_weil_zero_fusion \
+             every_moment_zero_packet_actual_prime_line_mellin_fusion hexagram64_zero_summand_mellin_exact \
+             hexagram64_mellin_weil_joint_exact; do
+             grep -F "AEGIS.RHHexagram64MellinWeilFusionV1.$fusion_theorem" \
+               evidence-cofinal/compile-AEGISOverlay_RHHexagram64MellinWeilFusionV1.log
+           done
+          python3 scripts/verify_rh_overlay_axioms.py \
+             AEGISOverlay/RHMellinDetectorCenteredV1.lean \
+             evidence-cofinal/compile-AEGISOverlay_RHMellinDetectorCenteredV1.log
+           grep -F 'AEGIS.RHMellinDetectorCenteredV1.narrow_hexagram64_full_actual_margin' \
+             evidence-cofinal/compile-AEGISOverlay_RHMellinDetectorCenteredV1.log
+           grep -F 'AEGIS.RHOptimizedSchurGlobalJoinV1.riemannHypothesis_of_optimized_actual_row_producer' \
+            evidence-cofinal/compile-AEGISOverlay_RHOptimizedSchurGlobalJoinV1.log
+          python3 scripts/verify_rh_overlay_axioms.py \
             AEGISOverlay/RHArchRow29V1.lean \
             evidence-cofinal/compile-AEGISOverlay_RHArchRow29V1.log
           python3 scripts/verify_rh_overlay_axioms.py \
@@ -648,7 +738,7 @@ jobs:
           for thm in packet_zero_quadratic_nonnegative packet_weil_nonpositive riemannHypothesis_of_window_scaled_schur_families; do
             grep -F "AEGIS.RHFeshbachScaledWeilV1.$thm" evidence-cofinal/compile-RHFeshbachScaledWeilV1.log
           done
-          echo "SCALED_WEIL_JOIN=KERNEL_PASS; RH_UNCONDITIONAL=NOT_CLAIMED"
+          echo "SCALED_WEIL_JOIN=KERNEL_PASS; CANONICAL_RH_ADMISSION=EVALUATED_BY_EXACT_HEAD_PROOF_GRAPH_EXPORT"
 
       - name: Export actual proof dependencies and observed closure test
         shell: bash

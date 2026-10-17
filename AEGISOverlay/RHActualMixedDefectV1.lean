@@ -2000,6 +2000,51 @@ theorem distinct_fine_actual_B_between_log_two_three
       rw [abs_of_nonneg hpos]
       linarith
 
+
+/-- Exact actual-Weil Q16.16 certificate in the SECOND prime-log-free
+window (strictly between log 2 and log 3). The zero prime component is
+source-proven, while the Arch component is charged at 676/65536.
+The lower separation is kept explicit, so no unverified real-log
+inequality is needed in this source theorem. -/
+theorem distinct_fine_actual_B_q16_between_log_two_three
+    (p q : WeilCompactSmoothGV1) (a b : ℝ)
+    (hp : WidthOneOneTwentyEightAt p a)
+    (hq : WidthOneOneTwentyEightAt q b)
+    (hm : WeilMomentConditionsV1 p)
+    (hsep : (35 / 128 : ℝ) ≤ b - a)
+    (hlo : Real.log 2 + (1 / 128 : ℝ) < b - a)
+    (hhi : b - a < Real.log 3 - (1 / 128 : ℝ)) :
+    ‖B p q‖ ≤ (676 / 65536 : ℝ) *
+      (energy p.1 + energy q.1) := by
+  have hactual := distinct_fine_actual_B_between_log_two_three
+    p q a b hp hq hm hlo hhi
+  have hkernel := moment_zero_fine_middle_arch_q16
+    ((b - a) - 1 / 128) (by linarith)
+  exact hactual.trans (mul_le_mul_of_nonneg_right hkernel
+    (add_nonneg (energy_nonnegative p.1) (energy_nonnegative q.1)))
+
+/-- Both prime-log-free intervals at the same genuine-Weil Q16.16
+price, for arbitrary moment-zero fine atoms (no same-mother requirement).
+This covers the intermediate support-gap and the log-2/log-3 gap.
+No resonance claim is made outside these explicit intervals. -/
+theorem distinct_fine_actual_B_q16_first_two_log_free_windows
+    (p q : WeilCompactSmoothGV1) (a b : ℝ)
+    (hp : WidthOneOneTwentyEightAt p a)
+    (hq : WidthOneOneTwentyEightAt q b)
+    (hm : WeilMomentConditionsV1 p)
+    (hsep : (35 / 128 : ℝ) ≤ b - a)
+    (hfree :
+      b - a < Real.log 2 - (1 / 128 : ℝ) ∨
+      (Real.log 2 + (1 / 128 : ℝ) < b - a ∧
+        b - a < Real.log 3 - (1 / 128 : ℝ))) :
+    ‖B p q‖ ≤ (676 / 65536 : ℝ) *
+      (energy p.1 + energy q.1) := by
+  rcases hfree with hbefore | ⟨hafter, hbeforeThree⟩
+  · exact distinct_fine_actual_B_q16_middle_gap
+      p q a b hp hq hm hsep hbefore
+  · exact distinct_fine_actual_B_q16_between_log_two_three
+      p q a b hp hq hm hsep hafter hbeforeThree
+
 end AEGIS.RHActualMixedDefectV1
 
 #print axioms AEGIS.RHActualMixedDefectV1.quantitative_lower_of_diagonal
@@ -2058,6 +2103,8 @@ end AEGIS.RHActualMixedDefectV1
 #print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_actual_prime_zero_of_integer_log_gap
 #print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_actual_B_of_integer_log_gap
 #print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_prime_zero_between_log_two_three
+#print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_actual_B_q16_between_log_two_three
+#print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_actual_B_q16_first_two_log_free_windows
 #print axioms AEGIS.RHActualMixedDefectV1.distinct_fine_actual_B_between_log_two_three
 
 #print axioms AEGIS.RHActualMixedDefectV1.integer_log_avoids_below_log_two
