@@ -56,7 +56,7 @@ limitations under the License.
 
   function checkCopyright(s, file) {
     if (!s.startsWith('/-')) {
-      core.error('There must be a copyright header on the first line', {
+      core.error(`${file}: There must be a copyright header on the first line`, {
         title: 'No Copyright Header',
         file: file,
         startLine: 1,
@@ -66,7 +66,7 @@ limitations under the License.
     }
     let match = headerRe.exec(s);
     if (!match) {
-      core.error('Could not find an Apache 2 copyright header', {
+      core.error(`${file}: Could not find an Apache 2 copyright header`, {
         title: 'No Copyright Header',
         file: file,
         startLine: 1,
