@@ -80,7 +80,8 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify exact environment pins
+      - name: Verify exact environment pins and target state
+        id: target-state
         shell: bash
         run: |
           set -euo pipefail
@@ -90,9 +91,19 @@ jobs:
           test "$(git -C .port-source rev-parse HEAD)" = "$PORT_SOURCE_SHA"
           test "$(git -C .li rev-parse HEAD)" = "$LI_PROVIDER_SHA"
           test "$(git -C .li hash-object Hadamard/General/Factorization.lean)" = "$LI_FACTORIZATION_BLOB"
-          test -f FormalConjectures/Millennium/RiemannHypothesis.lean
-          grep -Fx 'import RHRestrictedWeilCriterionV13' FormalConjectures/Millennium/RiemannHypothesis.lean
-          ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' FormalConjectures/Millennium/RiemannHypothesis.lean | grep -F 'sorry'
+          TARGET="FormalConjectures/Millennium/RiemannHypothesis.lean"
+          test -f "$TARGET"
+          TARGET_BLOB="$(git hash-object "$TARGET")"
+          echo "target_blob=$TARGET_BLOB" >> "$GITHUB_OUTPUT"
+          if [ "$TARGET_BLOB" = "$UPSTREAM_RH_BLOB" ]; then
+            echo "candidate=false" >> "$GITHUB_OUTPUT"
+            echo "RH_TARGET_STATE=UPSTREAM_OPEN_NOT_ADMISSION_CANDIDATE"
+          else
+            echo "candidate=true" >> "$GITHUB_OUTPUT"
+            echo "RH_TARGET_STATE=CHANGED_ADMISSION_CANDIDATE"
+            grep -Eq '^[[:space:]]*theorem riemannHypothesis[[:space:]]*:[[:space:]]*RiemannHypothesis[[:space:]]*:=' "$TARGET"
+            ! grep -n -A3 'theorem riemannHypothesis : RiemannHypothesis' "$TARGET" | grep -F 'sorry'
+          fi
 
       - name: Install pinned Lean and Mathlib cache
         shell: bash
@@ -163,35 +174,47 @@ jobs:
           OUT="$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
           mkdir -p "$OUT"
 
-          python3 - "$BASE" "$LOCAL" "$SRC" "$COMPAT" "$GITHUB_WORKSPACE/.deepmind-rh-order.txt" <<'PY'
+          python3 - "$BASE" "$LOCAL" "$SRC" "$COMPAT" \
+            "$GITHUB_WORKSPACE/.deepmind-rh-order.txt" "$GITHUB_WORKSPACE/.deepmind-rh-selected.tsv" <<'PY'
           import pathlib, sys
           base=pathlib.Path(sys.argv[1])
           local=pathlib.Path(sys.argv[2])
           src=pathlib.Path(sys.argv[3])
           compat=pathlib.Path(sys.argv[4])
-          out=pathlib.Path(sys.argv[5])
+          order_out=pathlib.Path(sys.argv[5])
+          selected_out=pathlib.Path(sys.argv[6])
 
-          groups = [
-              ("BASE", {p.stem:p for p in base.glob("*.lean")}),
-              ("SRC", {p.stem:p for p in src.glob("*.lean")}),
-              ("COMPAT", {p.stem:p for p in compat.glob("*.lean")}),
-              ("LOCAL", {p.stem:p for p in local.glob("*.lean")}),
-          ]
-          mods=set()
-          for _,g in groups: mods |= set(g)
+          def substantive_local(p):
+              prefixes=(
+                "import ", "theorem ", "def ", "abbrev ", "namespace ", "open ",
+                "set_option ", "noncomputable ", "private theorem ", "public theorem "
+              )
+              return any(
+                any(line.strip().startswith(prefix) for prefix in prefixes)
+                for line in p.read_text(encoding="utf-8").splitlines()
+              )
+
+          base_mods={p.stem:p for p in base.glob("*.lean")}
+          src_mods={p.stem:p for p in src.glob("*.lean")}
+          compat_mods={p.stem:p for p in compat.glob("*.lean")}
+          local_mods={p.stem:p for p in local.glob("*.lean") if substantive_local(p)}
+          mods=set(base_mods)|set(src_mods)|set(compat_mods)|set(local_mods)
 
           def selected(m):
-              for _,g in reversed(groups):
-                  if m in g: return g[m]
+              if m in compat_mods: return ("COMPAT", compat_mods[m])
+              if m in src_mods: return ("SRC", src_mods[m])
+              if m in local_mods: return ("LOCAL", local_mods[m])
+              if m in base_mods: return ("BASE", base_mods[m])
               raise SystemExit("missing:"+m)
 
           deps={}
           for m in mods:
+              _,file=selected(m)
               ds=[]
-              for line in selected(m).read_text(encoding="utf-8").splitlines():
-                  s=line.split("--",1)[0].strip()
-                  if not s.startswith("import "): continue
-                  for tok in s[7:].split():
+              for line in file.read_text(encoding="utf-8").splitlines():
+                  text=line.split("--",1)[0].strip()
+                  if not text.startswith("import "): continue
+                  for tok in text[7:].split():
                       root=tok.split(".")[0]
                       if root in mods: ds.append(root)
               deps[m]=ds
@@ -206,10 +229,14 @@ jobs:
               for d in deps[m]: visit(d)
               temp.remove(m); seen.add(m); order.append(m)
           visit(target)
-          out.write_text("\n".join(order)+"\n")
+          order_out.write_text("\n".join(order)+"\n")
+          selected_out.write_text(
+              "".join(f"{m}\t{selected(m)[0]}\t{selected(m)[1]}\n" for m in order)
+          )
           print("DEEPMIND_RH_TERMINAL_CLOSURE_COUNT", len(order))
           for m in order:
-              print(m, selected(m))
+              kind,file=selected(m)
+              print(kind, m, file)
           PY
 
       - name: Compile V13 terminal closure
@@ -224,15 +251,12 @@ jobs:
           ROOT_LEAN_PATH="$(lake env printenv LEAN_PATH)"
           export LEAN_PATH="$OUT:$LOCAL:$COMPAT:$SRC:$BASE:$GITHUB_WORKSPACE/.li/.lake/build/lib/lean:$ROOT_LEAN_PATH"
 
-          while IFS= read -r MOD; do
+          while read -r MOD KIND FILE; do
             [ -z "$MOD" ] && continue
-            FILE="$BASE/$MOD.lean"
-            [ -f "$SRC/$MOD.lean" ] && FILE="$SRC/$MOD.lean"
-            [ -f "$COMPAT/$MOD.lean" ] && FILE="$COMPAT/$MOD.lean"
-            [ -f "$LOCAL/$MOD.lean" ] && FILE="$LOCAL/$MOD.lean"
-            echo "=== $MOD ==="
+            test -f "$FILE"
+            echo "=== $KIND $MOD ==="
             lean -o "$OUT/$MOD.olean" "$FILE"
-          done < "$GITHUB_WORKSPACE/.deepmind-rh-order.txt"
+          done < "$GITHUB_WORKSPACE/.deepmind-rh-selected.tsv"
 
       - name: Compile source-bound canonical RH proved-window join
         shell: bash
@@ -243,6 +267,7 @@ jobs:
           bash scripts/rh_pr63_proved_window_prebuild.sh "$GITHUB_WORKSPACE/.lake/deepmind-rh-target"
 
       - name: Compile current DeepMind RH target
+        if: steps.target-state.outputs.candidate == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -281,6 +306,21 @@ jobs:
             --source "$TARGET" --log "$EVIDENCE/target-compile.log" \
             --lean-exit 0 --axioms-log "$EVIDENCE/target-axioms.log" \
             --receipt "$EVIDENCE/receipt.json"
+
+      - name: Record unchanged upstream-open RH target
+        if: steps.target-state.outputs.candidate != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="$GITHUB_WORKSPACE/evidence-rh-official"
+          mkdir -p "$EVIDENCE"
+          {
+            printf 'RH_TARGET_STATE=UPSTREAM_OPEN_NOT_ADMISSION_CANDIDATE\n'
+            printf 'RH_TARGET_BLOB=%s\n' "${{ steps.target-state.outputs.target_blob }}"
+            printf 'UPSTREAM_RH_BLOB=%s\n' "$UPSTREAM_RH_BLOB"
+            printf 'EXACT_HEAD=%s\n' "$(git rev-parse HEAD)"
+            printf 'OFFICIAL_ADMISSION_GATE=NOT_APPLICABLE_TO_UNCHANGED_UPSTREAM_OPEN_TARGET\n'
+          } | tee "$EVIDENCE/target-state.txt"
 
       - name: Upload exact RH target evidence
         if: always()
